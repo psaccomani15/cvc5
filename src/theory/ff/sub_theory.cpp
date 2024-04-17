@@ -17,8 +17,7 @@
  * [OKTB23]: https://doi.org/10.1007/978-3-031-37703-7_8
  */
 
-#ifdef CVC5_USE_COCOA
-
+#ifdef CVC5_USE_COCOA 
 #include "theory/ff/sub_theory.h"
 
 #include <CoCoA/BigInt.H>

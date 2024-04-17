@@ -106,7 +106,7 @@ index 2d5fe05..e5c05a5 100644
      int i;
      while ( (i = FindReducerIndex(F, v) ) != -1)
      {
-+      if(proofEnabled) membershipStep(v);
++      if(proofEnabled) membershipStep(v[i]);
        CheckForInterrupt("ReduceActiveLM");
        F->myReduce(v[i]);
      }

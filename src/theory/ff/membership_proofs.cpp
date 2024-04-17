@@ -1,4 +1,4 @@
-#include "theory/ff/gbProofs.h"
+#include "theory/ff/membership_proofs.h"
 #include <CoCoA/TmpGPoly.H>
 
 #include <sstream>
@@ -61,7 +61,7 @@ void GBProof::setFunctionPointers()
       std::function([=](CoCoA::ConstRefRingElem p) { t->reductionEnd(p); });
   d_membershipStart = std::function([=](CoCoA::ConstRefRingElem p){ t->membershipStart(p); });
   d_membershipStep = std::function([=](CoCoA::RingElem p) {t->membershipStep(p); });
-  d_membershipEnd = std::function([=](){t->membershipEnd(); })
+  d_membershipEnd = std::function([=](){t->membershipEnd(); });
   CoCoA::proofEnabled = true;
   CoCoA::sPolyProof = d_sPoly;
   CoCoA::reductionStartProof = d_reductionStart;
