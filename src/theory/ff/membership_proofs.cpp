@@ -60,12 +60,16 @@ void GBProof::setFunctionPointers()
   d_reductionEnd =
       std::function([=](CoCoA::ConstRefRingElem p) { t->reductionEnd(p); });
   d_membershipStart = std::function([=](CoCoA::ConstRefRingElem p){ t->membershipStart(p); });
-  d_membershipStep = std::function([=](CoCoA::ConstRefRingElem p) {});
+  d_membershipStep = std::function([=](CoCoA::RingElem p) {t->membershipStep(p); });
+  d_membershipEnd = std::function([=](){t->membershipEnd(); })
   CoCoA::proofEnabled = true;
   CoCoA::sPolyProof = d_sPoly;
   CoCoA::reductionStartProof = d_reductionStart;
   CoCoA::reductionStepProof = d_reductionStep;
   CoCoA::reductionEndProof = d_reductionEnd;
+  CoCoA::membershipStart = d_membershipStart;
+  CoCoA::membershipStep = d_membershipStep;
+  CoCoA::membershipEnd = d_membershipEnd;
 }
   Node GBProof::produceMembershipNode(std::string poly, NodeManager *nm) {
   Node polyRepr = nm->mkBoundVar(poly, nm->sExprType()); 
@@ -178,7 +182,7 @@ void GBProof::membershipStart(CoCoA::ConstRefRingElem p) {
   d_reducingPoly = ostring(p);
 }
 
-void GBProof::membershipStep(CoCoA::ConstRefRingElem red) {
+void GBProof::membershipStep(CoCoA::RingElem red) {
   d_membershipSeq.push_back(ostring(red));
 }
 void GBProof::membershipEnd()

@@ -91,7 +91,7 @@ private:
 
   void membershipStart(CoCoA::ConstRefRingElem p);
 
-  void membershipStep(CoCoA::ConstRefRingElem s);
+  void membershipStep(CoCoA::RingElem s);
 
   void membershipEnd(); 
   /**
