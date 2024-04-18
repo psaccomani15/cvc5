@@ -56,15 +56,13 @@ Node produceNonNullVarPred(NodeManager* nm, Node ideal)
 {
   TypeNode typeOfIdealB = ideal.getType();
   TypeNode pType = nm->mkFunctionType(typeOfIdealB, nm->booleanType());
-  Node nonNullVarietySymb = nm->mkBoundVar("nonNullVariety", pType);
+  Node nonNullVarietySymb = nm->mkRawSymbol("nonNullVariety", pType);
   Node nonNullVarietyPred =
       nm->mkNode(Kind::APPLY_UF, nonNullVarietySymb, ideal);
   return nonNullVarietyPred;
 }
 
-SubTheory::SubTheory(Env& env,
-                     FfStatistics* stats,
-                     Integer modulus)
+SubTheory::SubTheory(Env& env, FfStatistics* stats, Integer modulus)
     : EnvObj(env),
       FieldObj(modulus),
       d_facts(context()),
@@ -112,7 +110,7 @@ Result SubTheory::postCheck(Theory::Effort e)
       for (const Node& node : d_facts)
       {
         literals.push_back(node);
-        enc.addFact(node);	
+        enc.addFact(node);
       }
       enc.endScan();
       // assert facts
@@ -122,7 +120,8 @@ Result SubTheory::postCheck(Theory::Effort e)
       }
       Node literalSATPred = nm->mkAnd(literals);
       d_proof.addStep(literalSATPred, ProofRule::ASSUME, {}, {});
-
+      Trace("ff::trace") << "..will create pf step: " << ProofRule::ASSUME
+                         << literalSATPred << std::endl;
       // compute a GB
       std::vector<CoCoA::RingElem> generators;
       generators.insert(
@@ -138,10 +137,15 @@ Result SubTheory::postCheck(Theory::Effort e)
       Node nonNullVarPred = produceNonNullVarPred(nm, idealRepr);
       Node equivPred = nm->mkNode(Kind::EQUAL, literalSATPred, nonNullVarPred);
       d_proof.addStep(equivPred, ProofRule::FF_FIELD_SPLIT, {}, {});
+      Trace("ff::trace") << ".. will create pf step: "
+                         << ProofRule::FF_FIELD_SPLIT << equivPred << std::endl;
       d_proof.addStep(nonNullVarPred,
-                       ProofRule::EQ_RESOLVE,
-                       {literalSATPred, equivPred},
-                       {});
+                      ProofRule::EQ_RESOLVE,
+                      {literalSATPred, equivPred},
+                      {});
+      Trace("ff::trace") << ".. will create pf step: " << ProofRule::EQ_RESOLVE
+                         << literalSATPred << ", " << equivPred << " ---> "
+                         << nonNullVarPred << std::endl;
       Node trueNonNullVarPred;
       size_t nNonFieldPolyGens = generators.size();
       if (options().ff.ffFieldPolys)
@@ -161,9 +165,13 @@ Result SubTheory::postCheck(Theory::Effort e)
         Node newIdealRepr = nm->mkNode(Kind::SEXPR, polys);
         trueNonNullVarPred = produceNonNullVarPred(nm, newIdealRepr);
         d_proof.addStep(trueNonNullVarPred,
-                         ProofRule::FF_FIELD_POLYS,
-                         {equivPred},
-                         {fieldPolys});
+                        ProofRule::FF_FIELD_POLYS,
+                        {nonNullVarPred},
+                        {fieldPolys});
+        Trace("ff::trace") << ".. will create pf step: "
+                           << ProofRule::FF_FIELD_POLYS << nonNullVarPred
+                           << " ---> " << trueNonNullVarPred
+                           << " args: " << fieldPolys << std::endl;
       }
       else
       {
@@ -174,7 +182,8 @@ Result SubTheory::postCheck(Theory::Effort e)
       if (options().ff.ffTraceGb) tracer.setFunctionPointers();
 
       CoCoA::ideal ideal = CoCoA::ideal(generators);
-      IdealProof idealProofs = IdealProof(d_env, generators, trueNonNullVarPred, &d_proof);
+      IdealProof idealProofs =
+          IdealProof(d_env, generators, trueNonNullVarPred, &d_proof);
       const auto basis = CoCoA::GBasis(ideal);
       if (options().ff.ffTraceGb) tracer.unsetFunctionPointers();
 
@@ -182,12 +191,12 @@ Result SubTheory::postCheck(Theory::Effort e)
       bool is_trivial = basis.size() == 1 && CoCoA::deg(basis.front()) == 0;
       if (is_trivial)
       {
-	Node unsat = idealProofs.oneInUnsat(basis.front());
+        Node unsat = idealProofs.oneInUnsat(basis.front());
         d_proof.addStep(nm->mkConst<bool>(false),
-                         ProofRule::CONTRA,
-                         {trueNonNullVarPred, unsat},
-                         {});
-	
+                        ProofRule::CONTRA,
+                        {trueNonNullVarPred, unsat},
+                        {});
+        Trace("ff::trace") << "Finish unsat proof production" << std::endl;
         Trace("ff::gb") << "Trivial GB" << std::endl;
         if (options().ff.ffTraceGb)
         {
