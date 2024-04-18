@@ -84,7 +84,7 @@ Node GBProof::produceMembershipNode(std::string poly, NodeManager* nm)
   return nm->mkNode(Kind::SEXPR, polyRepr, d_ideal);
 }
 
-  //Returns a stored proof por membership of poly
+// Returns a stored proof por membership of poly
 Node GBProof::getMembershipFact(CoCoA::ConstRefRingElem poly)
 {
   std::string polyStrRepr = ostring(poly);
@@ -92,7 +92,7 @@ Node GBProof::getMembershipFact(CoCoA::ConstRefRingElem poly)
   return d_polyToMembership[polyStrRepr];
 }
 
-  //Register or returns a membership proof for a given polynomial 
+// Register or returns a membership proof for a given polynomial
 Node GBProof::proofIdealMembership(CoCoA::RingElem poly, CoCoA::ideal ideal)
 {
   std::string polyRepr = ostring(poly);
@@ -171,8 +171,9 @@ void GBProof::reductionEnd(CoCoA::ConstRefRingElem r)
     }
     d_proof->addStep(
         conclusion, ProofRule::FF_R_DOWN, premises, reductorsSeq, true);
-    Trace("ff::trace") << ".. will create pf step: " << ProofRule::FF_R_DOWN << premises << " ---> " << conclusion << std::endl;  
-  } 
+    Trace("ff::trace") << ".. will create pf step: " << ProofRule::FF_R_DOWN
+                       << premises << " ---> " << conclusion << std::endl;
+  }
   else
   {
     if (TraceIsOn("ff::trace"))

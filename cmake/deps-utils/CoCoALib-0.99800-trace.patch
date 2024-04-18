@@ -90,7 +90,7 @@ index b5b8b43..a26f652 100644
      // if CoeffEncoding::FrFldOfGCDDomain myRelease makes poly content free
    }
 diff --git a/src/AlgebraicCore/SparsePolyOps-vector.C b/src/AlgebraicCore/SparsePolyOps-vector.C
-index 2d5fe05..e5c05a5 100644
+index 2d5fe05..97e025d 100644
 --- a/src/AlgebraicCore/SparsePolyOps-vector.C
 +++ b/src/AlgebraicCore/SparsePolyOps-vector.C
 @@ -26,7 +26,7 @@
@@ -125,10 +125,10 @@ index 2d5fe05..e5c05a5 100644
    }
  
 diff --git a/src/AlgebraicCore/TmpGPoly.C b/src/AlgebraicCore/TmpGPoly.C
-index ea250d4..a282464 100644
+index ea250d4..e1345ef 100644
 --- a/src/AlgebraicCore/TmpGPoly.C
 +++ b/src/AlgebraicCore/TmpGPoly.C
-@@ -47,7 +47,17 @@ using std::vector;
+@@ -47,7 +47,19 @@ using std::vector;
  namespace CoCoA
  {  
  
@@ -138,16 +138,18 @@ index ea250d4..a282464 100644
 +  std::function<void(ConstRefRingElem p)> reductionStartHandler = nullptr;
 +  std::function<void(ConstRefRingElem q)> reductionStepHandler = nullptr;
 +  std::function<void(ConstRefRingElem r)> reductionEndHandler = nullptr;
-+
 +  bool proofEnabled = false;
 +  std::function<void(ConstRefRingElem p, ConstRefRingElem q, ConstRefRingElem s)> sPolyProof = nullptr;
 +  std::function<void(ConstRefRingElem p)> reductionStartProof = nullptr;
 +  std::function<void(ConstRefRingElem q)> reductionStepProof = nullptr;
 +  std::function<void(ConstRefRingElem r)> reductionEndProof = nullptr;
++  std::function<void(ConstRefRingElem p)> membershipStart = nullptr;
++  std::function<void(RingElem s)> membershipStep = nullptr;
++  std::function<void(void)> membershipEnd = nullptr;
    //---------class GPoly-------------------------------
  
    // WARNING: is not possible to build the zero GPoly here.
-@@ -300,8 +310,11 @@ void GPoly::myUpdateLenLPPLCDegComp()
+@@ -300,8 +312,11 @@ void GPoly::myUpdateLenLPPLCDegComp()
      myMinimalGenLevel = -1;
      if (the_gp.IsInputPoly())
        myPolyValue = poly(the_gp.myFirstGPoly());
