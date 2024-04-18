@@ -3,6 +3,7 @@
 
 #include <sstream>
 
+#include "smt/env_obj.h"
 #include "smt/assertions.h"
 #include "proof/proof.h"
 #include "util/rational.h"
@@ -23,13 +24,14 @@ std::string ostring(const T& t)
 
 // TODO string to node, so that same string yields the same node
 
-  GBProof::GBProof(const std::vector<CoCoA::RingElem> polys, Node ideal, CoCoA::ideal internalIdeal, CDProof* proof):
+  GBProof::GBProof(Env &env, const std::vector<CoCoA::RingElem> polys, Node ideal, CDProof* proof):
+    EnvObj(env),
     d_ideal(ideal),
-    cocoaIdeal(internalIdeal),
     d_proof(proof)
  
 {
-  NodeManager* nm = NodeManager::currentNM();;
+  
+  NodeManager* nm = nodeManager();
 
   for (CoCoA::ConstRefRingElem cPoly : polys)
   {
@@ -82,12 +84,12 @@ Node GBProof::getMembershipFact(CoCoA::ConstRefRingElem poly)
   Assert(d_polyToMembership.count(polyStrRepr));
   return d_polyToMembership[polyStrRepr]; 
 }
-  Node GBProof::proofIdealMembership(CoCoA::ConstRefRingElem poly) {
+  Node GBProof::proofIdealMembership(CoCoA::RingElem poly,CoCoA::ideal ideal) {
     std::string polyRepr = ostring(poly);
     if(d_polyToMembership.count(polyRepr))
       return getMembershipFact(poly);
-    Assert(CoCoA::HasGBasis(cocoaIdeal));
-    bool hasElem = CoCoA::IsElem(poly, cocoaIdeal);
+    Assert(CoCoA::HasGBasis(ideal));
+    bool hasElem = CoCoA::IsElem(poly, ideal);
     Assert(hasElem);
     return d_polyToMembership[polyRepr];
 
@@ -103,7 +105,7 @@ void GBProof::sPoly(CoCoA::ConstRefRingElem p,
   Trace("ff::trace") << "s: " << p << ", " << q << " -> " << s << std::endl;
   if (d_polyToMembership.count(ss) == 0)
   {
-    NodeManager *nm = NodeManager::currentNM();
+    NodeManager *nm = nodeManager();
     Trace("ff::trace") << " keep" << std::endl;
     std::string sPoly = ostring(s); 
     Node conclusion = produceMembershipNode(sPoly, nm); 
@@ -113,8 +115,6 @@ void GBProof::sPoly(CoCoA::ConstRefRingElem p,
     std::vector<Node> premises{ pMNode, qMNode};
     Trace("ff::trace") << "..will create pf step " << ProofRule::FF_S << ": "
                        << premises << " ---> " << conclusion << "\n";
-
-    // forces the CDProof to check wheter there is a proof for each premise
     d_proof->addStep(conclusion, ProofRule::FF_S, premises, {}, true);
   }
   else
@@ -144,7 +144,7 @@ void GBProof::reductionStep(CoCoA::ConstRefRingElem q)
 void GBProof::reductionEnd(CoCoA::ConstRefRingElem r)
 {
   Assert(!d_reductionSeq.empty());
-  NodeManager* nm = NodeManager::currentNM(); 
+  NodeManager* nm = nodeManager(); 
   Trace("ff::trace") << "reduction end: " << r << std::endl;
   std::string rr = ostring(r);
   if (d_polyToMembership.count(rr) == 0 && rr != d_reductionSeq.front())
@@ -187,7 +187,7 @@ void GBProof::membershipStep(CoCoA::RingElem red) {
 }
 void GBProof::membershipEnd()
 {
-  NodeManager* nm = NodeManager::currentNM();
+  NodeManager* nm = nodeManager();
   Node conclusion = produceMembershipNode(d_reducingPoly, nm);
   std::vector<Node> reductorsSeq;
   std::unordered_set<std::string> uniquePolys;

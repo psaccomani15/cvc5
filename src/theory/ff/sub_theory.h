@@ -36,6 +36,7 @@
 #include "theory/ff/stats.h"
 #include "theory/ff/util.h"
 #include "theory/theory.h"
+#include "proof/proof.h"
 #include "util/integer.h"
 #include "util/result.h"
 
@@ -83,6 +84,7 @@ class SubTheory : protected EnvObj, public FieldObj
    */
   bool inConflict() const;
 
+  Node getUnsatProof();
   /**
    * What is that conflict?
    */
@@ -111,6 +113,8 @@ class SubTheory : protected EnvObj, public FieldObj
    */
   context::CDList<Node> d_facts;
 
+  CDProof d_proof;
+  
   /**
    * Non-empty if we're in a conflict. The vector is the conflict.
    */
@@ -122,6 +126,7 @@ class SubTheory : protected EnvObj, public FieldObj
    */
   std::unordered_map<Node, Node> d_model{};
 
+  Node unsatProofNode; 
   /**
    * Statistics shared among all finite-field sub-theories.
    */

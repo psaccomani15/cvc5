@@ -17,7 +17,8 @@
  * [OKTB23]: https://doi.org/10.1007/978-3-031-37703-7_8
  */
 
-#ifdef CVC5_USE_COCOA 
+#ifdef CVC5_USE_COCOA
+#define proofProducing true
 #include "theory/ff/sub_theory.h"
 
 #include <CoCoA/BigInt.H>
@@ -33,6 +34,7 @@
 #include "smt/env_obj.h"
 #include "theory/ff/cocoa_encoder.h"
 #include "theory/ff/core.h"
+#include "theory/ff/ideal_proofs.h"
 #include "theory/ff/multi_roots.h"
 #include "theory/ff/split_gb.h"
 #include "util/cocoa_globals.h"
@@ -42,8 +44,32 @@ namespace cvc5::internal {
 namespace theory {
 namespace ff {
 
-SubTheory::SubTheory(Env& env, FfStatistics* stats, Integer modulus)
-    : EnvObj(env), FieldObj(modulus), d_facts(context()), d_stats(stats)
+template <typename T>
+std::string ostring(const T& t)
+{
+  std::ostringstream o;
+  o << t;
+  return o.str();
+}
+
+Node produceNonNullVarPred(NodeManager* nm, Node ideal)
+{
+  TypeNode typeOfIdealB = ideal.getType();
+  TypeNode pType = nm->mkFunctionType(typeOfIdealB, nm->booleanType());
+  Node nonNullVarietySymb = nm->mkBoundVar("nonNullVariety", pType);
+  Node nonNullVarietyPred =
+      nm->mkNode(Kind::APPLY_UF, nonNullVarietySymb, ideal);
+  return nonNullVarietyPred;
+}
+
+SubTheory::SubTheory(Env& env,
+                     FfStatistics* stats,
+                     Integer modulus)
+    : EnvObj(env),
+      FieldObj(modulus),
+      d_facts(context()),
+      d_proof(env, nullptr, "ffProofManager"),
+      d_stats(stats)
 {
   AlwaysAssert(modulus.isProbablePrime()) << "non-prime fields are unsupported";
   // must be initialized before using CoCoA.
@@ -78,11 +104,15 @@ Result SubTheory::postCheck(Theory::Effort e)
     }
     else if (options().ff.ffSolver == options::FfSolver::GB)
     {
+      const auto nm = nodeManager();
+      std::vector<Node> literals{};
       CocoaEncoder enc(size());
+
       // collect leaves
       for (const Node& node : d_facts)
       {
-        enc.addFact(node);
+        literals.push_back(node);
+        enc.addFact(node);	
       }
       enc.endScan();
       // assert facts
@@ -90,6 +120,8 @@ Result SubTheory::postCheck(Theory::Effort e)
       {
         enc.addFact(node);
       }
+      Node literalSATPred = nm->mkAnd(literals);
+      d_proof.addStep(literalSATPred, ProofRule::ASSUME, {}, {});
 
       // compute a GB
       std::vector<CoCoA::RingElem> generators;
@@ -97,20 +129,52 @@ Result SubTheory::postCheck(Theory::Effort e)
           generators.end(), enc.polys().begin(), enc.polys().end());
       generators.insert(
           generators.end(), enc.bitsumPolys().begin(), enc.bitsumPolys().end());
+      std::vector<Node> polys{};
+      for (auto& poly : generators)
+      {
+        polys.push_back(nm->mkBoundVar(ostring(poly), nm->sExprType()));
+      }
+      Node idealRepr = nm->mkNode(Kind::SEXPR, polys);
+      Node nonNullVarPred = produceNonNullVarPred(nm, idealRepr);
+      Node equivPred = nm->mkNode(Kind::EQUAL, literalSATPred, nonNullVarPred);
+      d_proof.addStep(equivPred, ProofRule::FF_FIELD_SPLIT, {}, {});
+      d_proof.addStep(nonNullVarPred,
+                       ProofRule::EQ_RESOLVE,
+                       {literalSATPred, equivPred},
+                       {});
+      Node trueNonNullVarPred;
       size_t nNonFieldPolyGens = generators.size();
       if (options().ff.ffFieldPolys)
       {
+        std::vector<Node> fieldPolys{};
         for (const auto& var : CoCoA::indets(enc.polyRing()))
         {
           CoCoA::BigInt characteristic = CoCoA::characteristic(coeffRing());
           long power = CoCoA::LogCardinality(coeffRing());
           CoCoA::BigInt size = CoCoA::power(characteristic, power);
-          generators.push_back(CoCoA::power(var, size) - var);
+          auto poly = CoCoA::power(var, size) - var;
+          Node polyRepr = nm->mkBoundVar(ostring(poly), nm->sExprType());
+          fieldPolys.push_back(polyRepr);
+          polys.push_back(polyRepr);
+          generators.push_back(poly);
         }
+        Node newIdealRepr = nm->mkNode(Kind::SEXPR, polys);
+        trueNonNullVarPred = produceNonNullVarPred(nm, newIdealRepr);
+        d_proof.addStep(trueNonNullVarPred,
+                         ProofRule::FF_FIELD_POLYS,
+                         {equivPred},
+                         {fieldPolys});
+      }
+      else
+      {
+        trueNonNullVarPred = nonNullVarPred;
       }
       Tracer tracer(generators);
+
       if (options().ff.ffTraceGb) tracer.setFunctionPointers();
+
       CoCoA::ideal ideal = CoCoA::ideal(generators);
+      IdealProof idealProofs = IdealProof(d_env, generators, trueNonNullVarPred, &d_proof);
       const auto basis = CoCoA::GBasis(ideal);
       if (options().ff.ffTraceGb) tracer.unsetFunctionPointers();
 
@@ -118,6 +182,12 @@ Result SubTheory::postCheck(Theory::Effort e)
       bool is_trivial = basis.size() == 1 && CoCoA::deg(basis.front()) == 0;
       if (is_trivial)
       {
+	Node unsat = idealProofs.oneInUnsat(basis.front());
+        d_proof.addStep(nm->mkConst<bool>(false),
+                         ProofRule::CONTRA,
+                         {trueNonNullVarPred, unsat},
+                         {});
+	
         Trace("ff::gb") << "Trivial GB" << std::endl;
         if (options().ff.ffTraceGb)
         {
@@ -154,7 +224,6 @@ Result SubTheory::postCheck(Theory::Effort e)
         {
           // SAT: populate d_model from the root
           Assert(d_model.empty());
-          const auto nm = nodeManager();
           for (const auto& [idx, node] : enc.nodeIndets())
           {
             if (isFfLeaf(node))
@@ -192,6 +261,7 @@ const std::unordered_map<Node, Node>& SubTheory::model() const
   return d_model;
 }
 
+Node SubTheory::getUnsatProof() { return unsatProofNode; }
 }  // namespace ff
 }  // namespace theory
 }  // namespace cvc5::internal

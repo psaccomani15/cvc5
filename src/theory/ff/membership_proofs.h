@@ -24,6 +24,7 @@
 #include <CoCoA/ideal.H>
 #include <functional>
 #include <unordered_map>
+#include "smt/env_obj.h"
 #include "expr/node.h"
 
 
@@ -40,12 +41,12 @@ namespace ff {
  *
  * We represent polynomials as their strings.
  */
-class GBProof
+  class GBProof : protected EnvObj
 {
   
  public:
 
-  GBProof(const std::vector<CoCoA::RingElem> polys, Node ideal, CoCoA::ideal cocoaIdeal, CDProof* proof);
+  GBProof(Env &env, const std::vector<CoCoA::RingElem> polys, Node ideal, CDProof* proof);
 
   /*
    * Hooks into CoCoA. The functions are then called by CoCoA Groebner Basis during
@@ -62,7 +63,7 @@ class GBProof
    * Produces/uses a membership fact for arbitrary polynomials in the ideal. 
    * The argument "poly" *must* be an element of the ideal.  
    */
-  Node proofIdealMembership(CoCoA::ConstRefRingElem poly); 
+  Node proofIdealMembership(CoCoA::RingElem poly, CoCoA::ideal ideal); 
 private:
 
   /**
@@ -131,8 +132,6 @@ private:
    * An sExpr of bound variables that represents the initial set of generators. 
    */
   Node d_ideal;  
-
-  CoCoA::ideal cocoaIdeal;
 
   /**
    * Maps polynomials to their original ideal membership proofs 
