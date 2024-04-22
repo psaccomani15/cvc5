@@ -191,12 +191,14 @@ Result SubTheory::postCheck(Theory::Effort e)
       bool is_trivial = basis.size() == 1 && CoCoA::deg(basis.front()) == 0;
       if (is_trivial)
       {
-        Node unsat = idealProofs.oneInUnsat(basis.front());
-        d_proof.addStep(nm->mkConst<bool>(false),
+        Node unsatPolys = idealProofs.oneInUnsat(basis.front());
+	Node falseNode = nm->mkConst<bool>(false); 
+        d_proof.addStep(falseNode,
                         ProofRule::CONTRA,
-                        {trueNonNullVarPred, unsat},
+                        {trueNonNullVarPred, unsatPolys},
                         {});
-        Trace("ff::trace") << "Finish unsat proof production" << std::endl;
+	std::shared_ptr<ProofNode> pf = d_proof.getProofFor(falseNode);
+        Trace("ff::trace") << "Finish unsat proof production" << *pf.get() << std::endl;
         Trace("ff::gb") << "Trivial GB" << std::endl;
         if (options().ff.ffTraceGb)
         {

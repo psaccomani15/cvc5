@@ -15,7 +15,7 @@
 
 #include "cvc5_private.h"
 
-// #if CVC5_USE_COCOA
+#if CVC5_USE_COCOA
 #ifndef CVC5__THEORY__GB__PROOF_H
 #define CVC5__THEORY__GB__PROOF_H
 
@@ -154,4 +154,4 @@ private:
 
 #endif /* CVC5__THEORY__FF__PROOF_H */
 
-//#endif /* CVC5_USE_COCOA */
+#endif /* CVC5_USE_COCOA */

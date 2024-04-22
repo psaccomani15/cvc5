@@ -15,7 +15,7 @@
 
 #include "cvc5_private.h"
 
-// #if CVC5_USE_COCOA
+#if CVC5_USE_COCOA
 #ifndef CVC5__THEORY__IDEAL__PROOF_H
 #define CVC5__THEORY__IDEAL__PROOF_H
 
@@ -90,4 +90,4 @@ class IdealProof : protected EnvObj
 
 #endif /* CVC5__THEORY__FF__PROOF_H */
 
-//#endif /* CVC5_USE_COCOA */
+#endif /* CVC5_USE_COCOA */
