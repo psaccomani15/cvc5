@@ -51,7 +51,7 @@ Tracer::Tracer(const std::vector<CoCoA::RingElem>& inputs)
   {
     const std::string s = ostring(inputs[i]);
     d_parents[s] = {};
-    Trace("ff::trace") << "input: " << s << std::endl;
+    //Trace("ff::trace") << "input: " << s << std::endl;
     d_inputNumbers.emplace(std::move(s), i);
   }
 };
@@ -93,13 +93,13 @@ std::vector<size_t> Tracer::trace(const CoCoA::RingElem& i) const
   while (q.size())
   {
     const std::string t = q.back();
-    Trace("ff::trace") << "traceback: " << t << std::endl;
+    //Trace("ff::trace") << "traceback: " << t << std::endl;
     q.pop_back();
     // is the ancestor an input?
     if (d_inputNumbers.count(t))
     {
       // yes? output it
-      Trace("ff::trace") << " blame" << std::endl;
+      //Trace("ff::trace") << " blame" << std::endl;
       inputAncestors.push_back(d_inputNumbers.at(t));
     }
     else
@@ -128,41 +128,41 @@ void Tracer::sPoly(CoCoA::ConstRefRingElem p,
                               CoCoA::ConstRefRingElem s)
 {
   std::string ss = ostring(s);
-  Trace("ff::trace") << "s: " << p << ", " << q << " -> " << s << std::endl;
+  //Trace("ff::trace") << "s: " << p << ", " << q << " -> " << s << std::endl;
   if (d_parents.count(ss) == 0)
   {
-    Trace("ff::trace") << " keep" << std::endl;
+    //Trace("ff::trace") << " keep" << std::endl;
     addDep(ostring(p), ss);
     addDep(ostring(q), ss);
   }
   else
   {
-    Trace("ff::trace") << " drop" << std::endl;
+    //Trace("ff::trace") << " drop" << std::endl;
   }
 }
 
 void Tracer::reductionStart(CoCoA::ConstRefRingElem p)
 {
   Assert(d_reductionSeq.empty());
-  Trace("ff::trace") << "reduction start: " << p << std::endl;
+  //Trace("ff::trace") << "reduction start: " << p << std::endl;
   d_reductionSeq.push_back(ostring(p));
 }
 
 void Tracer::reductionStep(CoCoA::ConstRefRingElem q)
 {
   Assert(!d_reductionSeq.empty());
-  Trace("ff::trace") << "reduction step: " << q << std::endl;
+  //Trace("ff::trace") << "reduction step: " << q << std::endl;
   d_reductionSeq.push_back(ostring(q));
 }
 
 void Tracer::reductionEnd(CoCoA::ConstRefRingElem r)
 {
   Assert(!d_reductionSeq.empty());
-  Trace("ff::trace") << "reduction end: " << r << std::endl;
+  //Trace("ff::trace") << "reduction end: " << r << std::endl;
   std::string rr = ostring(r);
   if (d_parents.count(rr) == 0 && rr != d_reductionSeq.front())
   {
-    Trace("ff::trace") << " keep" << std::endl;
+    //Trace("ff::trace") << " keep" << std::endl;
     for (auto& s : d_reductionSeq)
     {
       addDep(s, rr);
@@ -172,15 +172,15 @@ void Tracer::reductionEnd(CoCoA::ConstRefRingElem r)
   {
     if (TraceIsOn("ff::trace"))
     {
-      Trace("ff::trace") << " drop" << std::endl;
+      //Trace("ff::trace") << " drop" << std::endl;
       if (d_parents.count(rr))
       {
-        Trace("ff::trace") << " parents:";
+        //Trace("ff::trace") << " parents:";
         for (const auto& p : d_parents.at(rr))
         {
-          Trace("ff::trace") << ", " << p;
+          //Trace("ff::trace") << ", " << p;
         }
-        Trace("ff::trace") << std::endl;
+        //Trace("ff::trace") << std::endl;
       }
     }
   }

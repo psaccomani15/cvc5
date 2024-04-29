@@ -8,6 +8,7 @@ callgrind.out*
 gmon.out
 stamp-generated
 generated/
+compile_commands.json
 *~
 \#*\#
 *.swp
@@ -15,5 +16,6 @@ generated/
 /deps/
 .vscode
 *.pyc
+.ccls-cache/
 
 

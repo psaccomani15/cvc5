@@ -717,6 +717,10 @@ libcvc5_add_sources(
   theory/ff/cocoa_util.h
   theory/ff/core.cpp
   theory/ff/core.h
+  theory/ff/ideal_proofs.cpp
+  theory/ff/ideal_proofs.h
+  theory/ff/membership_proofs.cpp
+  theory/ff/membership_proofs.h
   theory/ff/multi_roots.cpp
   theory/ff/multi_roots.h
   theory/ff/parse.cpp

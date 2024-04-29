@@ -2229,6 +2229,20 @@ enum ENUM(ProofRule) : uint32_t
    */
   EVALUE(ARITH_NL_COVERING_RECURSIVE),
 
+  /*  Finite Field Rules */
+
+  // TODO: ADD DOCUMENTATION. 
+  EVALUE(FF_ROOT_BRANCH),
+  EVALUE(FF_EXHAUST_BRANCH),
+  EVALUE(FF_FIELD_POLYS),
+  EVALUE(FF_ONE_UNSAT),
+  EVALUE(FF_NO_ROOTS_UNSAT),
+  EVALUE(FF_FIELD_SPLIT),
+  EVALUE(FF_Z),
+  EVALUE(FF_G),
+  EVALUE(FF_R_UP),
+  EVALUE(FF_R_DOWN),
+  EVALUE(FF_S),
   /**
    * \verbatim embed:rst:leading-asterisk
    * **External -- LFSC**

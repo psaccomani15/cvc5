@@ -1,147 +1,164 @@
-diff --git a/configuration/shell-fns.sh b/configuration/shell-fns.sh
-index 190dbb4..c8d281f 100755
---- a/configuration/shell-fns.sh
-+++ b/configuration/shell-fns.sh
-@@ -11,7 +11,7 @@ mktempdir()
- {
-     TODAY=`date "+%Y%m%d"`
-     TIME=`date "+%H%M%S"`
--    TMP_DIR="/tmp/CoCoALib-config/$USER-$TODAY/$1-$TIME-$$"
-+    TMP_DIR="/tmp/CoCoALib-config-$USER/$USER-$TODAY/$1-$TIME-$$"
-     /bin/rm -rf "$TMP_DIR"  &&  /bin/mkdir -p "$TMP_DIR"
-     if [ $? -ne 0 ]
-     then
 diff --git a/include/CoCoA/TmpGPoly.H b/include/CoCoA/TmpGPoly.H
-index 4c4d51e..efe50f7 100644
+index 4c4d51e..3e7fa1a 100644
 --- a/include/CoCoA/TmpGPoly.H
 +++ b/include/CoCoA/TmpGPoly.H
 @@ -29,6 +29,7 @@
  #include "CoCoA/TmpGTypes.H"
  #include "CoCoA/utils.H"
  
-+#include<functional>
++#include <functional>
  #include<list>
  // using std::list; // for GPolyList; GPolyPtrList;
  #include<vector>
-@@ -46,6 +47,11 @@ enum ClearMarker {clear};
+@@ -46,7 +47,21 @@ enum ClearMarker {clear};
  
  class GPoly;
  
+-
 +extern bool handlersEnabled;
 +extern std::function<void(ConstRefRingElem p, ConstRefRingElem q, ConstRefRingElem s)> sPolyHandler;
 +extern std::function<void(ConstRefRingElem p)> reductionStartHandler;
 +extern std::function<void(ConstRefRingElem q)> reductionStepHandler;
 +extern std::function<void(ConstRefRingElem r)> reductionEndHandler;
- 
++
++extern bool proofEnabled;
++extern std::function<void(ConstRefRingElem p, ConstRefRingElem q, ConstRefRingElem s)> sPolyProof;
++extern std::function<void(ConstRefRingElem p)> reductionStartProof;
++extern std::function<void(ConstRefRingElem q)> reductionStepProof;
++extern std::function<void(ConstRefRingElem r)> reductionEndProof;
++extern std::function<void(ConstRefRingElem p)> membershipStart;
++extern std::function<void(RingElem s)> membershipStep;
++extern std::function<void(void)> membershipEnd;
++  
  typedef std::list<GPoly> GPolyList;
  
+ 
 diff --git a/src/AlgebraicCore/PolyRing-content.C b/src/AlgebraicCore/PolyRing-content.C
-index c5d0a0a..36d6d2b 100644
+index c5d0a0a..a984f23 100644
 --- a/src/AlgebraicCore/PolyRing-content.C
 +++ b/src/AlgebraicCore/PolyRing-content.C
-@@ -33,6 +33,7 @@
+@@ -33,7 +33,7 @@
  #include "CoCoA/convert.H"
  #include "CoCoA/error.H"
  #include "CoCoA/utils.H"  // for len
+-
 +#include "CoCoA/TmpGPoly.H"
  
- 
  #include <vector>
-@@ -128,7 +129,9 @@ namespace CoCoA
+ // using std::vector;
+@@ -128,7 +128,11 @@ namespace CoCoA
    {
      const PolyRing Rx = owner(f);
      RingElem ans(Rx);
 +    if (handlersEnabled) reductionStartHandler(f);
++    if (proofEnabled) reductionStartProof(f);	  
      Rx->myMonic(raw(ans), raw(f));
-+    if (handlersEnabled) reductionEndHandler(ans);
++    if (handlersEnabled) reductionEndHandler(f);
++    if (proofEnabled) reductionEndProof(f);	  
      return ans;
    }
  
 diff --git a/src/AlgebraicCore/SparsePolyOps-reduce.C b/src/AlgebraicCore/SparsePolyOps-reduce.C
-index b5b8b43..11687f0 100644
+index b5b8b43..a26f652 100644
 --- a/src/AlgebraicCore/SparsePolyOps-reduce.C
 +++ b/src/AlgebraicCore/SparsePolyOps-reduce.C
-@@ -134,6 +134,7 @@ degree HereForProfilingOnlyWDeg(ConstRefPPMonoidElem cofactor1)
+@@ -134,6 +134,8 @@ degree HereForProfilingOnlyWDeg(ConstRefPPMonoidElem cofactor1)
        v.myGRingInfo().myCheckForTimeout("ReduceActiveLM");
        s->myUpdate(F, *g);
        F->myReduce(poly(*g), NumTerms(*g));
-+      if ( handlersEnabled ) reductionStepHandler(poly(*g));
++      if( handlersEnabled ) reductionStepHandler(poly(*g));
++      if( proofEnabled ) reductionStepProof(poly(*g));
      }//while
    }//ReduceActiveLM
  
-@@ -269,6 +270,7 @@ degree HereForProfilingOnlyWDeg(ConstRefPPMonoidElem cofactor1)
+@@ -269,6 +271,8 @@ degree HereForProfilingOnlyWDeg(ConstRefPPMonoidElem cofactor1)
    void GPoly::myReduce(const Reductors& theReductors)
    {
      if ( IsZero(*this) ) return;
 +    if ( handlersEnabled ) reductionStartHandler(myPoly());
++    if ( proofEnabled ) reductionStartProof(myPoly());
      ReductionCog F = ChooseReductionCogGeobucket(myGRingInfo());
      F->myAssignReset(myPolyValue, myNumTerms); // myPolyValue gets 0
      reduce(F, mySugar, theReductors); // mySugar updated
-@@ -278,6 +280,7 @@ degree HereForProfilingOnlyWDeg(ConstRefPPMonoidElem cofactor1)
+@@ -278,6 +282,8 @@ degree HereForProfilingOnlyWDeg(ConstRefPPMonoidElem cofactor1)
      if ( !IsZero(*this) && !IsOne(myLCValue) ) // makes myPolyValue monic
        if ( myGRingInfo().myCoeffRingType()==CoeffEncoding::Field )
          myGRingInfo().myNewSPR()->myDivByCoeff(raw(myPolyValue), raw(myLCValue));
 +    if ( handlersEnabled ) reductionEndHandler(myPoly());
++    if ( proofEnabled ) reductionEndProof(myPoly());
      // if CoeffEncoding::Field myRelease does NOT make poly monic
      // if CoeffEncoding::FrFldOfGCDDomain myRelease makes poly content free
    }
+diff --git a/src/AlgebraicCore/SparsePolyOps-vector.C b/src/AlgebraicCore/SparsePolyOps-vector.C
+index 2d5fe05..97e025d 100644
+--- a/src/AlgebraicCore/SparsePolyOps-vector.C
++++ b/src/AlgebraicCore/SparsePolyOps-vector.C
+@@ -26,7 +26,7 @@
+ #include "CoCoA/verbose.H"
+ #include "CoCoA/ReductionCog.H"
+ 
+-
++#include "CoCoA/TmpGPoly.H"
+ //#include <vector>
+ using std::vector;
+ 
+@@ -146,6 +146,7 @@ namespace CoCoA
+     int i;
+     while ( (i = FindReducerIndex(F, v) ) != -1)
+     {
++      if(proofEnabled) membershipStep(v[i]);
+       CheckForInterrupt("ReduceActiveLM");
+       F->myReduce(v[i]);
+     }
+@@ -173,11 +174,13 @@ namespace CoCoA
+       CoCoA_THROW_ERROR(ERR::MixedRings, FnName);
+     if ( IsZero(f) ) return f;
+     if ( v.empty() ) return f;
++    if(proofEnabled) membershipStart(f);
+     RingElem ans(f);
+     ReductionCog F = NewRedCogGeobucketField(owner(ans));
+     F->myAssignReset(ans);
+     reduce(F, v);
+     F->myRelease(ans);
++    if(proofEnabled) membershipEnd();
+     return ans;
+   }
+ 
 diff --git a/src/AlgebraicCore/TmpGPoly.C b/src/AlgebraicCore/TmpGPoly.C
-index ea250d4..3447d86 100644
+index ea250d4..e1345ef 100644
 --- a/src/AlgebraicCore/TmpGPoly.C
 +++ b/src/AlgebraicCore/TmpGPoly.C
-@@ -47,6 +47,11 @@ using std::vector;
+@@ -47,7 +47,19 @@ using std::vector;
  namespace CoCoA
  {  
  
+-
 +  bool handlersEnabled = false;
 +  std::function<void(ConstRefRingElem p, ConstRefRingElem q, ConstRefRingElem s)> sPolyHandler = nullptr;
 +  std::function<void(ConstRefRingElem p)> reductionStartHandler = nullptr;
 +  std::function<void(ConstRefRingElem q)> reductionStepHandler = nullptr;
 +  std::function<void(ConstRefRingElem r)> reductionEndHandler = nullptr;
- 
++  bool proofEnabled = false;
++  std::function<void(ConstRefRingElem p, ConstRefRingElem q, ConstRefRingElem s)> sPolyProof = nullptr;
++  std::function<void(ConstRefRingElem p)> reductionStartProof = nullptr;
++  std::function<void(ConstRefRingElem q)> reductionStepProof = nullptr;
++  std::function<void(ConstRefRingElem r)> reductionEndProof = nullptr;
++  std::function<void(ConstRefRingElem p)> membershipStart = nullptr;
++  std::function<void(RingElem s)> membershipStep = nullptr;
++  std::function<void(void)> membershipEnd = nullptr;
    //---------class GPoly-------------------------------
  
-@@ -301,7 +306,10 @@ void GPoly::myUpdateLenLPPLCDegComp()
+   // WARNING: is not possible to build the zero GPoly here.
+@@ -300,8 +312,11 @@ void GPoly::myUpdateLenLPPLCDegComp()
+     myMinimalGenLevel = -1;
      if (the_gp.IsInputPoly())
        myPolyValue = poly(the_gp.myFirstGPoly());
-     else
-+    {
+-    else
++    else{
        myPolySetSPoly(the_gp.myFirstGPoly(), the_gp.mySecondGPoly());
 +      if ( handlersEnabled ) sPolyHandler(the_gp.myFirstGPoly().myPoly(), the_gp.mySecondGPoly().myPoly(), myPoly());
++      if ( proofEnabled ) sPolyProof(the_gp.myFirstGPoly().myPoly(), the_gp.mySecondGPoly().myPoly(), myPoly());
 +    }
      myUpdateLenLPPLCDegComp();
      myAge = the_age;
      // MAX: do these things only if necessary.
-diff --git a/configuration/gmp-check-cxxflags.sh b/configuration/gmp-check-cxxflags.sh
-index f34c10d..6c167a3 100755
---- a/configuration/gmp-check-cxxflags.sh
-+++ b/configuration/gmp-check-cxxflags.sh
-@@ -59,7 +59,7 @@ fi
- 
- 
- GMP_LDLIB=-lgmp
--if [ -f "$COCOA_EXTLIB_DIR"/lib/libgmp-symlink.a ]
-+if [ -f "$COCOA_EXTLIB_DIR"/lib/libgmp-symlink."$GMP_LIB_EXTN" ]
- then
-   GMP_LDLIB=-lgmp-symlink
- fi
-diff --git a/configure b/configure
-index 769750d..5ac5e90 100755
---- a/configure
-+++ b/configure
-@@ -336,6 +336,7 @@ fi
- # Next two lines required by the scripts which check GMP (see below).
- export CXX
- export CXXFLAGS
-+export GMP_LIB_EXTN
- 
- # Check compiler and flags are sane.
- # If all is well, result is either "gnu" or "not gnu" & return code is 0.
-@@ -467,6 +468,7 @@ else
-       # gmp-find.sh script worked, so message is full path of GMP library
-       /bin/ln -s "$GMP_MESG" $EXTLIBS/lib/libgmp-symlink.a
-       GMP_LIB="$GMP_MESG"
-+      GMP_LIB_EXTN="a"
-     fi
-   fi
- fi
