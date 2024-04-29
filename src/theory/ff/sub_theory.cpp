@@ -39,7 +39,7 @@
 #include "theory/ff/split_gb.h"
 #include "util/cocoa_globals.h"
 #include "util/finite_field_value.h"
-
+#include "proof/proof_node.h"
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
@@ -198,7 +198,10 @@ Result SubTheory::postCheck(Theory::Effort e)
                         {trueNonNullVarPred, unsatPolys},
                         {});
 	std::shared_ptr<ProofNode> pf = d_proof.getProofFor(falseNode);
-        Trace("ff::trace") << "Finish unsat proof production" << *pf.get() << std::endl;
+	std::ostringstream s;
+	ProofNode *pff = pf.get();
+	pff->printDebug(s);
+        Trace("ff::trace") << "Finish unsat proof production with element" << basis.front() << "\nproof: " << s.str() << std::endl;
         Trace("ff::gb") << "Trivial GB" << std::endl;
         if (options().ff.ffTraceGb)
         {

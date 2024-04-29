@@ -10,7 +10,7 @@
  * directory for licensing information.
  * ****************************************************************************
  *
- * Finite fields Proof Core construction
+ * Finite fields Ideal Proof Construction
  */
 
 #if CVC5_USE_COCOA

@@ -141,7 +141,7 @@ void GBProof::reductionStep(CoCoA::ConstRefRingElem q)
 {
   Assert(!d_reductionSeq.empty());
   Trace("ff::trace") << "GBreduction proof step: " << q << std::endl;
-  Assert(!d_polyToMembership.count(ostring(q)));
+  Assert(d_polyToMembership.count(ostring(q)));
   d_reductionSeq.push_back(ostring(q));
 }
 
@@ -149,9 +149,9 @@ void GBProof::reductionEnd(CoCoA::ConstRefRingElem r)
 {
   Assert(!d_reductionSeq.empty());
   NodeManager* nm = nodeManager();
-  Trace("ff::trace") << "reduction proof end: " << r << std::endl;
   std::string rr = ostring(r);
-  if (d_polyToMembership.count(rr) == 0 && rr != d_reductionSeq.front())
+  Trace("ff::trace") << "reduction proof end: " << r << d_polyToMembership.count(rr) << std::endl;
+  if (d_polyToMembership.count(rr) == 0)
   {
     std::vector<Node> premises{};
     std::vector<Node> reductorsSeq{};
