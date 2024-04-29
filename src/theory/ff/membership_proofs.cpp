@@ -1,5 +1,4 @@
 #include "theory/ff/membership_proofs.h"
-
 #include <CoCoA/SparsePolyOps-ideal.H>
 #include <CoCoA/SparsePolyRing.H>
 #include <CoCoA/TmpGPoly.H>
