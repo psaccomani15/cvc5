@@ -183,7 +183,8 @@ Result SubTheory::postCheck(Theory::Effort e)
 
       CoCoA::ideal ideal = CoCoA::ideal(generators);
       IdealProof idealProofs =
-          IdealProof(d_env, generators, trueNonNullVarPred, &d_proof);
+	IdealProof(d_env, generators, trueNonNullVarPred, ideal, &d_proof);
+      idealProofs.setFunctionPointers();
       const auto basis = CoCoA::GBasis(ideal);
       if (options().ff.ffTraceGb) tracer.unsetFunctionPointers();
 
@@ -227,10 +228,11 @@ Result SubTheory::postCheck(Theory::Effort e)
         Trace("ff::gb") << "Non-trivial GB" << std::endl;
 
         // common root (vec of CoCoA base ring elements)
-        std::vector<CoCoA::RingElem> root = findZero(ideal);
-
+        std::vector<CoCoA::RingElem> root = findZero(ideal, idealProofs, nodeManager());
         if (root.empty())
         {
+	  Trace("ff::trace") << "Finish unsat proof production " << "\nproof: " << s.str() << std::endl;
+          
           // UNSAT
           setTrivialConflict();
         }

@@ -17,6 +17,7 @@
 
 #include "theory/ff/ideal_proofs.h"
 
+#include <CoCoA/SparsePolyOps-ideal.H>
 #include <CoCoA/TmpGPoly.H>
 
 #include <sstream>
@@ -47,14 +48,20 @@ Node produceNonNullVarPred(Node ideal)
       nm->mkNode(Kind::APPLY_UF, nonNullVarietySymb, ideal);
   return nonNullVarietyPred;
 }
+
 IdealProof::IdealProof(Env& env,
                        const std::vector<CoCoA::RingElem>& inputs,
-                       Node varNonEmpty,
+                       Node nonNullVarPred,
+                       CoCoA::ideal cocoaIdeal,
                        CDProof* proof)
-    : EnvObj(env), d_validFact(varNonEmpty), d_proof(proof)
+    : EnvObj(env),
+      d_cocoaIdeal(cocoaIdeal),
+      d_validFact(nonNullVarPred),
+      d_childrenProofs(),
+      d_proof(proof)
 {
   std::vector<Node> polys;
-  NodeManager* nm = NodeManager::currentNM();
+  NodeManager* nm = nodeManager();
   for (auto gen : inputs)
   {
     Node polyVar = nm->mkBoundVar(ostring(gen), nm->sExprType());
@@ -62,35 +69,71 @@ IdealProof::IdealProof(Env& env,
   }
   d_ideal = nm->mkNode(Kind::SEXPR, polys);
   d_membershipProofs = new GBProof(env, inputs, d_ideal, d_proof);
-  d_membershipProofs->setFunctionPointers();
-};
+}
 
- Node IdealProof::oneInUnsat(CoCoA::RingElem p) {
-   Node unsatVar = nodeManager()->mkNode(Kind::NOT, d_validFact);
-   Node membershipFact = d_membershipProofs->getMembershipFact(p);
-   d_proof->addStep(unsatVar, ProofRule::FF_ONE_UNSAT, {membershipFact}, {});
-   return unsatVar;
- }
- void IdealProof::setFunctionPointers()
+Node IdealProof::oneInUnsat(CoCoA::RingElem p)
+{
+  Node unsatVar = nodeManager()->mkNode(Kind::NOT, d_validFact);
+  Node membershipFact = d_membershipProofs->getMembershipFact(p);
+  d_proof->addStep(unsatVar, ProofRule::FF_ONE_UNSAT, {membershipFact}, {});
+  return unsatVar;
+}
+void IdealProof::setFunctionPointers()
 {
   d_membershipProofs->setFunctionPointers();
 }
 
-/* TODO: ADD SUPPORT FOR BRANCHING PROOFS*/
-// std::vector<IdealProof> IdealProof::registerRootBranch(
-//     CoCoA::RingElem poly,
-//     std::vector<CoCoA::RingElem> roots,
-//     std::vector<CoCoA::RingElem> basis)
-// {
-//   std::vector<Node> premises {d_validFact};
-//   Node polyMembership = d_membershipProofs->proofIdealMembership(poly);
-//   premises.push_back(polyMembership);
-//   for (auto gen : basis)
-//   {
-//     premises.push_back(d_membershipProofs->getMembershipFact(gen));
-//   }
+void IdealProof::registerBranchPolynomial(CoCoA::RingElem branchPoly)
+{
+  NodeManager* nm = nodeManager();
+  d_branchPoly = nm->mkBoundVar(ostring(branchPoly), nm->sExprType());
+  d_branchPolyProof =
+      d_membershipProofs->proofIdealMembership(branchPoly, d_cocoaIdeal);
+}
 
-// }
+void IdealProof::registerRoots(std::vector<CoCoA::RingElem> roots) {
+  for (auto root : roots)
+  {
+    NodeManager *nm = nodeManager(); 
+    Node rootRepr = nm->mkBoundVar(ostring(root), nm->sExprType());
+    d_branchPolyRoots.push_back(rootRepr);
+  }
+}
+  IdealProof IdealProof::registerConclusion(CoCoA::RingElem choicePoly,
+                                          CoCoA::ideal newIdeal)
+{
+  
+  NodeManager* nm = nodeManager();
+  std::vector<Node> polysRepr{
+      nm->mkBoundVar(ostring(choicePoly), nm->sExprType())};
+  std::vector<CoCoA::RingElem> newGens;
+  for (auto poly : CoCoA::GBasis(d_cocoaIdeal))
+    polysRepr.push_back(nm->mkBoundVar(ostring(poly), nm->sExprType()));
+  Node idealRepr = nm->mkNode(Kind::SEXPR, polysRepr);
+  Node nonNullVarPred = produceNonNullVarPred(idealRepr);
+  d_childrenProofs.push_back(nonNullVarPred);
+  return IdealProof(d_env, newGens, nonNullVarPred, newIdeal, d_proof);
+}
+
+void IdealProof::finishProof(bool rootBranching)
+{
+  Node conclusion = nodeManager()->mkOr(d_childrenProofs);
+  std::vector<Node> premises{d_validFact};
+  std::vector<Node> arguments {};
+  for (auto poly : CoCoA::GBasis(d_cocoaIdeal))
+    premises.push_back(d_membershipProofs->getMembershipFact(poly));
+  if (rootBranching)
+  {
+    premises.push_back(d_branchPolyProof);
+    arguments = d_branchPolyRoots;
+    arguments.push_back(d_branchPoly);
+    d_proof->addStep(conclusion, ProofRule::FF_ROOT_BRANCH,premises, arguments);
+  }
+  else
+  {
+    d_proof->addStep(conclusion, ProofRule::FF_EXHAUST_BRANCH, premises, arguments);
+  }
+}
 
 }  // namespace ff
 }  // namespace theory

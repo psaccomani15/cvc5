@@ -44,16 +44,22 @@ class IdealProof : protected EnvObj
  public:
   IdealProof(Env& env,
              const std::vector<CoCoA::RingElem>& inputs,
-             Node varNonEmpty,
              CDProof* proof);
-
+  IdealProof(Env& env,
+             const std::vector<CoCoA::RingElem>& inputs,
+             Node nonNullVarPred, CoCoA::ideal cocoaIdeal, CDProof* proof);
+  
   void setFunctionPointers();
   std::vector<IdealProof> registerRootBranch(
       CoCoA::RingElem poly,
       std::vector<CoCoA::RingElem> roots,
       std::vector<CoCoA::RingElem> basis);
 
-  Node registerExhaustBranch(std::vector<CoCoA::RingElem> toGuess);
+  void registerBranchPolynomial(CoCoA::RingElem branchPoly);
+  void registerRoots(std::vector<CoCoA::RingElem> roots);
+  IdealProof registerConclusion(CoCoA::RingElem choicePoly, CoCoA::ideal newIdeal);
+
+  void finishProof(bool rootBranching);
   // p here represents the unit :p.
   Node oneInUnsat(CoCoA::RingElem p);
  private:
@@ -62,9 +68,12 @@ class IdealProof : protected EnvObj
    * facts.
    */
   Node d_ideal;
-
+  CoCoA::ideal d_cocoaIdeal;
   Node d_validFact;
-  Node childrenProof;
+  Node d_branchPolyProof;
+  Node d_branchPoly;
+  std::vector<Node> d_branchPolyRoots;
+  std::vector<Node> d_childrenProofs;
   /**
    * Maps string representation of polynomials to their corresponding Nodes.
    */

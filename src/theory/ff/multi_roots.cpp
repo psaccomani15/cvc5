@@ -1,3 +1,4 @@
+
 /******************************************************************************
  * Top contributors (to current version):
  *   Alex Ozdemir
@@ -29,17 +30,26 @@
 #include <memory>
 #include <sstream>
 
+#include "ideal_proofs.h"
 #include "smt/assertions.h"
 #include "theory/ff/uni_roots.h"
-
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
 
+template <typename T>
+std::string ostring(const T& t)
+{
+  std::ostringstream o;
+  o << t;
+  return o.str();
+}
+
 AssignmentEnumerator::~AssignmentEnumerator(){};
 
 ListEnumerator::ListEnumerator(const std::vector<CoCoA::RingElem>&& options)
-    : d_remainingOptions(std::move(options))
+    : d_remainingOptions(std::move(options)),
+      d_empty(d_remainingOptions.empty())
 {
   std::reverse(d_remainingOptions.begin(), d_remainingOptions.end());
 }
@@ -61,8 +71,26 @@ std::optional<CoCoA::RingElem> ListEnumerator::next()
 }
 
 std::string ListEnumerator::name() { return "list"; }
+bool ListEnumerator::empty() { return d_empty; }
 
-std::unique_ptr<ListEnumerator> factorEnumerator(CoCoA::RingElem univariatePoly)
+std::unique_ptr<ListEnumerator> factorEnumerator(CoCoA::RingElem univariatePoly,
+                                                 IdealProof& idealProof)
+{
+  int varIdx = CoCoA::UnivariateIndetIndex(univariatePoly);
+  Assert(varIdx >= 0);
+  Trace("ff::model::factor") << "roots for: " << univariatePoly << std::endl;
+  std::vector<CoCoA::RingElem> theRoots = roots(univariatePoly);
+  idealProof.registerRoots(theRoots);
+  std::vector<CoCoA::RingElem> linears{};
+  CoCoA::RingElem var = CoCoA::indet(CoCoA::owner(univariatePoly), varIdx);
+  for (const auto& r : theRoots)
+  {
+    linears.push_back(var - r);
+  }
+  return std::make_unique<ListEnumerator>(std::move(linears));
+}
+
+ std::unique_ptr<ListEnumerator> factorEnumerator(CoCoA::RingElem univariatePoly)
 {
   int varIdx = CoCoA::UnivariateIndetIndex(univariatePoly);
   Assert(varIdx >= 0);
@@ -77,6 +105,7 @@ std::unique_ptr<ListEnumerator> factorEnumerator(CoCoA::RingElem univariatePoly)
   return std::make_unique<ListEnumerator>(std::move(linears));
 }
 
+
 RoundRobinEnumerator::RoundRobinEnumerator(
     const std::vector<CoCoA::RingElem>& vars, const CoCoA::ring& ring)
     : d_vars(vars),
@@ -84,7 +113,8 @@ RoundRobinEnumerator::RoundRobinEnumerator(
       d_idx(),
       d_maxIdx(
           CoCoA::power(CoCoA::characteristic(ring), CoCoA::LogCardinality(ring))
-          * vars.size())
+          * vars.size()),
+      d_empty(false)
 {
 }
 
@@ -107,18 +137,12 @@ std::optional<CoCoA::RingElem> RoundRobinEnumerator::next()
 
 std::string RoundRobinEnumerator::name() { return "round-robin"; }
 
+bool RoundRobinEnumerator::empty() { return d_empty; }
+
 bool isUnsat(const CoCoA::ideal& ideal)
 {
   const auto& gens = CoCoA::GBasis(ideal);
   return !(gens.size() > 1 || CoCoA::deg(gens[0]) > 0);
-}
-
-template <typename T>
-std::string ostring(const T& t)
-{
-  std::ostringstream o;
-  o << t;
-  return o.str();
 }
 
 std::pair<size_t, CoCoA::RingElem> extractAssignment(
@@ -155,7 +179,8 @@ bool allVarsAssigned(const CoCoA::ideal& ideal)
          == (size_t)CoCoA::NumIndets(ideal->myRing());
 }
 
-std::unique_ptr<AssignmentEnumerator> applyRule(const CoCoA::ideal& ideal)
+std::unique_ptr<AssignmentEnumerator> applyRule(const CoCoA::ideal& ideal,
+                                                IdealProof& idealProof)
 {
   CoCoA::ring polyRing = ideal->myRing();
   Assert(!isUnsat(ideal));
@@ -166,7 +191,8 @@ std::unique_ptr<AssignmentEnumerator> applyRule(const CoCoA::ideal& ideal)
     int varNumber = CoCoA::UnivariateIndetIndex(p);
     if (varNumber >= 0 && CoCoA::deg(p) > 1)
     {
-      return factorEnumerator(p);
+      idealProof.registerBranchPolynomial(p);
+      return factorEnumerator(p, idealProof);
     }
   }
   // now, we check the dimension
@@ -181,7 +207,8 @@ std::unique_ptr<AssignmentEnumerator> applyRule(const CoCoA::ideal& ideal)
       if (!alreadySet.count(ostring(var)))
       {
         CoCoA::RingElem minPoly = CoCoA::MinPolyQuot(var, ideal, var);
-        return factorEnumerator(minPoly);
+        idealProof.registerBranchPolynomial(minPoly);
+        return factorEnumerator(minPoly, idealProof);
       }
     }
     Unreachable()
@@ -208,7 +235,9 @@ std::unique_ptr<AssignmentEnumerator> applyRule(const CoCoA::ideal& ideal)
   }
 }
 
-std::vector<CoCoA::RingElem> findZero(const CoCoA::ideal& initialIdeal)
+std::vector<CoCoA::RingElem> findZero(const CoCoA::ideal& initialIdeal,
+                                      IdealProof initialIdealProof,
+                                      NodeManager* nm)
 {
   CoCoA::ring polyRing = initialIdeal->myRing();
   // We maintain two stacks:
@@ -229,6 +258,7 @@ std::vector<CoCoA::RingElem> findZero(const CoCoA::ideal& initialIdeal)
 
   // goal: find a zero for any ideal in the stack.
   std::vector<CoCoA::ideal> ideals{initialIdeal};
+  std::vector<IdealProof> idealsProofs{initialIdealProof};
   if (TraceIsOn("ff::model::branch"))
   {
     Trace("ff::model::branch") << "init polys: " << std::endl;
@@ -244,9 +274,13 @@ std::vector<CoCoA::RingElem> findZero(const CoCoA::ideal& initialIdeal)
   {
     // choose one
     const auto& ideal = ideals.back();
+    auto& idealProof = idealsProofs.back();
+    idealProof.setFunctionPointers();
     // If the ideal is UNSAT, drop it.
     if (isUnsat(ideal))
     {
+      idealProof.oneInUnsat(CoCoA::GBasis(ideal)[0]);
+      idealsProofs.pop_back();
       ideals.pop_back();
     }
     // If the ideal has a linear polynomial in each variable, we've found a
@@ -272,7 +306,7 @@ std::vector<CoCoA::RingElem> findZero(const CoCoA::ideal& initialIdeal)
     else if (ideals.size() > branchers.size())
     {
       Assert(ideals.size() == branchers.size() + 1);
-      branchers.push_back(applyRule(ideal));
+      branchers.push_back(applyRule(ideal, idealProof));
       Trace("ff::model::branch")
           << "brancher: " << branchers.back()->name() << std::endl;
       if (TraceIsOn("ff::model::branch"))
@@ -298,11 +332,18 @@ std::vector<CoCoA::RingElem> findZero(const CoCoA::ideal& initialIdeal)
             << ", branch: " << choicePoly.value() << std::endl;
         std::vector<CoCoA::RingElem> newGens = CoCoA::GBasis(ideal);
         newGens.push_back(choicePoly.value());
-        ideals.push_back(CoCoA::ideal(newGens));
+        CoCoA::ideal newIdeal = CoCoA::ideal(newGens);
+        IdealProof branchingIdeal = idealsProofs.back().registerConclusion(
+            choicePoly.value(), newIdeal);
+        idealsProofs.push_back(branchingIdeal);
+        ideals.push_back(newIdeal);
       }
       // or drop this ideal & brancher if we're out of branches.
       else
       {
+        bool rootBranching = branchers.back()->name() == "list";
+        idealsProofs.back().finishProof(rootBranching);
+        idealsProofs.pop_back();
         branchers.pop_back();
         ideals.pop_back();
       }
