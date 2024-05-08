@@ -231,7 +231,7 @@ Result SubTheory::postCheck(Theory::Effort e)
         std::vector<CoCoA::RingElem> root = findZero(ideal, idealProofs, nodeManager());
         if (root.empty())
         {
-	  Trace("ff::trace") << "Finish unsat proof production " << "\nproof: " << s.str() << std::endl;
+	  //	  Trace("ff::trace") << "Finish unsat proof production " << "\nproof: " << s.str() << std::endl;
           
           // UNSAT
           setTrivialConflict();

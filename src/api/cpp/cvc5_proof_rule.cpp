@@ -208,7 +208,7 @@ const char* toString(ProofRule id)
     case ProofRule::FF_R_UP: return "F_RUP";
     case ProofRule::FF_R_DOWN: return "FF_RDOWN";
     case ProofRule::FF_S: return "FF_S";
-	
+    case ProofRule:: FF_MONIC: return "FF_MONIC";
     //================================================= External rules
     case ProofRule::LFSC_RULE: return "LFSC_RULE";
     case ProofRule::ALETHE_RULE: return "ALETHE_RULE";

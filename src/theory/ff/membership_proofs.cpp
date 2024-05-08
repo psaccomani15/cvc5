@@ -1,4 +1,5 @@
 #include "theory/ff/membership_proofs.h"
+
 #include <CoCoA/SparsePolyOps-ideal.H>
 #include <CoCoA/SparsePolyRing.H>
 #include <CoCoA/TmpGPoly.H>
@@ -63,6 +64,10 @@ void GBProof::setFunctionPointers()
       std::function([=](CoCoA::ConstRefRingElem p) { t->reductionStep(p); });
   d_reductionEnd =
       std::function([=](CoCoA::ConstRefRingElem p) { t->reductionEnd(p); });
+  d_monicProof = std::function(
+      [=](CoCoA::ConstRefRingElem poly, CoCoA::ConstRefRingElem monic) {
+        t->monicProof(poly, monic);
+      });
   d_membershipStart =
       std::function([=](CoCoA::ConstRefRingElem p) { t->membershipStart(p); });
   d_membershipStep =
@@ -76,6 +81,7 @@ void GBProof::setFunctionPointers()
   CoCoA::membershipStart = d_membershipStart;
   CoCoA::membershipStep = d_membershipStep;
   CoCoA::membershipEnd = d_membershipEnd;
+  CoCoA::monicProof = d_monicProof;
 }
 Node GBProof::produceMembershipNode(std::string poly, NodeManager* nm)
 {
@@ -95,10 +101,15 @@ Node GBProof::getMembershipFact(CoCoA::ConstRefRingElem poly)
 Node GBProof::proofIdealMembership(CoCoA::RingElem poly, CoCoA::ideal ideal)
 {
   std::string polyRepr = ostring(poly);
+  // Trace("ff::trace") << "Ideal has element " << poly << " with proof fact:"
+  // << d_polyToMembership[polyRepr] << std::endl;
   if (d_polyToMembership.count(polyRepr)) return getMembershipFact(poly);
   Assert(CoCoA::HasGBasis(ideal));
   bool hasElem = CoCoA::IsElem(poly, ideal);
   Assert(hasElem);
+  Trace("ff::trace") << "Ideal has element " << poly
+                     << "with proof fact:" << d_polyToMembership[polyRepr]
+                     << std::endl;
   return d_polyToMembership[polyRepr];
 }
 
@@ -149,7 +160,8 @@ void GBProof::reductionEnd(CoCoA::ConstRefRingElem r)
   Assert(!d_reductionSeq.empty());
   NodeManager* nm = nodeManager();
   std::string rr = ostring(r);
-  Trace("ff::trace") << "reduction proof end: " << r << d_polyToMembership.count(rr) << std::endl;
+  Trace("ff::trace") << "reduction proof end: " << r
+                     << d_polyToMembership.count(rr) << std::endl;
   if (d_polyToMembership.count(rr) == 0)
   {
     std::vector<Node> premises{};
@@ -183,10 +195,24 @@ void GBProof::reductionEnd(CoCoA::ConstRefRingElem r)
   d_reductionSeq.clear();
 }
 
+void GBProof::monicProof(CoCoA::ConstRefRingElem poly,
+                         CoCoA::ConstRefRingElem monic)
+{
+  NodeManager* nm = nodeManager();
+  std::string polyStr = ostring(poly);
+  std::string monicStr = ostring(monic);
+  Node monicRepr = nm->mkBoundVar(monicStr, nm->sExprType());
+  Assert(d_polyToMembership.count(polyStr));
+  std::vector<Node> premises{d_polyToMembership[polyStr]};
+  Node conclusion = nm->mkNode(Kind::SEXPR, monicRepr, d_ideal);
+  d_polyToMembership.emplace(monicStr, conclusion);
+  d_proof->addStep(conclusion, ProofRule::FF_MONIC, premises, {});
+}
 void GBProof::membershipStart(CoCoA::ConstRefRingElem p)
 {
   Assert(d_membershipSeq.empty());
   d_reducingPoly = ostring(p);
+  Trace("ff::trace") << "Starting membership proof with: " << p << std::endl;
 }
 
 void GBProof::membershipStep(CoCoA::RingElem red)
@@ -207,9 +233,13 @@ void GBProof::membershipEnd()
   std::vector<Node> premises{};
   for (std::string p : uniquePolys)
   {
+    Assert(d_polyToMembership.count(p));
     premises.push_back(d_polyToMembership[p]);
   }
   premises.push_back(d_polyToMembership["0"]);
+  Trace("ff::trace") << "finish membership Proof for " << d_reducingPoly
+                     << std::endl;
+  d_polyToMembership.emplace(d_reducingPoly, conclusion);
   d_proof->addStep(
       conclusion, ProofRule::FF_R_UP, premises, reductorsSeq, true);
   d_membershipSeq.clear();

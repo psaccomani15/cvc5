@@ -1,5 +1,5 @@
 diff --git a/include/CoCoA/TmpGPoly.H b/include/CoCoA/TmpGPoly.H
-index 4c4d51e..3e7fa1a 100644
+index 4c4d51e..64f10d2 100644
 --- a/include/CoCoA/TmpGPoly.H
 +++ b/include/CoCoA/TmpGPoly.H
 @@ -29,6 +29,7 @@
@@ -10,7 +10,7 @@ index 4c4d51e..3e7fa1a 100644
  #include<list>
  // using std::list; // for GPolyList; GPolyPtrList;
  #include<vector>
-@@ -46,7 +47,21 @@ enum ClearMarker {clear};
+@@ -46,7 +47,22 @@ enum ClearMarker {clear};
  
  class GPoly;
  
@@ -26,6 +26,7 @@ index 4c4d51e..3e7fa1a 100644
 +extern std::function<void(ConstRefRingElem p)> reductionStartProof;
 +extern std::function<void(ConstRefRingElem q)> reductionStepProof;
 +extern std::function<void(ConstRefRingElem r)> reductionEndProof;
++extern std::function<void(ConstRefRingElem p, ConstRefRingElem q)> monicProof;
 +extern std::function<void(ConstRefRingElem p)> membershipStart;
 +extern std::function<void(RingElem s)> membershipStep;
 +extern std::function<void(void)> membershipEnd;
@@ -58,6 +59,26 @@ index c5d0a0a..a984f23 100644
      return ans;
    }
  
+diff --git a/src/AlgebraicCore/SparsePolyOps-ideal.C b/src/AlgebraicCore/SparsePolyOps-ideal.C
+index ddfb6bd..a64e76b 100644
+--- a/src/AlgebraicCore/SparsePolyOps-ideal.C
++++ b/src/AlgebraicCore/SparsePolyOps-ideal.C
+@@ -42,6 +42,7 @@
+ #include "CoCoA/SparsePolyOps-ideal-monomial.H"
+ #include "CoCoA/SparsePolyRing.H"
+ #include "CoCoA/TmpGOperations.H"  // for myIntersect, my Elim..
++#include "CoCoA/TmpGPoly.H"
+ #include "CoCoA/TmpPPVector.H"  // for interreducing in GBasisByHomog
+ #include "CoCoA/TmpUniversalInvolutiveBasisContainer.H" // for ideal ctor
+ #include "CoCoA/assert.H"
+@@ -761,6 +762,7 @@ namespace CoCoA
+       {
+         myMinGensValue = myGensValue;
+         CoCoA_ASSERT(myGBasisValue.empty());
++	if(proofEnabled) monicProof(myGensValue[0], monic(myGensValue[0]));
+         myGBasisValue.push_back(monic(myGensValue[0]));
+       }
+       else
 diff --git a/src/AlgebraicCore/SparsePolyOps-reduce.C b/src/AlgebraicCore/SparsePolyOps-reduce.C
 index b5b8b43..a26f652 100644
 --- a/src/AlgebraicCore/SparsePolyOps-reduce.C
@@ -125,10 +146,10 @@ index 2d5fe05..97e025d 100644
    }
  
 diff --git a/src/AlgebraicCore/TmpGPoly.C b/src/AlgebraicCore/TmpGPoly.C
-index ea250d4..e1345ef 100644
+index ea250d4..8868e0b 100644
 --- a/src/AlgebraicCore/TmpGPoly.C
 +++ b/src/AlgebraicCore/TmpGPoly.C
-@@ -47,7 +47,19 @@ using std::vector;
+@@ -47,7 +47,20 @@ using std::vector;
  namespace CoCoA
  {  
  
@@ -143,13 +164,14 @@ index ea250d4..e1345ef 100644
 +  std::function<void(ConstRefRingElem p)> reductionStartProof = nullptr;
 +  std::function<void(ConstRefRingElem q)> reductionStepProof = nullptr;
 +  std::function<void(ConstRefRingElem r)> reductionEndProof = nullptr;
++  std::function<void(ConstRefRingElem p, ConstRefRingElem q)> monicProof = nullptr;
 +  std::function<void(ConstRefRingElem p)> membershipStart = nullptr;
 +  std::function<void(RingElem s)> membershipStep = nullptr;
 +  std::function<void(void)> membershipEnd = nullptr;
    //---------class GPoly-------------------------------
  
    // WARNING: is not possible to build the zero GPoly here.
-@@ -300,8 +312,11 @@ void GPoly::myUpdateLenLPPLCDegComp()
+@@ -300,8 +313,11 @@ void GPoly::myUpdateLenLPPLCDegComp()
      myMinimalGenLevel = -1;
      if (the_gp.IsInputPoly())
        myPolyValue = poly(the_gp.myFirstGPoly());

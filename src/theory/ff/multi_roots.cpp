@@ -191,6 +191,7 @@ std::unique_ptr<AssignmentEnumerator> applyRule(const CoCoA::ideal& ideal,
     int varNumber = CoCoA::UnivariateIndetIndex(p);
     if (varNumber >= 0 && CoCoA::deg(p) > 1)
     {
+      Trace("ff::model::branch") << "univariate branching " << p << std::endl;
       idealProof.registerBranchPolynomial(p);
       return factorEnumerator(p, idealProof);
     }
@@ -258,7 +259,7 @@ std::vector<CoCoA::RingElem> findZero(const CoCoA::ideal& initialIdeal,
 
   // goal: find a zero for any ideal in the stack.
   std::vector<CoCoA::ideal> ideals{initialIdeal};
-  std::vector<IdealProof> idealsProofs{initialIdealProof};
+  std::vector<IdealProof*> idealsProofs{&initialIdealProof};
   if (TraceIsOn("ff::model::branch"))
   {
     Trace("ff::model::branch") << "init polys: " << std::endl;
@@ -275,11 +276,11 @@ std::vector<CoCoA::RingElem> findZero(const CoCoA::ideal& initialIdeal,
     // choose one
     const auto& ideal = ideals.back();
     auto& idealProof = idealsProofs.back();
-    idealProof.setFunctionPointers();
+    idealProof->setFunctionPointers();
     // If the ideal is UNSAT, drop it.
     if (isUnsat(ideal))
     {
-      idealProof.oneInUnsat(CoCoA::GBasis(ideal)[0]);
+      idealProof->oneInUnsat(CoCoA::GBasis(ideal)[0]);
       idealsProofs.pop_back();
       ideals.pop_back();
     }
@@ -306,7 +307,7 @@ std::vector<CoCoA::RingElem> findZero(const CoCoA::ideal& initialIdeal,
     else if (ideals.size() > branchers.size())
     {
       Assert(ideals.size() == branchers.size() + 1);
-      branchers.push_back(applyRule(ideal, idealProof));
+      branchers.push_back(applyRule(ideal, *idealProof));
       Trace("ff::model::branch")
           << "brancher: " << branchers.back()->name() << std::endl;
       if (TraceIsOn("ff::model::branch"))
@@ -333,16 +334,16 @@ std::vector<CoCoA::RingElem> findZero(const CoCoA::ideal& initialIdeal,
         std::vector<CoCoA::RingElem> newGens = CoCoA::GBasis(ideal);
         newGens.push_back(choicePoly.value());
         CoCoA::ideal newIdeal = CoCoA::ideal(newGens);
-        IdealProof branchingIdeal = idealsProofs.back().registerConclusion(
+        IdealProof branchingIdeal = idealsProofs.back()->registerConclusion(
             choicePoly.value(), newIdeal);
-        idealsProofs.push_back(branchingIdeal);
+        idealsProofs.push_back(&branchingIdeal);
         ideals.push_back(newIdeal);
       }
       // or drop this ideal & brancher if we're out of branches.
       else
       {
         bool rootBranching = branchers.back()->name() == "list";
-        idealsProofs.back().finishProof(rootBranching);
+        idealsProofs.back()->finishProof(rootBranching);
         idealsProofs.pop_back();
         branchers.pop_back();
         ideals.pop_back();

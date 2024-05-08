@@ -2240,6 +2240,7 @@ enum ENUM(ProofRule) : uint32_t
   EVALUE(FF_R_UP),
   EVALUE(FF_R_DOWN),
   EVALUE(FF_S),
+  EVALUE(FF_MONIC),
   /**
    * \verbatim embed:rst:leading-asterisk
    * **External -- LFSC**

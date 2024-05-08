@@ -57,6 +57,8 @@ IdealProof::IdealProof(Env& env,
     : EnvObj(env),
       d_cocoaIdeal(cocoaIdeal),
       d_validFact(nonNullVarPred),
+      d_branchPolyProof(),
+      d_branchPolyRoots(),
       d_childrenProofs(),
       d_proof(proof)
 {
@@ -85,10 +87,12 @@ void IdealProof::setFunctionPointers()
 
 void IdealProof::registerBranchPolynomial(CoCoA::RingElem branchPoly)
 {
+  Trace("ff::trace") << "registering Proof for branchPoly: " << branchPoly << std::endl; 
   NodeManager* nm = nodeManager();
   d_branchPoly = nm->mkBoundVar(ostring(branchPoly), nm->sExprType());
   d_branchPolyProof =
       d_membershipProofs->proofIdealMembership(branchPoly, d_cocoaIdeal);
+  Trace("ff::trace") << d_branchPolyProof << std::endl;
 }
 
 void IdealProof::registerRoots(std::vector<CoCoA::RingElem> roots) {
