@@ -50,6 +50,7 @@ namespace ff {
 CoCoA::RingElem redMod(CoCoA::RingElem b, CoCoA::RingElem m)
 {
   std::vector<CoCoA::RingElem> mm = {m};
+  Trace("ff::roots") << "Here\n";
   return CoCoA::NR(b, mm);
 }
 

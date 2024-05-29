@@ -24,8 +24,12 @@
 
 #include <functional>
 #include <unordered_map>
+#include "context/cdlist_forward.h"
+#include "smt/env_obj.h"
 
 #include "proof/proof.h"
+
+
 #include "smt/env_obj.h"
 #include "theory/ff/membership_proofs.h"
 
@@ -42,14 +46,13 @@ namespace ff {
 class IdealProof : protected EnvObj
 {
  public:
-  IdealProof(Env& env,
+  IdealProof(Env& env, size_t id,
              const std::vector<CoCoA::RingElem>& inputs,
-             CDProof* proof);
-  IdealProof(Env& env,
-             const std::vector<CoCoA::RingElem>& inputs,
-             Node nonNullVarPred, CoCoA::ideal cocoaIdeal, CDProof* proof);
-  
+             Node nonNullVarPred, CoCoA::ideal cocoaIdeal);
+  // ~IdealProof();
   void setFunctionPointers();
+  void enableProofHooks();
+  void disableProofHooks();
   std::vector<IdealProof> registerRootBranch(
       CoCoA::RingElem poly,
       std::vector<CoCoA::RingElem> roots,
@@ -57,11 +60,13 @@ class IdealProof : protected EnvObj
 
   void registerBranchPolynomial(CoCoA::RingElem branchPoly);
   void registerRoots(std::vector<CoCoA::RingElem> roots);
-  IdealProof registerConclusion(CoCoA::RingElem choicePoly, CoCoA::ideal newIdeal);
+  std::shared_ptr<IdealProof> registerConclusion(CoCoA::RingElem choicePoly, CoCoA::ideal newIdeal);
 
-  void finishProof(bool rootBranching);
+  void finishProof(bool rootBranching, CDProof* globalTheoryProofs);
   // p here represents the unit :p.
-  Node oneInUnsat(CoCoA::RingElem p);
+  Node oneInUnsat(CoCoA::RingElem p, CDProof* globalTheoryProofs);
+  Node getUnsatFact();
+  Node getSatFact();
  private:
   /**
    * A representation of the Ideal that we are currently proving membership
@@ -70,10 +75,11 @@ class IdealProof : protected EnvObj
   Node d_ideal;
   CoCoA::ideal d_cocoaIdeal;
   Node d_validFact;
+  Node d_emptyVarFact;
   Node d_branchPolyProof;
   Node d_branchPoly;
   std::vector<Node> d_branchPolyRoots;
-  std::vector<Node> d_childrenProofs;
+  std::vector<std::shared_ptr<IdealProof>> d_childrenProofs;
   /**
    * Maps string representation of polynomials to their corresponding Nodes.
    */
@@ -83,14 +89,13 @@ class IdealProof : protected EnvObj
    * The user-context-dependent proof object
    *
    */
-  CDProof* d_proof;
-
+  CDProof d_proof;
+  size_t d_id;
   /*
    * Manager membership proofs for polynomials in this ideal.
    */
   GBProof* d_membershipProofs;
 
-  Node idealBranch;
 };
 
 }  // namespace ff

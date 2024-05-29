@@ -73,7 +73,6 @@ void GBProof::setFunctionPointers()
   d_membershipStep =
       std::function([=](CoCoA::RingElem p) { t->membershipStep(p); });
   d_membershipEnd = std::function([=]() { t->membershipEnd(); });
-  CoCoA::proofEnabled = true;
   CoCoA::sPolyProof = d_sPoly;
   CoCoA::reductionStartProof = d_reductionStart;
   CoCoA::reductionStepProof = d_reductionStep;
@@ -100,6 +99,7 @@ Node GBProof::getMembershipFact(CoCoA::ConstRefRingElem poly)
 // Register or returns a membership proof for a given polynomial
 Node GBProof::proofIdealMembership(CoCoA::RingElem poly, CoCoA::ideal ideal)
 {
+  // Unreachable();
   std::string polyRepr = ostring(poly);
   // Trace("ff::trace") << "Ideal has element " << poly << " with proof fact:"
   // << d_polyToMembership[polyRepr] << std::endl;
@@ -151,7 +151,6 @@ void GBProof::reductionStep(CoCoA::ConstRefRingElem q)
 {
   Assert(!d_reductionSeq.empty());
   Trace("ff::trace") << "GBreduction proof step: " << q << std::endl;
-  Assert(d_polyToMembership.count(ostring(q)));
   d_reductionSeq.push_back(ostring(q));
 }
 
@@ -160,7 +159,7 @@ void GBProof::reductionEnd(CoCoA::ConstRefRingElem r)
   Assert(!d_reductionSeq.empty());
   NodeManager* nm = nodeManager();
   std::string rr = ostring(r);
-  Trace("ff::trace") << "reduction proof end: " << r
+  Trace("ff::trace") << "reduction proof end: " << r << " "
                      << d_polyToMembership.count(rr) << std::endl;
   if (d_polyToMembership.count(rr) == 0)
   {

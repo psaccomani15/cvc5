@@ -31,6 +31,7 @@
 
 #include "expr/node_traversal.h"
 #include "options/ff_options.h"
+#include "proof/proof_node.h"
 #include "smt/env_obj.h"
 #include "theory/ff/cocoa_encoder.h"
 #include "theory/ff/core.h"
@@ -39,7 +40,6 @@
 #include "theory/ff/split_gb.h"
 #include "util/cocoa_globals.h"
 #include "util/finite_field_value.h"
-#include "proof/proof_node.h"
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
@@ -182,27 +182,27 @@ Result SubTheory::postCheck(Theory::Effort e)
       if (options().ff.ffTraceGb) tracer.setFunctionPointers();
 
       CoCoA::ideal ideal = CoCoA::ideal(generators);
-      IdealProof idealProofs =
-	IdealProof(d_env, generators, trueNonNullVarPred, ideal, &d_proof);
-      idealProofs.setFunctionPointers();
+      std::shared_ptr<IdealProof> idealProofs(
+          new IdealProof(d_env, 0, generators, trueNonNullVarPred, ideal));
+      idealProofs->setFunctionPointers();
+      idealProofs->enableProofHooks();
       const auto basis = CoCoA::GBasis(ideal);
       if (options().ff.ffTraceGb) tracer.unsetFunctionPointers();
-
       // if it is trivial, create a conflict
       bool is_trivial = basis.size() == 1 && CoCoA::deg(basis.front()) == 0;
       if (is_trivial)
       {
-        Node unsatPolys = idealProofs.oneInUnsat(basis.front());
-	Node falseNode = nm->mkConst<bool>(false); 
-        d_proof.addStep(falseNode,
-                        ProofRule::CONTRA,
-                        {trueNonNullVarPred, unsatPolys},
-                        {});
-	std::shared_ptr<ProofNode> pf = d_proof.getProofFor(falseNode);
-	std::ostringstream s;
-	ProofNode *pff = pf.get();
-	pff->printDebug(s);
-        Trace("ff::trace") << "Finish unsat proof production with element" << basis.front() << "\nproof: " << s.str() << std::endl;
+        Node unsatPolys = idealProofs->oneInUnsat(basis.front(), &d_proof);
+        Node falseNode = nm->mkConst<bool>(false);
+        d_proof.addStep(
+            falseNode, ProofRule::CONTRA, {trueNonNullVarPred, unsatPolys}, {});
+        std::shared_ptr<ProofNode> pf = d_proof.getProofFor(falseNode);
+        std::ostringstream s;
+        ProofNode* pff = pf.get();
+        pff->printDebug(s);
+        Trace("ff::trace") << "Finish unsat proof production with element"
+                           << basis.front() << "\nproof: " << s.str()
+                           << std::endl;
         Trace("ff::gb") << "Trivial GB" << std::endl;
         if (options().ff.ffTraceGb)
         {
@@ -228,11 +228,27 @@ Result SubTheory::postCheck(Theory::Effort e)
         Trace("ff::gb") << "Non-trivial GB" << std::endl;
 
         // common root (vec of CoCoA base ring elements)
-        std::vector<CoCoA::RingElem> root = findZero(ideal, idealProofs, nodeManager());
+        std::vector<CoCoA::RingElem> root =
+            findZero(ideal, idealProofs, nodeManager(), &d_proof);
         if (root.empty())
         {
-	  //	  Trace("ff::trace") << "Finish unsat proof production " << "\nproof: " << s.str() << std::endl;
-          
+          Node satFact = idealProofs->getSatFact();
+          Node unsatFact = idealProofs->getUnsatFact();
+          Node falseNode = nm->mkConst<bool>(false);
+          d_proof.addStep(falseNode,
+                          ProofRule::CONTRA,
+                          {satFact, unsatFact},
+                          {});
+          std::shared_ptr<ProofNode> pf = d_proof.getProofFor(falseNode);
+          std::ostringstream s;
+          ProofNode* pff = pf.get();
+          pff->printDebug(s);
+          Trace("ff::trace")
+              << "Finish unsat proof production with proof;"
+              << "\nproof: " << s.str() << std::endl;
+          // Trace("ff::trace") << "Finish unsat proof production " << "\nproof:
+          // " << s.str() << std::endl;
+
           // UNSAT
           setTrivialConflict();
         }

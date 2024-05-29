@@ -35,7 +35,7 @@ index 4c4d51e..64f10d2 100644
  
  
 diff --git a/src/AlgebraicCore/PolyRing-content.C b/src/AlgebraicCore/PolyRing-content.C
-index c5d0a0a..a984f23 100644
+index c5d0a0a..e219d04 100644
 --- a/src/AlgebraicCore/PolyRing-content.C
 +++ b/src/AlgebraicCore/PolyRing-content.C
 @@ -33,7 +33,7 @@
@@ -47,20 +47,19 @@ index c5d0a0a..a984f23 100644
  
  #include <vector>
  // using std::vector;
-@@ -128,7 +128,11 @@ namespace CoCoA
+@@ -128,7 +128,10 @@ namespace CoCoA
    {
      const PolyRing Rx = owner(f);
      RingElem ans(Rx);
-+    if (handlersEnabled) reductionStartHandler(f);
-+    if (proofEnabled) reductionStartProof(f);	  
++    if (handlersEnabled) reductionStartHandler(f);	  
      Rx->myMonic(raw(ans), raw(f));
-+    if (handlersEnabled) reductionEndHandler(f);
-+    if (proofEnabled) reductionEndProof(f);	  
++    if (handlersEnabled) reductionEndHandler(ans);
++    if (proofEnabled) monicProof(f, ans);	  
      return ans;
    }
  
 diff --git a/src/AlgebraicCore/SparsePolyOps-ideal.C b/src/AlgebraicCore/SparsePolyOps-ideal.C
-index ddfb6bd..a64e76b 100644
+index ddfb6bd..bb6a79d 100644
 --- a/src/AlgebraicCore/SparsePolyOps-ideal.C
 +++ b/src/AlgebraicCore/SparsePolyOps-ideal.C
 @@ -42,6 +42,7 @@
@@ -71,14 +70,6 @@ index ddfb6bd..a64e76b 100644
  #include "CoCoA/TmpPPVector.H"  // for interreducing in GBasisByHomog
  #include "CoCoA/TmpUniversalInvolutiveBasisContainer.H" // for ideal ctor
  #include "CoCoA/assert.H"
-@@ -761,6 +762,7 @@ namespace CoCoA
-       {
-         myMinGensValue = myGensValue;
-         CoCoA_ASSERT(myGBasisValue.empty());
-+	if(proofEnabled) monicProof(myGensValue[0], monic(myGensValue[0]));
-         myGBasisValue.push_back(monic(myGensValue[0]));
-       }
-       else
 diff --git a/src/AlgebraicCore/SparsePolyOps-reduce.C b/src/AlgebraicCore/SparsePolyOps-reduce.C
 index b5b8b43..a26f652 100644
 --- a/src/AlgebraicCore/SparsePolyOps-reduce.C
