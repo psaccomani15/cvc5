@@ -14,7 +14,6 @@
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
-
 template <typename T>
 std::string ostring(const T& t)
 {
@@ -24,7 +23,6 @@ std::string ostring(const T& t)
 }
 
 // TODO string to node, so that same string yields the same node
-
 GBProof::GBProof(Env& env,
                  const std::vector<CoCoA::RingElem> polys,
                  Node ideal,
@@ -52,7 +50,7 @@ GBProof::GBProof(Env& env,
 };
 
 void GBProof::setFunctionPointers()
-{
+{ 
   GBProof* t = this;
   d_sPoly =
       std::function([=](CoCoA::ConstRefRingElem p,

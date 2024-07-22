@@ -88,7 +88,8 @@ Node IdealProof::getUnsatFact() { return d_emptyVarFact; }
 
 Node IdealProof::oneInUnsat(CoCoA::RingElem p, CDProof* globalTheoryProofs)
 {
-  d_emptyVarFact = nodeManager()->mkNode(Kind::NOT, d_validFact);
+  d_emptyVarFact
+    = nodeManager()->mkNode(Kind::NOT, d_validFact);
   Node membershipFact = d_membershipProofs->getMembershipFact(p);
   d_proof.addStep(
       d_emptyVarFact, ProofRule::FF_ONE_UNSAT, {membershipFact}, {});
@@ -96,6 +97,15 @@ Node IdealProof::oneInUnsat(CoCoA::RingElem p, CDProof* globalTheoryProofs)
   globalTheoryProofs->addProof(emptyVarProof);
   return d_emptyVarFact;
 }
+
+Node IdealProof::oneInUnsat(CoCoA::RingElem p){
+  d_emptyVarFact
+    = nodeManager()->mkNode(Kind::NOT, d_validFact);
+  Node membershipFact = d_membershipProofs->getMembershipFact(p);
+  d_proof.addStep(
+      d_emptyVarFact, ProofRule::FF_ONE_UNSAT, {membershipFact}, {});
+  return d_emptyVarFact;
+  }
 void IdealProof::setFunctionPointers()
 {
   d_membershipProofs->setFunctionPointers();

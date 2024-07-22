@@ -65,6 +65,7 @@ class IdealProof : protected EnvObj
   void finishProof(bool rootBranching, CDProof* globalTheoryProofs);
   // p here represents the unit :p.
   Node oneInUnsat(CoCoA::RingElem p, CDProof* globalTheoryProofs);
+  Node oneInUnsat(CoCoA::RingElem p);
   Node getUnsatFact();
   Node getSatFact();
  private:
