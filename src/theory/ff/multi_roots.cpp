@@ -186,7 +186,6 @@ std::unique_ptr<AssignmentEnumerator> applyRule(
 {
   //Unreachable();
   CoCoA::ring polyRing = ideal->myRing();
-  // Assert(!isUnsat(ideal, idealProof));
   // first, we look for super-linear univariate polynomials.
   const auto& gens = CoCoA::GBasis(ideal);
   for (const auto& p : gens)
@@ -250,7 +249,6 @@ std::vector<CoCoA::RingElem> findZero(
     CDProof* globalTheoryProofs)
 {
   CoCoA::ring polyRing = initialIdeal->myRing();
-  // Unreachable();
   // We maintain two stacks:
   // * one of ideals
   // * one of branchers
@@ -334,9 +332,7 @@ std::vector<CoCoA::RingElem> findZero(
     // Otherwise, this ideal should have a brancher; get the next branch
     else
     {
-      // Unreachable();
       Assert(ideals.size() == branchers.size());
-      Trace("ff::trace") << "getting new gens\n";
       std::optional<CoCoA::RingElem> choicePoly = branchers.back()->next();
       // construct a new ideal from the branch
       if (choicePoly.has_value())

@@ -93,6 +93,44 @@ TypeNode FiniteFieldFixedFieldTypeRule::computeType(NodeManager* nodeManager,
   return t;
 }
 
+TypeNode FiniteFieldIdeal::preComputeType(NodeManager* nm, TNode n)
+{
+  return nm->mkAbstractType(Kind::FINITE_FIELD_IDEAL);
+}
+TypeNode FiniteFieldIdeal::computeType(NodeManager* nm,
+                                       TNode n,
+                                       bool check,
+                                       std::ostream* errOut)
+{
+  return nm->mkAbstractType(Kind::FINITE_FIELD_IDEAL);
+}
+  
+TypeNode FiniteFieldIdealMembership::preComputeType(NodeManager* nm, TNode n)
+{
+  return nm->booleanType();
+}
+TypeNode FiniteFieldIdealMembership::computeType(NodeManager* nm,
+                                                 TNode n,
+                                                 bool check,
+                                                 std::ostream* errOut)
+{
+  return nm->booleanType();
+}
+
+
+TypeNode FiniteFieldNonNullVar::preComputeType(NodeManager* nm, TNode n)
+{
+  return nm->booleanType();
+}
+TypeNode FiniteFieldNonNullVar::computeType(NodeManager* nm,
+                                                TNode n,
+                                                bool check,
+                                                std::ostream* errOut)
+{
+  return nm->booleanType();
+}
+
+
 }  // namespace ff
 }  // namespace theory
 }  // namespace cvc5::internal

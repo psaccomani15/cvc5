@@ -84,6 +84,12 @@ class CocoaEncoder : public FieldObj
    * Available in Stage::Encode.
    */
   const Poly& getTermEncoding(const Node& t) const { return d_cache.at(t); }
+
+  /**
+   * Construct the term that represents the poly.
+   */
+  Node encodeBack(CoCoA::ConstRefRingElem p);
+  
   /**
    * Get the bitsum terms (for the bitsumPolys).
    * Available in Stage::Encode.
@@ -103,7 +109,6 @@ class CocoaEncoder : public FieldObj
    * Convert a (coefficient) Scalar to a FiniteFieldValue.
    */
   FiniteFieldValue cocoaFfToFfVal(const Scalar& elem);
-
  private:
   /**
    * Get a fresh symbol that starts with varName.
@@ -154,7 +159,8 @@ class CocoaEncoder : public FieldObj
   std::unordered_map<std::string, Poly> d_symPolys{};
   /** map: symbol name to term */
   std::unordered_map<std::string, Node> d_symNodes{};
-
+  /** map: diseq symbol name to term */
+  std::unordered_map<std::string, Node> d_diseqNodes{};
   // populated at the end of Stage::Scan
 
   /** the polynomial ring */

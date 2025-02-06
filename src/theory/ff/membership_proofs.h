@@ -26,7 +26,7 @@
 #include <unordered_map>
 #include "smt/env_obj.h"
 #include "expr/node.h"
-
+#include "theory/ff/cocoa_encoder.h"
 
 namespace cvc5::internal {
 
@@ -46,23 +46,24 @@ namespace ff {
    public:
     GBProof(Env& env,
             const std::vector<CoCoA::RingElem> polys,
-            Node ideal,
+            Node ideal, CocoaEncoder &enc,  
             CDProof* proof);
 
-    /*
+    /**
      * Hooks into CoCoA. The functions are then called by CoCoA Groebner Basis
      * during Reduction and computation of SPolynomials
      */
     void setFunctionPointers();
-    /*
+    /**
      * Returns a membership proof for a given polynomial.
-     * The polynomial must be already registered in d_polyToVar.
+     * @param poly: The polynomial must be already registered in d_polyToVar.
      */
     Node getMembershipFact(CoCoA::ConstRefRingElem poly);
 
-    /*
+    /**
      * Produces/uses a membership fact for arbitrary polynomials in the ideal.
-     * The argument "poly" *must* be an element of the ideal.
+     * @param poly: The polynomial that we are proving membership: *must* be an element of the ideal.
+     * @param Ideal: the cocoalib representantion for the ideal. 
      */
     Node proofIdealMembership(CoCoA::RingElem poly, CoCoA::ideal ideal);
 
@@ -70,7 +71,7 @@ namespace ff {
     /**
      * Produces Nodes that represents ideal membership facts.
      */
-    Node produceMembershipNode(std::string poly, NodeManager* nm);
+    Node produceMembershipNode(Node poly, NodeManager* nm);
 
     /**
      * Call this when s = spoly(p, q);
@@ -108,13 +109,13 @@ namespace ff {
     /**
      * The sequence of polynomials used for reduction during GBasis production.
      */
-    std::vector<std::string> d_reductionSeq{};
+    std::vector<Node> d_reductionSeq{};
 
     /**
      * The sequence of polynomials in GBasis used in the reduction during
      * independent membership proof production.
      */
-    std::vector<std::string> d_membershipSeq{};
+    std::vector<Node> d_membershipSeq{};
 
     /**
      * Hooks for:
@@ -141,16 +142,16 @@ namespace ff {
      * generators.
      */
     Node d_ideal;
-
+    CocoaEncoder d_enc;
     /**
-     * Maps polynomials to their original ideal membership proofs
+     * Maps polynomials to their ideal membership proofs
      */
-    std::unordered_map<std::string, Node> d_polyToMembership;
+    std::unordered_map<Node, Node> d_polyToMembership;
     /**
      * Used for arbitrary membership proofs.
      * Represents the polynomial that we are currently testing for membership
      */
-    std::string d_reducingPoly;
+    Node  d_reducingPoly;
     /**
      * The user-context-dependent proof object
      */

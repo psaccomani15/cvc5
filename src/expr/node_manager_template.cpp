@@ -598,7 +598,7 @@ bool NodeManager::isSortKindAbstractable(Kind k)
          || k == Kind::BAG_TYPE || k == Kind::BITVECTOR_TYPE
          || k == Kind::TUPLE_TYPE || k == Kind::FINITE_FIELD_TYPE
          || k == Kind::FLOATINGPOINT_TYPE || k == Kind::FUNCTION_TYPE
-         || k == Kind::SEQUENCE_TYPE || k == Kind::SET_TYPE;
+    || k == Kind::SEQUENCE_TYPE || k == Kind::SET_TYPE || k == Kind::FINITE_FIELD_IDEAL;
 }
 
 TypeNode NodeManager::mkAbstractType(Kind k)

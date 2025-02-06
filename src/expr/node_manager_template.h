@@ -454,7 +454,7 @@ class NodeManager
 
   /** Make the type of finite field elements modulo <code>modulus</code> */
   TypeNode mkFiniteFieldType(const Integer& modulus);
-
+  
   /** Make the type of arrays with the given parameterization */
   TypeNode mkArrayType(TypeNode indexType, TypeNode constituentType);
 
