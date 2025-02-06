@@ -1,10 +1,10 @@
 ###############################################################################
 # Top contributors (to current version):
-#   Gereon Kremer, Mathias Preiner, Andrew V. Teylu
+#   Gereon Kremer, Mathias Preiner, Daniel Larraz
 #
 # This file is part of the cvc5 project.
 #
-# Copyright (c) 2009-2024 by the authors listed in the file AUTHORS
+# Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
 # in the top-level source directory and their institutional affiliations.
 # All rights reserved.  See the file COPYING in the top-level source
 # directory for licensing information.
@@ -54,7 +54,7 @@ if(NOT CryptoMiniSat_FOUND_SYSTEM)
     CryptoMiniSat-EP
     ${COMMON_EP_CONFIG}
     URL https://github.com/msoos/cryptominisat/archive/refs/tags/${CryptoMiniSat_VERSION}.tar.gz
-    URL_HASH SHA1=d97510a186af8eaecc3ecf38dad345e0758288a5
+    URL_HASH SHA256=288fd53d801909af797c72023361a75af3229d1806dbc87a0fcda18f5e03763b
     CMAKE_ARGS -DCMAKE_BUILD_TYPE=Release
                # make sure not to register with cmake
                -DCMAKE_EXPORT_NO_PACKAGE_REGISTRY=ON
@@ -110,4 +110,8 @@ else()
       "Building CryptoMiniSat ${CryptoMiniSat_VERSION}: ${CryptoMiniSat_LIBRARIES}"
   )
   add_dependencies(CryptoMiniSat CryptoMiniSat-EP)
+  # Install static library only if it is a static build.
+  if(NOT BUILD_SHARED_LIBS)
+    install(FILES ${CryptoMiniSat_LIBRARIES} TYPE ${LIB_BUILD_TYPE})
+  endif()
 endif()

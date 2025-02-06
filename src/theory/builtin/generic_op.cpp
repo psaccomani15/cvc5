@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Aina Niemetz, Mathias Preiner
+ *   Andrew Reynolds, Aina Niemetz, Mudathir Mohamed
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2024 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -59,7 +59,7 @@ bool GenericOp::isNumeralIndexedOperatorKind(Kind k)
          || k == Kind::BITVECTOR_REPEAT || k == Kind::BITVECTOR_ZERO_EXTEND
          || k == Kind::BITVECTOR_SIGN_EXTEND || k == Kind::BITVECTOR_ROTATE_LEFT
          || k == Kind::BITVECTOR_ROTATE_RIGHT || k == Kind::INT_TO_BITVECTOR
-         || k == Kind::BITVECTOR_BITOF || k == Kind::IAND
+         || k == Kind::BITVECTOR_BIT || k == Kind::IAND
          || k == Kind::FLOATINGPOINT_TO_FP_FROM_FP
          || k == Kind::FLOATINGPOINT_TO_FP_FROM_IEEE_BV
          || k == Kind::FLOATINGPOINT_TO_FP_FROM_SBV
@@ -120,9 +120,9 @@ std::vector<Node> GenericOp::getIndicesForOperator(Kind k, Node n)
       indices.push_back(nm->mkConstInt(
           Rational(n.getConst<BitVectorRotateRight>().d_rotateRightAmount)));
       break;
-    case Kind::BITVECTOR_BITOF:
+    case Kind::BITVECTOR_BIT:
       indices.push_back(
-          nm->mkConstInt(Rational(n.getConst<BitVectorBitOf>().d_bitIndex)));
+          nm->mkConstInt(Rational(n.getConst<BitVectorBit>().d_bitIndex)));
       break;
     case Kind::INT_TO_BITVECTOR:
       indices.push_back(
@@ -267,11 +267,12 @@ bool convertToNumeralList(const std::vector<Node>& indices,
   return true;
 }
 
-Node GenericOp::getOperatorForIndices(Kind k, const std::vector<Node>& indices)
+Node GenericOp::getOperatorForIndices(NodeManager* nm,
+                                      Kind k,
+                                      const std::vector<Node>& indices)
 {
   // all indices should be constant!
   Assert(isIndexedOperatorKind(k));
-  NodeManager* nm = NodeManager::currentNM();
   if (isNumeralIndexedOperatorKind(k))
   {
     std::vector<uint32_t> numerals;
@@ -303,9 +304,9 @@ Node GenericOp::getOperatorForIndices(Kind k, const std::vector<Node>& indices)
       case Kind::BITVECTOR_ROTATE_RIGHT:
         Assert(numerals.size() == 1);
         return nm->mkConst(BitVectorRotateRight(numerals[0]));
-      case Kind::BITVECTOR_BITOF:
+      case Kind::BITVECTOR_BIT:
         Assert(numerals.size() == 1);
-        return nm->mkConst(BitVectorBitOf(numerals[0]));
+        return nm->mkConst(BitVectorBit(numerals[0]));
       case Kind::INT_TO_BITVECTOR:
         Assert(numerals.size() == 1);
         return nm->mkConst(IntToBitVector(numerals[0]));
@@ -400,7 +401,8 @@ Node GenericOp::getConcreteApp(const Node& app)
   // usually one, but we handle cases where it is >1.
   size_t nargs = metakind::getMinArityForKind(okind);
   std::vector<Node> indices(app.begin(), app.end() - nargs);
-  Node op = getOperatorForIndices(okind, indices);
+  NodeManager* nm = NodeManager::currentNM();
+  Node op = getOperatorForIndices(nm, okind, indices);
   // could have a bad index, in which case we don't rewrite
   if (op.isNull())
   {
@@ -409,7 +411,7 @@ Node GenericOp::getConcreteApp(const Node& app)
   std::vector<Node> args;
   args.push_back(op);
   args.insert(args.end(), app.end() - nargs, app.end());
-  Node ret = NodeManager::currentNM()->mkNode(okind, args);
+  Node ret = nm->mkNode(okind, args);
   // could be ill typed, in which case we don't rewrite
   if (ret.getTypeOrNull(true).isNull())
   {

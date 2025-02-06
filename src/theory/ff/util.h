@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Alex Ozdemir
+ *   Alex Ozdemir, Daniel Larraz
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2024 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -24,6 +24,7 @@
 #endif /* CVC5_USE_COCOA */
 
 // std includes
+#include <exception>
 #include <unordered_map>
 
 // internal includes
@@ -46,7 +47,7 @@ using FfModel = std::unordered_map<Node, FiniteFieldValue>;
 class FieldObj
 {
  public:
-  FieldObj(const FfSize& size);
+  FieldObj(NodeManager* nm, const FfSize& size);
   /** create a sum (with as few as 0 elements); accepts Nodes or TNodes */
   template <bool ref_count>
   Node mkAdd(const std::vector<NodeTemplate<ref_count>>& summands);
@@ -83,6 +84,13 @@ bool isFfTerm(const Node& n);
 /** Is this a field fact (equality of disequality)? */
 bool isFfFact(const Node& n);
 
+/** Used to signal check timeouts */
+class FfTimeoutException : public Exception
+{
+ public:
+  FfTimeoutException(const std::string& where);
+  ~FfTimeoutException() override;
+};
 /** Testing whether something is related to (this specific) FF */
 
 /** Is this a (this) field term with non-field kind? */

@@ -1,10 +1,10 @@
 ###############################################################################
 # Top contributors (to current version):
-#   Hans-Jörg Schurr, Ying Sheng, Aina Niemetz
+#   Abdalrhman Mohamed, Aina Niemetz, Hans-Joerg Schurr
 #
 # This file is part of the cvc5 project.
 #
-# Copyright (c) 2009-2024 by the authors listed in the file AUTHORS
+# Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
 # in the top-level source directory and their institutional affiliations.
 # All rights reserved.  See the file COPYING in the top-level source
 # directory for licensing information.
@@ -29,7 +29,7 @@ def solver(tm):
 
 
 def create_proof(tm, solver):
-    solver.setOption("produce-proofs", "true");
+    solver.setOption("produce-proofs", "true")
 
     uSort = tm.mkUninterpretedSort("u")
     intSort = tm.getIntegerSort()
@@ -70,10 +70,19 @@ def create_rewrite_proof(tm, solver):
     return solver.getProof()[0]
 
 
-def test_get_result(tm, solver):
+def test_null_proof(solver):
+  proof = cvc5.Proof(solver)
+  assert proof.getRule() == ProofRule.UNKNOWN
+  assert hash(ProofRule.UNKNOWN) == hash(ProofRule.UNKNOWN)
+  assert proof.getResult().isNull()
+  assert len(proof.getChildren()) == 0
+  assert len(proof.getArguments()) == 0
+
+
+def test_get_rule(tm, solver):
     proof = create_proof(tm, solver)
     rule = proof.getRule()
-    assert rule == "SCOPE"
+    assert rule == ProofRule.SCOPE
 
 
 def test_get_rewrite_rule(tm, solver):
@@ -104,3 +113,18 @@ def test_get_children(tm, solver):
 def test_get_arguments(tm, solver):
     proof = create_proof(tm, solver)
     proof.getArguments()
+
+
+def test_eq(tm, solver):
+    x = create_proof(tm, solver)
+    y = x.getChildren()[0]
+    z = cvc5.Proof(solver)
+
+    assert x == x
+    assert not x != x
+    assert not x == y
+    assert x != y
+    assert not (x == z)
+    assert x != z
+
+    assert hash(x) == hash(x)

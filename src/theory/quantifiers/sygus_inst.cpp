@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2024 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -266,6 +266,7 @@ void SygusInst::check(Theory::Effort e, QEffort quant_e)
 
   if (quant_e != QEFFORT_STANDARD) return;
 
+  beginCallDebug();
   FirstOrderModel* model = d_treg.getModel();
   Instantiate* inst = d_qim.getInstantiate();
   TermDbSygus* db = d_treg.getTermDatabaseSygus();
@@ -336,6 +337,7 @@ void SygusInst::check(Theory::Effort e, QEffort quant_e)
       sendEvalUnfoldLemmas(eval_unfold_lemmas);
     }
   }
+  endCallDebug();
 }
 
 bool SygusInst::sendEvalUnfoldLemmas(const std::vector<Node>& lemmas)
@@ -486,6 +488,8 @@ void SygusInst::ppNotifyAssertions(const std::vector<Node>& assertions)
   }
 }
 
+std::string SygusInst::identify() const { return "sygus-inst"; }
+
 /*****************************************************************************/
 /* private methods                                                           */
 /*****************************************************************************/
@@ -499,8 +503,7 @@ Node SygusInst::getCeLiteral(Node q)
   }
 
   NodeManager* nm = nodeManager();
-  SkolemManager* sm = nm->getSkolemManager();
-  Node sk = sm->mkDummySkolem("CeLiteral", nm->booleanType());
+  Node sk = NodeManager::mkDummySkolem("CeLiteral", nm->booleanType());
   Node lit = d_qstate.getValuation().ensureLiteral(sk);
   d_ce_lits[q] = lit;
   return lit;
