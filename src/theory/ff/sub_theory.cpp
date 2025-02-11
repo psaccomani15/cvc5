@@ -19,7 +19,6 @@
 
 #include "theory/shared_terms_database.h"
 #ifdef CVC5_USE_COCOA
-#define proofProducing true
 #include <CoCoA/BigInt.H>
 #include <CoCoA/QuotientRing.H>
 #include <CoCoA/RingZZ.H>
@@ -317,7 +316,7 @@ Result SubTheory::postCheck(Theory::Effort e)
           Assert(d_conflict.empty());
           for (size_t i : coreIndices)
           {
-            // omit field polys from core
+            // omit field polys from core: Fix this. This is wrong.
             if (i < nNonFieldPolyGens)
             {
 	      Unreachable();
