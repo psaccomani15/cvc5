@@ -264,7 +264,6 @@ Result SubTheory::postCheck(Theory::Effort e)
                            << equivPred << " ---> " << nonNullVarPred
                            << std::endl;
         Node trueNonNullVarPred;
-        size_t nNonFieldPolyGens = generators.size();
         std::vector<Node> fieldPolys{};
         if (options().ff.ffFieldPolys)
         {
@@ -371,7 +370,7 @@ Result SubTheory::postCheck(Theory::Effort e)
 
           // common root (vec of CoCoA base ring elements)
           std::vector<CoCoA::RingElem> root =
-              findZero(ideal, idealProofs, nodeManager(), d_proof);
+              findZero(ideal, idealProofs, nodeManager(), d_proof, d_env);
           if (root.empty())
           {
             Node satFact = idealProofs->getSatFact();
