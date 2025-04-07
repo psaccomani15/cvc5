@@ -9,10 +9,15 @@ Usage: $0 [<build type>] [<option> ...]
 
 Build types:
   production
+    Optimized, assertions and tracing disabled
   debug
+    Unoptimized, debug symbols, assertions, and tracing enabled
   testing
+    Optimized debug build
   competition
-  competition-inc
+    Maximally optimized, assertions and tracing disabled, muzzled
+  safe-mode
+    Like production except --safe-options is set to true
 
 
 General options;
@@ -27,6 +32,7 @@ General options;
   --win64-native           natively compile for Windows 64 bit
   --ninja                  use Ninja build system
   --docs                   build Api documentation
+  --docs-ga                build API documentation with Google Analytics
 
 
 Features:
@@ -109,12 +115,12 @@ asan=default
 assertions=default
 auto_download=default
 cln=default
-comp_inc=default
 coverage=default
 cryptominisat=default
 debug_context_mm=default
 debug_symbols=default
 docs=default
+docs_ga=default
 glpk=default
 gpl=default
 kissat=default
@@ -125,9 +131,11 @@ ninja=default
 profiling=default
 python_bindings=default
 python_only_src=default
+pyvenv=default
 java_bindings=default
 editline=default
 build_shared=ON
+safe_mode=default
 static_binary=default
 statistics=default
 tracing=default
@@ -243,6 +251,9 @@ do
     --docs) docs=ON;;
     --no-docs) docs=OFF;;
 
+    --docs-ga) docs_ga=ON;;
+    --no-docs-ga) docs_ga=OFF;;
+
     --glpk) glpk=ON;;
     --no-glpk) glpk=OFF;;
 
@@ -263,6 +274,9 @@ do
 
     --auto-download) auto_download=ON;;
     --no-auto-download) auto_download=OFF;;
+
+    --pyvenv) pyvenv=ON;;
+    --no-pyvenv) pyvenv=OFF;;
 
     --statistics) statistics=ON;;
     --no-statistics) statistics=OFF;;
@@ -326,7 +340,7 @@ do
          debug)           buildtype=Debug;;
          testing)         buildtype=Testing;;
          competition)     buildtype=Competition;;
-         competition-inc) buildtype=Competition; comp_inc=ON;;
+         safe-mode)       buildtype=Production; safe_mode=ON;;
          *)               die "invalid build type (try -h)";;
        esac
        ;;
@@ -348,6 +362,8 @@ fi
   && cmake_opts="$cmake_opts -DENABLE_ASAN=$asan"
 [ $auto_download != default ] \
   && cmake_opts="$cmake_opts -DENABLE_AUTO_DOWNLOAD=$auto_download"
+[ $pyvenv != default ] \
+  && cmake_opts="$cmake_opts -DUSE_PYTHON_VENV=$pyvenv"
 [ $ubsan != default ] \
   && cmake_opts="$cmake_opts -DENABLE_UBSAN=$ubsan"
 [ $tsan != default ] \
@@ -356,8 +372,8 @@ fi
   && cmake_opts="$cmake_opts -DENABLE_IPO=$ipo"
 [ $assertions != default ] \
   && cmake_opts="$cmake_opts -DENABLE_ASSERTIONS=$assertions"
-[ $comp_inc != default ] \
-  && cmake_opts="$cmake_opts -DENABLE_COMP_INC_TRACK=$comp_inc"
+[ $safe_mode != default ] \
+  && cmake_opts="$cmake_opts -DENABLE_SAFE_MODE=$safe_mode"
 [ $coverage != default ] \
   && cmake_opts="$cmake_opts -DENABLE_COVERAGE=$coverage"
 [ $debug_symbols != default ] \
@@ -388,6 +404,8 @@ fi
   && cmake_opts="$cmake_opts -DENABLE_UNIT_TESTING=$unit_testing"
 [ $docs != default ] \
   && cmake_opts="$cmake_opts -DBUILD_DOCS=$docs"
+[ $docs_ga != default ] \
+  && cmake_opts="$cmake_opts -DBUILD_DOCS_GA=$docs_ga"
 [ $python_bindings != default ] \
   && cmake_opts="$cmake_opts -DBUILD_BINDINGS_PYTHON=$python_bindings"
 [ $python_only_src != default ] \

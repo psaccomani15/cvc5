@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2024 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -491,17 +491,17 @@ class CVC5_EXPORT SolverEngine
    */
   void addPlugin(Plugin* p);
   /**
-   * Simplify a formula without doing "much" work.  Does not involve
-   * the SAT Engine in the simplification, but uses the current
-   * definitions, assertions, and the current partial model, if one
-   * has been constructed.  It also involves theory normalization.
+   * Simplify a term or formula based on rewriting and (optionally) applying
+   * substitutions for solved variables.
    *
-   * @throw TypeCheckingException, LogicException
+   * If applySubs is true, then for example, if `(= x 0)` was asserted to this
+   * solver, this method may replace occurrences of `x` with `0`.
    *
-   * @todo (design) is this meant to give an equivalent or an
-   * equisatisfiable formula?
+   * @param t The term to simplify.
+   * @param applySubs Whether to apply substitutions for solved variables.
+   * @return The simplified term.
    */
-  Node simplify(const Node& e);
+  Node simplify(const Node& e, bool applySubs);
 
   /**
    * Get the assigned value of an expr (only if immediately preceded by a SAT
@@ -972,6 +972,12 @@ class CVC5_EXPORT SolverEngine
    */
   theory::TheoryModel* getAvailableModel(const char* c) const;
   /**
+   * Get the available proof, which is that of the prop engine if SAT
+   * proof producing, or else a dummy proof SAT_REFUTATION whose assumptions
+   * are the preprocessed input formulas.
+   */
+  std::shared_ptr<ProofNode> getAvailableSatProof();
+  /**
    * Get available quantifiers engine, which throws a modal exception if it
    * does not exist. This can happen if a quantifiers-specific call (e.g.
    * getInstantiatedQuantifiedFormulas) is called in a non-quantified logic.
@@ -1026,6 +1032,14 @@ class CVC5_EXPORT SolverEngine
    */
   const Options& options() const;
 
+  /**
+   * Return true if the given term is a valid closed term, which can be used as
+   * an argument to, e.g., assert, get-value, block-model-values, etc.
+   *
+   * @param n The node to check
+   * @return true if n is a well formed term.
+   */
+  bool isWellFormedTerm(const Node& n) const;
   /**
    * Check that the given term is a valid closed term, which can be used as an
    * argument to, e.g., assert, get-value, block-model-values, etc.
@@ -1116,6 +1130,10 @@ class CVC5_EXPORT SolverEngine
   bool d_safeOptsSetRegularOption;
   /** The regular option we set (for --safe-options) */
   std::string d_safeOptsRegularOption;
+  /** The value of the regular option we set (for --safe-options) */
+  std::string d_safeOptsRegularOptionValue;
+  /** Was the option already the default setting */
+  bool d_safeOptsSetRegularOptionToDefault;
 
   /** Whether this is an internal subsolver. */
   bool d_isInternalSubsolver;

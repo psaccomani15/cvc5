@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Gereon Kremer, Andrew Reynolds, Hans-Jörg Schurr
+ *   Gereon Kremer, Andrew Reynolds, Hans-Joerg Schurr
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2024 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -227,11 +227,8 @@ Node TranscendentalProofRuleChecker::checkInternal(
   else if (id == ProofRule::ARITH_TRANS_SINE_SHIFT)
   {
     Assert(children.empty());
-    Assert(args.size() == 3);
-    const auto& x = args[0];
-    const auto& y = args[1];
-    const auto& s = args[2];
-    return SineSolver::getPhaseShiftLemma(x, y, s);
+    Assert(args.size() == 1);
+    return SineSolver::getPhaseShiftLemma(args[0]);
   }
   else if (id == ProofRule::ARITH_TRANS_SINE_SYMMETRY)
   {

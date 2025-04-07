@@ -1,10 +1,10 @@
 ###############################################################################
 # Top contributors (to current version):
-#   Gereon Kremer, Mathias Preiner, Andrew V. Teylu
+#   Gereon Kremer, Mathias Preiner, Daniel Larraz
 #
 # This file is part of the cvc5 project.
 #
-# Copyright (c) 2009-2024 by the authors listed in the file AUTHORS
+# Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
 # in the top-level source directory and their institutional affiliations.
 # All rights reserved.  See the file COPYING in the top-level source
 # directory for licensing information.
@@ -37,6 +37,13 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.14")
         LOG_MERGED_STDOUTERR ON
         LOG_OUTPUT_ON_FAILURE ON
     )
+endif()
+
+# On Windows, DLL libraries are runtime artifacts
+if(BUILD_SHARED_LIBS AND WIN32)
+  set(LIB_BUILD_TYPE BIN)
+else()
+  set(LIB_BUILD_TYPE LIB)
 endif()
 
 # On Windows, we need to have a shell interpreter to call 'configure'

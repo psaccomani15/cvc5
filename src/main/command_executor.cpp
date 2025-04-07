@@ -4,7 +4,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2024 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -54,7 +54,7 @@ void setNoLimitCPU() {
 
 CommandExecutor::CommandExecutor(std::unique_ptr<cvc5::Solver>& solver)
     : d_solver(solver),
-      d_symman(new SymbolManager(d_solver.get())),
+      d_symman(new SymbolManager(d_solver->getTermManager())),
       d_result(),
       d_parseOnly(false)
 {

@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Andrew Reynolds, Gereon Kremer, Aina Niemetz
+ *   Andrew Reynolds, Gereon Kremer, Andres Noetzli
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2024 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -64,6 +64,12 @@ InstStrategyCegqi::InstStrategyCegqi(Env& env,
   d_check_vts_lemma_lc = false;
   if (options().quantifiers.cegqiNestedQE)
   {
+    // initialize the trust proof generator if necessary
+    if (d_env.isTheoryProofProducing())
+    {
+      d_nqetpg.reset(new TrustProofGenerator(
+          env, TrustId::QUANTIFIERS_NESTED_QE_LEMMA, {}));
+    }
     d_nestedQe.reset(new NestedQe(d_env));
   }
 }
@@ -255,11 +261,11 @@ void InstStrategyCegqi::check(Theory::Effort e, QEffort quant_e)
   if (quant_e == QEFFORT_STANDARD)
   {
     Assert(!d_qstate.isInConflict());
-    double clSet = 0;
-    if( TraceIsOn("cegqi-engine") ){
-      clSet = double(clock())/double(CLOCKS_PER_SEC);
-      Trace("cegqi-engine") << "---Cbqi Engine Round, effort = " << e << "---" << std::endl;
+    if (d_active_quant.empty())
+    {
+      return;
     }
+    beginCallDebug();
     size_t lastWaiting = d_qim.numPendingLemmas();
     for( int ee=0; ee<=1; ee++ ){
       //for( unsigned i=0; i<d_quantEngine->getModel()->getNumAssertedQuantifiers(); i++ ){
@@ -267,7 +273,7 @@ void InstStrategyCegqi::check(Theory::Effort e, QEffort quant_e)
       //  if( doCbqi( q ) && d_quantEngine->getModel()->isQuantifierActive( q ) ){
       for( std::map< Node, bool >::iterator it = d_active_quant.begin(); it != d_active_quant.end(); ++it ){
         Node q = it->first;
-        Trace("cegqi") << "CBQI : Process quantifier " << q[0] << " at effort " << ee << std::endl;
+        Trace("cegqi") << "CEGQI : Process quantifier " << q[0] << " at effort " << ee << std::endl;
         if (d_qreg.getQuantAttributes().isQuantElimPartial(q))
         {
           d_cbqi_set_quant_inactive = true;
@@ -284,16 +290,7 @@ void InstStrategyCegqi::check(Theory::Effort e, QEffort quant_e)
         break;
       }
     }
-    if( TraceIsOn("cegqi-engine") ){
-      if (d_qim.numPendingLemmas() > lastWaiting)
-      {
-        Trace("cegqi-engine")
-            << "Added lemmas = " << (d_qim.numPendingLemmas() - lastWaiting)
-            << std::endl;
-      }
-      double clSet2 = double(clock())/double(CLOCKS_PER_SEC);
-      Trace("cegqi-engine") << "Finished cbqi engine, time = " << (clSet2-clSet) << std::endl;
-    }
+    endCallDebug();
   }
 }
 
@@ -331,6 +328,8 @@ void InstStrategyCegqi::checkOwnership(Node q)
     }
   }
 }
+
+std::string InstStrategyCegqi::identify() const { return "cegqi"; }
 
 void InstStrategyCegqi::preRegisterQuantifier(Node q)
 {
@@ -498,8 +497,7 @@ Node InstStrategyCegqi::getCounterexampleLiteral(Node q)
     return it->second;
   }
   NodeManager* nm = nodeManager();
-  SkolemManager* sm = nm->getSkolemManager();
-  Node g = sm->mkDummySkolem("g", nm->booleanType());
+  Node g = NodeManager::mkDummySkolem("g", nm->booleanType());
   // ensure that it is a SAT literal
   Node ceLit = d_qstate.getValuation().ensureLiteral(g);
   d_ce_lit[q] = ceLit;
@@ -535,7 +533,10 @@ bool InstStrategyCegqi::processNestedQe(Node q, bool isPreregister)
       // add lemmas to process
       for (const Node& lem : lems)
       {
-        d_qim.addPendingLemma(lem, InferenceId::QUANTIFIERS_CEGQI_NESTED_QE);
+        d_qim.addPendingLemma(lem,
+                              InferenceId::QUANTIFIERS_CEGQI_NESTED_QE,
+                              LemmaProperty::NONE,
+                              d_nqetpg.get());
       }
       // don't need to process this, since it has been reduced
       return true;

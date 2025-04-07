@@ -5,7 +5,7 @@
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2024 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -25,6 +25,7 @@
 #include <CoCoA/SparsePolyOps-MinPoly.H>
 #include <CoCoA/SparsePolyOps-RingElem.H>
 #include <CoCoA/SparsePolyOps-ideal.H>
+#include <CoCoA/ring.H>
 
 #include <algorithm>
 #include <memory>
@@ -32,7 +33,11 @@
 
 #include "ideal_proofs.h"
 #include "smt/assertions.h"
+#include "theory/ff/cocoa_util.h"
 #include "theory/ff/uni_roots.h"
+#include "theory/ff/util.h"
+#include "util/resource_manager.h"
+
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
@@ -45,7 +50,7 @@ std::string ostring(const T& t)
   return o.str();
 }
 
-AssignmentEnumerator::~AssignmentEnumerator(){};
+AssignmentEnumerator::~AssignmentEnumerator() {};
 
 ListEnumerator::ListEnumerator(const std::vector<CoCoA::RingElem>&& options)
     : d_remainingOptions(std::move(options)),
@@ -54,7 +59,7 @@ ListEnumerator::ListEnumerator(const std::vector<CoCoA::RingElem>&& options)
   std::reverse(d_remainingOptions.begin(), d_remainingOptions.end());
 }
 
-ListEnumerator::~ListEnumerator(){};
+ListEnumerator::~ListEnumerator() {};
 
 std::optional<CoCoA::RingElem> ListEnumerator::next()
 {
@@ -159,8 +164,9 @@ std::pair<size_t, CoCoA::RingElem> extractAssignment(
 
 std::unordered_set<std::string> assignedVars(const CoCoA::ideal& ideal)
 {
-  //Unreachable();
+  // Unreachable();
   std::unordered_set<std::string> ret{};
+  Assert(CoCoA::HasGBasis(ideal));
   for (const auto& g : CoCoA::GBasis(ideal))
   {
     if (CoCoA::deg(g) == 1)
@@ -184,9 +190,10 @@ bool allVarsAssigned(const CoCoA::ideal& ideal)
 std::unique_ptr<AssignmentEnumerator> applyRule(
     const CoCoA::ideal& ideal, std::shared_ptr<IdealProof> idealProof)
 {
-  //Unreachable();
+  // Unreachable();
   CoCoA::ring polyRing = ideal->myRing();
   // first, we look for super-linear univariate polynomials.
+  Assert(CoCoA::HasGBasis(ideal));
   const auto& gens = CoCoA::GBasis(ideal);
   for (const auto& p : gens)
   {
@@ -212,9 +219,9 @@ std::unique_ptr<AssignmentEnumerator> applyRule(
       if (!alreadySet.count(ostring(var)))
       {
         CoCoA::RingElem minPoly = CoCoA::MinPolyQuot(var, ideal, var);
-	idealProof->enableProofHooks();
-	idealProof->registerBranchPolynomial(minPoly);
-	idealProof->disableProofHooks();
+        idealProof->enableProofHooks();
+        idealProof->registerBranchPolynomial(minPoly);
+        idealProof->disableProofHooks();
         return factorEnumerator(minPoly, idealProof);
       }
     }
@@ -246,7 +253,8 @@ std::vector<CoCoA::RingElem> findZero(
     const CoCoA::ideal& initialIdeal,
     std::shared_ptr<IdealProof> initialIdealProof,
     NodeManager* nm,
-    CDProof* globalTheoryProofs)
+    CDProof* globalTheoryProofs,
+    const Env& env)
 {
   CoCoA::ring polyRing = initialIdeal->myRing();
   // We maintain two stacks:
@@ -281,11 +289,19 @@ std::vector<CoCoA::RingElem> findZero(
   // while some ideal might have a zero.
   while (!ideals.empty())
   {
-    // choose one
+    // check for timeout
+    if (env.getResourceManager()->outOfTime())
+    {
+      throw FfTimeoutException("findZero");
+    }
+    // choose one ideal
     const auto& ideal = ideals.back();
     std::shared_ptr<IdealProof> idealProof = idealsProofs.back();
     idealProof->setFunctionPointers();
     idealProof->disableProofHooks();
+    // make sure we have a GBasis:
+    GBasisTimeout(ideal, env.getResourceManager());
+    Assert(CoCoA::HasGBasis(ideal));
     // If the ideal is UNSAT, drop it.
     if (isUnsat(ideal, idealProof))
     {
@@ -299,6 +315,7 @@ std::vector<CoCoA::RingElem> findZero(
     else if (allVarsAssigned(ideal))
     {
       std::unordered_map<size_t, CoCoA::RingElem> varNumToValue{};
+      Assert(CoCoA::HasGBasis(ideal));
       const auto& gens = CoCoA::GBasis(ideal);
       size_t numIndets = CoCoA::NumIndets(polyRing);
       Assert(gens.size() == numIndets);
@@ -322,7 +339,7 @@ std::vector<CoCoA::RingElem> findZero(
           << "brancher: " << branchers.back()->name() << std::endl;
       if (TraceIsOn("ff::model::branch"))
       {
-	Trace("ff::model::branch") << "ideal polys: " << std::endl;
+        Trace("ff::model::branch") << "ideal polys: " << std::endl;
         for (const auto& p : CoCoA::gens(ideal))
         {
           Trace("ff::model::branch") << " * " << p << std::endl;
@@ -341,7 +358,8 @@ std::vector<CoCoA::RingElem> findZero(
             << "level: " << branchers.size()
             << ", brancher: " << branchers.back()->name()
             << ", branch: " << choicePoly.value() << std::endl;
-	std::vector<CoCoA::RingElem> newGens = CoCoA::GBasis(ideal);
+        Assert(CoCoA::HasGBasis(ideal));
+        std::vector<CoCoA::RingElem> newGens = CoCoA::GBasis(ideal);
         newGens.push_back(choicePoly.value());
         CoCoA::ideal newIdeal = CoCoA::ideal(newGens);
         std::shared_ptr<IdealProof> branchingIdeal =

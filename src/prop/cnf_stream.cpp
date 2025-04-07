@@ -1,10 +1,10 @@
 /******************************************************************************
  * Top contributors (to current version):
- *   Dejan Jovanovic, Haniel Barbosa, Mathias Preiner
+ *   Dejan Jovanovic, Haniel Barbosa, Andrew Reynolds
  *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2024 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -20,7 +20,6 @@
 #include "base/check.h"
 #include "base/output.h"
 #include "expr/node.h"
-#include "expr/skolem_manager.h"
 #include "options/bv_options.h"
 #include "printer/printer.h"
 #include "proof/clause_id.h"
@@ -259,15 +258,15 @@ SatLiteral CnfStream::convertAtom(TNode node)
   bool preRegister = false;
 
   // Is this a variable add it to the list. We distinguish whether a Boolean
-  // variable has been marked as a "purification skolem". This is done
-  // by the term formula removal pass (term_formula_removal.h/cpp). We treat
-  // such variables as theory atoms since they may occur in term positions and
-  // thus need to be considered e.g. for theory combination.
+  // variable has been marked as a "Boolean term skolem". These variables are
+  // introduced by the term formula removal pass (term_formula_removal.h)
+  // and maintained by Env (smt/env.h). We treat such variables as theory atoms
+  // since they may occur in term positions and thus need to be considered e.g.
+  // for theory combination.
   bool isInternalBoolVar = false;
   if (node.isVar())
   {
-    SkolemManager* sm = nodeManager()->getSkolemManager();
-    isInternalBoolVar = (sm->getId(node) != SkolemId::PURIFY);
+    isInternalBoolVar = !d_env.isBooleanTermSkolem(node);
   }
   if (isInternalBoolVar)
   {
