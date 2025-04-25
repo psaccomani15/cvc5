@@ -44,128 +44,6 @@ namespace cvc5::internal {
 namespace theory {
 namespace ff {
 
-template <typename T>
-std::string ostring(const T& t)
-{
-  std::ostringstream o;
-  o << t;
-  return o.str();
-}
-
-Node unsatCoreProofRec(NodeManager* nm,
-                       CDProof* pm,
-                       Node newIdeal,
-                       Node nonNullVarFact,
-                       std::shared_ptr<ProofNode> currProof)
-{
-  ProofRule currRule = currProof->getRule();
-  if (currRule == ProofRule::FF_ONE_UNSAT)
-  {
-    Node nullVarFact = nm->mkNode(Kind::NOT, nonNullVarFact);
-    auto oneMembershipProof = currProof->getChildren()[0];
-    Node oneMembershipFact =
-        unsatCoreProofRec(nm, pm, newIdeal, nonNullVarFact, oneMembershipProof);
-    pm->addStep(nullVarFact, currRule, {oneMembershipFact}, {}, true);
-    return nullVarFact;
-  }
-  if (currRule == ProofRule::FF_R_DOWN || currRule == ProofRule::FF_S
-      || currRule == ProofRule::FF_MONIC)
-  {
-    Node fact = currProof->getResult();
-    Node poly = fact[0];
-    Trace("ff::proof::processing")
-        << "fact is: " << fact << " extracted poly is: " << poly << std::endl;
-    auto premisesProofs = currProof->getChildren();
-    std::vector<Node> premises{};
-    for (auto p : premisesProofs)
-    {
-      premises.push_back(
-          unsatCoreProofRec(nm, pm, newIdeal, nonNullVarFact, p));
-    }
-    Node conclusion =
-        nm->mkNode(Kind::FINITE_FIELD_IDEAL_MEMBERSHIP, poly, newIdeal);
-    pm->addStep(
-        conclusion, currRule, premises, currProof->getArguments(), true);
-    return conclusion;
-  }
-  if (currRule == ProofRule::FF_G)
-  {
-    Node fact = currProof->getResult();
-    Node poly = fact[0];
-    Trace("ff::proof::processing")
-        << "fact G is: " << fact << " extracted poly is: " << poly << std::endl;
-
-    Node conclusion =
-        nm->mkNode(Kind::FINITE_FIELD_IDEAL_MEMBERSHIP, poly, newIdeal);
-    std::vector<Node> argsIdeal{poly, newIdeal};
-    pm->addStep(conclusion, currRule, {}, argsIdeal, true);
-    return conclusion;
-  }
-  Unreachable() << "In this scenario the proof step " << currRule
-                << " is not valid!";
-}
-/*
- * Transforms proofs into the unsat core expected format.
- * The unsatProof argument must be a proofNode with a CONTRA rule.
- */
-void unsatCoreProof(NodeManager* nm,
-                    CDProof* pm,
-                    std::vector<Node> conflictLits,
-                    std::vector<Node> allPolys,
-                    std::vector<Node> fieldPolys,
-                    std::vector<size_t> coreIndices)
-{
-  Node falseNode = nm->mkConst<bool>(false);
-  std::shared_ptr<ProofNode> unsatProof = pm->getProofFor(falseNode);
-  Assert(unsatProof->getRule() == ProofRule::CONTRA);
-  std::vector<Node> conflictPolys{};
-  for (size_t idx : coreIndices)
-  {
-    conflictPolys.push_back(allPolys[idx]);
-  }
-  Node conflictLitsSAT = nm->mkAnd(conflictLits);
-  Node unsatCoreIdealTerm = nm->mkNode(Kind::FINITE_FIELD_IDEAL, conflictPolys);
-  Node unsatCoreNonNullVar =
-      IdealProof::produceNonNullVarPred(nm, unsatCoreIdealTerm);
-  Node equivPred =
-      nm->mkNode(Kind::EQUAL, conflictLitsSAT, unsatCoreNonNullVar);
-  // pm->addStep(conflictLitsSAT, ProofRule::ASSUME, {}, {});
-  pm->addStep(equivPred, ProofRule::FF_FIELD_SPLIT, {}, {}, true);
-  pm->addStep(unsatCoreNonNullVar,
-              ProofRule::EQ_RESOLVE,
-              {conflictLitsSAT, equivPred},
-              {},
-              true);
-
-  if (!fieldPolys.empty())
-  {
-    conflictPolys.insert(
-        conflictPolys.end(), fieldPolys.begin(), fieldPolys.end());
-    Node oldUnsatCoreNonNullVar = unsatCoreNonNullVar;
-    unsatCoreIdealTerm = nm->mkNode(Kind::FINITE_FIELD_IDEAL, conflictPolys);
-    unsatCoreNonNullVar =
-        IdealProof::produceNonNullVarPred(nm, unsatCoreIdealTerm);
-    pm->addStep(unsatCoreNonNullVar,
-                ProofRule::FF_FIELD_POLYS,
-                {oldUnsatCoreNonNullVar},
-                {fieldPolys},
-                true);
-  }
-
-  std::shared_ptr<ProofNode> nullVarProof = unsatProof->getChildren()[1];
-  Trace("ff::proof") << "Extracted Unsat Node: "
-                     << nullVarProof.get()->getResult() << std::endl;
-  Node unsatCoreNullVar = unsatCoreProofRec(
-      nm, pm, unsatCoreIdealTerm, unsatCoreNonNullVar, nullVarProof);
-  Trace("ff::proof") << "Result Unsat Node: " << unsatCoreNullVar << std::endl;
-  pm->addStep(falseNode,
-              ProofRule::CONTRA,
-              {unsatCoreNonNullVar, unsatCoreNullVar},
-              {},
-              true,
-              CDPOverwrite::ALWAYS);
-}
-
 SubTheory::SubTheory(Env& env, FfStatistics* stats, Integer modulus)
     : EnvObj(env),
       FieldObj(nodeManager(), modulus),
@@ -213,11 +91,9 @@ Result SubTheory::postCheck(Theory::Effort e)
       }
       else if (options().ff.ffSolver == options::FfSolver::GB)
       {
-        std::vector<Node> literals{};
         CocoaEncoder enc(nodeManager(), size());
         for (const Node& node : d_facts)
         {
-          literals.push_back(node);
           enc.addFact(node);
         }
         enc.endScan();
@@ -226,13 +102,6 @@ Result SubTheory::postCheck(Theory::Effort e)
         {
           enc.addFact(node);
         }
-        Node literalSATPred = nodeManager()->mkAnd(literals);
-        Trace("ff::proof") << "Literals conjunction " << literalSATPred
-                           << std::endl;
-        d_proof->addStep(
-            literalSATPred, ProofRule::ASSUME, {}, {literalSATPred}, true);
-        Trace("ff::proof") << "..will create pf step: " << ProofRule::ASSUME
-                           << literalSATPred << std::endl;
         // compute a GB
         std::vector<CoCoA::RingElem> generators;
         generators.insert(
@@ -240,30 +109,11 @@ Result SubTheory::postCheck(Theory::Effort e)
         generators.insert(generators.end(),
                           enc.bitsumPolys().begin(),
                           enc.bitsumPolys().end());
-        std::vector<Node> polys{};
+        std::vector<Node> gens{};
         for (auto& poly : generators)
         {
-          polys.push_back(enc.encodeBack(poly));
+          gens.push_back(enc.encodeBack(poly));
         }
-        Node idealTerm = nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, polys);
-        Node nonNullVarPred =
-            IdealProof::produceNonNullVarPred(nodeManager(), idealTerm);
-        Node equivPred =
-            nodeManager()->mkNode(Kind::EQUAL, literalSATPred, nonNullVarPred);
-        d_proof->addStep(equivPred, ProofRule::FF_FIELD_SPLIT, {}, {}, true);
-        Trace("ff::proof") << ".. will create pf step: "
-                           << ProofRule::FF_FIELD_SPLIT << equivPred
-                           << std::endl;
-        d_proof->addStep(nonNullVarPred,
-                         ProofRule::EQ_RESOLVE,
-                         {literalSATPred, equivPred},
-                         {},
-                         true);
-        Trace("ff::proof") << ".. will create pf step: "
-                           << ProofRule::EQ_RESOLVE << literalSATPred << ", "
-                           << equivPred << " ---> " << nonNullVarPred
-                           << std::endl;
-        Node trueNonNullVarPred;
         std::vector<Node> fieldPolys{};
         if (options().ff.ffFieldPolys)
         {
@@ -275,26 +125,8 @@ Result SubTheory::postCheck(Theory::Effort e)
             auto poly = CoCoA::power(var, size) - var;
             Node polyTerm = enc.encodeBack(poly);
             fieldPolys.push_back(polyTerm);
-            polys.push_back(polyTerm);
             generators.push_back(poly);
           }
-          Node newIdealTerm =
-              nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, polys);
-          trueNonNullVarPred =
-              IdealProof::produceNonNullVarPred(nodeManager(), newIdealTerm);
-          d_proof->addStep(trueNonNullVarPred,
-                           ProofRule::FF_FIELD_POLYS,
-                           {nonNullVarPred},
-                           {fieldPolys},
-                           true);
-          Trace("ff::proof")
-              << ".. will create pf step: " << ProofRule::FF_FIELD_POLYS
-              << nonNullVarPred << " ---> " << trueNonNullVarPred
-              << " args: " << fieldPolys << std::endl;
-        }
-        else
-        {
-          trueNonNullVarPred = nonNullVarPred;
         }
         Tracer tracer(generators);
 
@@ -304,8 +136,8 @@ Result SubTheory::postCheck(Theory::Effort e)
         std::shared_ptr<IdealProof> idealProofs;
         if (d_proofEnabled)
         {
-          idealProofs = std::shared_ptr<IdealProof>(new IdealProof(
-              d_env, 0, generators, trueNonNullVarPred, enc, ideal));
+          idealProofs = std::shared_ptr<IdealProof>(
+              new IdealProof(d_env, 0, generators, enc, ideal));
           idealProofs->setFunctionPointers();
           idealProofs->enableProofHooks();
         }
@@ -315,20 +147,7 @@ Result SubTheory::postCheck(Theory::Effort e)
         bool is_trivial = basis.size() == 1 && CoCoA::deg(basis.front()) == 0;
         if (is_trivial)
         {
-          Node unsatVar = idealProofs->oneInUnsat(basis.front(), d_proof);
-          Node falseNode = nodeManager()->mkConst<bool>(false);
-          d_proof->addStep(
-              falseNode, ProofRule::CONTRA, {trueNonNullVarPred, unsatVar}, {});
-          // d_proof.addStep(d_emptyVarFact, ProofRule::SCOPE, {falseNode},
-          // {d_validFact});
-          std::shared_ptr<ProofNode> pf = d_proof->getProofFor(unsatVar);
-          std::ostringstream s;
-          ProofNode* pff = pf.get();
-          pff->printDebug(s, true);
-          Trace("ff::proof")
-              << "Finish unsat proof production with element " << basis.front()
-              << "\nproof: " << s.str() << std::endl;
-          Trace("ff::gb") << "Trivial GB" << std::endl;
+          std::vector<Node> corePolys{};
           if (options().ff.ffTraceGb)
           {
             std::vector<size_t> coreIndices = tracer.trace(basis.front());
@@ -346,23 +165,25 @@ Result SubTheory::postCheck(Theory::Effort e)
                 Trace("ff::core")
                     << "Core: " << i << " : " << d_facts[i] << std::endl;
                 d_conflict.push_back(enc.polyFact(generators[i]));
+                corePolys.push_back(enc.encodeBack(generators[i]));
               }
             }
-            if (d_conflict.size() != literals.size())
+            if (d_conflict.size() != enc.polys().size())
             {
-              unsatCoreProof(nodeManager(),
-                             d_proof,
-                             d_conflict,
-                             polys,
-                             fieldPolys,
-                             coreIndices);
+              std::vector<Node> coreGenerators = corePolys;
+              coreGenerators.insert(
+                  coreGenerators.end(), fieldPolys.begin(), fieldPolys.end());
+              idealProofs->updateIdeal(coreGenerators);
               Trace("ff::proof") << "Restriction on unsat core" << std::endl;
             }
           }
           else
           {
+            corePolys = gens;
             setTrivialConflict();
           }
+          Node unsatVar = idealProofs->oneInUnsat(basis.front(), d_proof);
+          produceContradiction(fieldPolys, corePolys);
         }
         else
         {
@@ -373,19 +194,9 @@ Result SubTheory::postCheck(Theory::Effort e)
               findZero(ideal, idealProofs, nodeManager(), d_proof, d_env);
           if (root.empty())
           {
-            Node satFact = idealProofs->getSatFact();
-            Node unsatFact = idealProofs->getUnsatFact();
-            Node falseNode = nodeManager()->mkConst<bool>(false);
-            d_proof->addStep(
-                falseNode, ProofRule::CONTRA, {satFact, unsatFact}, {}, true);
-            std::shared_ptr<ProofNode> pf = d_proof->getProofFor(falseNode);
-            std::ostringstream s;
-            ProofNode* pff = pf.get();
-            pff->printDebug(s, true);
-            Trace("ff::proof") << "Finish unsat proof production with proof;"
-                               << "\nproof: " << s.str() << std::endl;
             // UNSAT
             setTrivialConflict();
+            produceContradiction(fieldPolys, gens);
           }
           else
           {
@@ -425,6 +236,37 @@ Result SubTheory::postCheck(Theory::Effort e)
 void SubTheory::setTrivialConflict()
 {
   std::copy(d_facts.begin(), d_facts.end(), std::back_inserter(d_conflict));
+}
+void SubTheory::produceContradiction(std::vector<Node>& fieldPolys,
+                                     std::vector<Node>& gens)
+{
+  Node idealGens = nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, gens);
+  const Node unsatCore = nodeManager()->mkAnd(d_conflict);
+  d_proof->addStep(unsatCore, ProofRule::ASSUME, {}, {unsatCore});
+  Trace("ff::proof") << "Assumption: " << unsatCore << std::endl;
+  Node commonRoot = IdealProof::produceNonNullVarPred(nodeManager(), idealGens);
+  Node satIffCRoot = nodeManager()->mkNode(Kind::EQUAL, unsatCore, commonRoot);
+  d_proof->addStep(satIffCRoot, ProofRule::FF_FIELD_SPLIT, {}, {});
+  d_proof->addStep(
+      commonRoot, ProofRule::EQ_RESOLVE, {unsatCore, satIffCRoot}, {});
+  if (!fieldPolys.empty())
+  {
+    std::vector<Node> newGens = gens;
+    newGens.insert(newGens.end(), fieldPolys.begin(), fieldPolys.end());
+    Node idealNewGens =
+        nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, newGens);
+    Node commonRootFieldPolys =
+        IdealProof::produceNonNullVarPred(nodeManager(), idealNewGens);
+    d_proof->addStep(commonRootFieldPolys,
+                     ProofRule::FF_FIELD_POLYS,
+                     {commonRoot},
+                     {fieldPolys});
+    commonRoot = commonRootFieldPolys;
+  }
+  Node falseNode = nodeManager()->mkConst<bool>(false);
+  Node noCommonRoot = nodeManager()->mkNode(Kind::NOT, commonRoot);
+  d_proof->addStep(
+      falseNode, ProofRule::CONTRA, {commonRoot, noCommonRoot}, {});
 }
 
 bool SubTheory::inConflict() const { return !d_conflict.empty(); }

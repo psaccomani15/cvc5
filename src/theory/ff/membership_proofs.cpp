@@ -4,43 +4,46 @@
 #include <CoCoA/SparsePolyRing.H>
 #include <CoCoA/TmpGPoly.H>
 
+#include <algorithm>
 #include <sstream>
 
 #include "proof/proof.h"
 #include "smt/assertions.h"
 #include "smt/env_obj.h"
+#include "theory/shared_terms_database.h"
 #include "util/rational.h"
 
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
 GBProof::GBProof(Env& env,
-                 const std::vector<CoCoA::RingElem> polys,
-                 Node ideal, CocoaEncoder &enc, 
+                 const std::vector<Node> polys,
+                 Node ideal,
+                 CocoaEncoder& enc,
                  CDProof* proof)
-  : EnvObj(env), d_ideal(ideal), d_enc(enc), d_proof(proof)
+    : EnvObj(env), d_ideal(ideal), d_factToProof(), d_enc(enc), d_proof(proof)
 {
-  NodeManager* nm = nodeManager();
-
-  for (auto gen : polys)
+  for (auto polyRepr : polys)
   {
-    Node polyRepr = d_enc.encodeBack(gen);
-    // TODO: Add a predicate specific to ideal membership. 
-    Node membershipRepr = nm->mkNode(Kind::FINITE_FIELD_IDEAL_MEMBERSHIP, polyRepr, d_ideal);
-    std::vector<Node> argsIdeal{polyRepr, d_ideal};
-    Trace("ff::proof") << "..will create pf step " << ProofRule::FF_G << ": "
-                       << membershipRepr << " " << argsIdeal << "\n";
-    d_proof->addStep(membershipRepr, ProofRule::FF_G, {}, argsIdeal, true);
+    Node membershipRepr = produceMembershipNode(polyRepr);
     d_polyToMembership.emplace(polyRepr, membershipRepr);
+    storeProof(polyRepr, ProofRule::FF_G, {}, {polyRepr});
   }
-  Trace( "ff::proof") << "..will create pf step " << ProofRule::FF_Z << " : "
+  Trace("ff::proof") << "..will create pf step " << ProofRule::FF_Z << " : "
                      << "0 " << d_ideal << std::endl;
-  Node zeroConclusion = produceMembershipNode(d_enc.zero(), nm);
-  d_proof->addStep(zeroConclusion, ProofRule::FF_Z, {}, {d_ideal}, true);
+  Node zeroConclusion = produceMembershipNode(d_enc.zero());
+  d_polyToMembership.emplace(d_enc.zero(), zeroConclusion);
+  storeProof(d_enc.zero(), ProofRule::FF_Z, {}, {});
 };
 
+void GBProof::updateIdeal(Node ideal) { d_ideal = ideal; }
+Node GBProof::produceMembershipNode(Node poly)
+{
+  return nodeManager()->mkNode(
+      Kind::FINITE_FIELD_IDEAL_MEMBERSHIP, poly, d_ideal);
+}
 void GBProof::setFunctionPointers()
-{ 
+{
   GBProof* t = this;
   d_sPoly =
       std::function([=](CoCoA::ConstRefRingElem p,
@@ -70,18 +73,18 @@ void GBProof::setFunctionPointers()
   CoCoA::membershipEnd = d_membershipEnd;
   CoCoA::monicProof = d_monicProof;
 }
-Node GBProof::produceMembershipNode(Node poly, NodeManager* nm)
+void GBProof::storeProof(Node poly,
+                         ProofRule id,
+                         std::vector<Node> children,
+                         std::vector<Node> args)
 {
-  return nm->mkNode(Kind::FINITE_FIELD_IDEAL_MEMBERSHIP, poly, d_ideal);
+  d_factToProof.emplace(poly, ProofInfo(id, children, args));
 }
-
-  
 // Returns a stored proof por membership of poly
 Node GBProof::getMembershipFact(CoCoA::ConstRefRingElem poly)
 {
   Node polyRepr = d_enc.encodeBack(poly);
-  Assert(d_polyToMembership.count(polyRepr));
-  return d_polyToMembership[polyRepr];
+  return produceMembershipNode(polyRepr);
 }
 
 // Register or returns a membership proof for a given polynomial
@@ -89,8 +92,6 @@ Node GBProof::proofIdealMembership(CoCoA::RingElem poly, CoCoA::ideal ideal)
 {
   // Unreachable();
   Node polyRepr = d_enc.encodeBack(poly);
-  // Trace("ff::proof") << "Ideal has element " << poly << " with proof fact:"
-  // << d_polyToMembership[polyRepr] << std::endl;
   if (d_polyToMembership.count(polyRepr)) return getMembershipFact(poly);
   Assert(CoCoA::HasGBasis(ideal));
   bool hasElem = CoCoA::IsElem(poly, ideal);
@@ -100,7 +101,26 @@ Node GBProof::proofIdealMembership(CoCoA::RingElem poly, CoCoA::ideal ideal)
                      << std::endl;
   return d_polyToMembership[polyRepr];
 }
-
+void GBProof::registerProofs()
+{
+  for (auto& it : d_factToProof)
+  {
+    Node conclusion = produceMembershipNode(it.first);
+    ProofRule id = it.second.d_id;
+    std::vector<Node> children = it.second.d_children;
+    std::vector<Node> args = it.second.d_args;
+    if (id == ProofRule::FF_Z || id == ProofRule::FF_G)
+      args.push_back(d_ideal);
+    else
+    {
+      std::transform(
+          children.begin(), children.end(), children.begin(), [this](Node n) {
+            return produceMembershipNode(n);
+          });
+    }
+    d_proof->addStep(conclusion, id, children, args);
+  }
+}
 void GBProof::sPoly(CoCoA::ConstRefRingElem p,
                     CoCoA::ConstRefRingElem q,
                     CoCoA::ConstRefRingElem s)
@@ -111,16 +131,11 @@ void GBProof::sPoly(CoCoA::ConstRefRingElem p,
   Trace("ff::proof") << "s: " << p << ", " << q << " -> " << s << std::endl;
   if (d_polyToMembership.count(sTerm) == 0)
   {
-    NodeManager* nm = nodeManager();
     Trace("ff::proof") << " keep" << std::endl;
-    Node conclusion = produceMembershipNode(sTerm, nm);
+    Node conclusion = produceMembershipNode(sTerm);
     d_polyToMembership.emplace(sTerm, conclusion);
-    Node pMNode = d_polyToMembership[pTerm];
-    Node qMNode = d_polyToMembership[qTerm];
-    std::vector<Node> premises{pMNode, qMNode};
-    Trace("ff::proof") << "..will create pf step " << ProofRule::FF_S << ": "
-                       << premises << " ---> " << conclusion << "\n";
-    d_proof->addStep(conclusion, ProofRule::FF_S, premises, {}, true);
+    std::vector<Node> parents{pTerm, qTerm};
+    storeProof(sTerm, ProofRule::FF_S, parents, {});
   }
   else
   {
@@ -146,7 +161,6 @@ void GBProof::reductionStep(CoCoA::ConstRefRingElem q)
 void GBProof::reductionEnd(CoCoA::ConstRefRingElem r)
 {
   Assert(!d_reductionSeq.empty());
-  NodeManager* nm = nodeManager();
   Node rTerm = d_enc.encodeBack(r);
   Trace("ff::proof") << "reduction proof end: " << r << " "
                      << d_polyToMembership.count(rTerm) << std::endl;
@@ -156,9 +170,9 @@ void GBProof::reductionEnd(CoCoA::ConstRefRingElem r)
     std::vector<Node> reductorsSeq{};
     std::unordered_set<Node> uniquePolys;
     Trace("ff::proof") << " keep" << std::endl;
-    Node conclusion = produceMembershipNode(rTerm, nm);
+    Node conclusion = produceMembershipNode(rTerm);
     d_polyToMembership.emplace(rTerm, conclusion);
-    // TODO: Use indices of the premises list for the arguments. 
+    // TODO: Use indices of the premises list as argument.
     for (Node reductorTerm : d_reductionSeq)
     {
       uniquePolys.insert(reductorTerm);
@@ -168,17 +182,10 @@ void GBProof::reductionEnd(CoCoA::ConstRefRingElem r)
     {
       premises.push_back(d_polyToMembership[poly]);
     }
-    d_proof->addStep(
-        conclusion, ProofRule::FF_R_DOWN, premises, reductorsSeq, true);
-    Trace("ff::proof") << ".. will create pf step: " << ProofRule::FF_R_DOWN
-                       << premises << " ---> " << conclusion << std::endl;
-  }
-  else
-  {
-    if (TraceIsOn("ff::proof"))
-    {
-      Trace("ff::proof") << " drop" << std::endl;
-    }
+    storeProof(rTerm,
+               ProofRule::FF_R_DOWN,
+               std::vector(uniquePolys.begin(), uniquePolys.end()),
+               reductorsSeq);
   }
   d_reductionSeq.clear();
 }
@@ -186,14 +193,14 @@ void GBProof::reductionEnd(CoCoA::ConstRefRingElem r)
 void GBProof::monicProof(CoCoA::ConstRefRingElem poly,
                          CoCoA::ConstRefRingElem monic)
 {
-  NodeManager* nm = nodeManager();
   Node polyTerm = d_enc.encodeBack(poly);
   Node monicTerm = d_enc.encodeBack(monic);
   Assert(d_polyToMembership.count(polyTerm));
   std::vector<Node> premises{d_polyToMembership[polyTerm]};
-  Node conclusion = produceMembershipNode(monicTerm, nm);
+  Node conclusion = produceMembershipNode(monicTerm);
   d_polyToMembership.emplace(monicTerm, conclusion);
-  d_proof->addStep(conclusion, ProofRule::FF_MONIC, premises, {}, true);
+  storeProof(monicTerm, ProofRule::FF_MONIC, {polyTerm}, {});
+  // d_proof->addStep(conclusion, ProofRule::FF_MONIC, premises, {}, true);
 }
 void GBProof::membershipStart(CoCoA::ConstRefRingElem p)
 {
@@ -207,11 +214,10 @@ void GBProof::membershipStep(CoCoA::RingElem red)
   d_membershipSeq.push_back(d_enc.encodeBack(red));
 }
 
-  //TODO:: Refactor this section to reuse code from reduction. 
+// TODO:: Refactor this section to reuse code from reduction.
 void GBProof::membershipEnd()
 {
-  NodeManager* nm = nodeManager();
-  Node conclusion = produceMembershipNode(d_reducingPoly, nm);
+  Node conclusion = produceMembershipNode(d_reducingPoly);
   std::vector<Node> reductorsSeq;
   std::unordered_set<Node> uniquePolys;
   for (Node p : d_membershipSeq)
@@ -237,4 +243,4 @@ void GBProof::membershipEnd()
 }  // namespace theory
 }  // namespace cvc5::internal
 
-//#endif /* CVC5_USE_COCOA */
+// #endif /* CVC5_USE_COCOA */

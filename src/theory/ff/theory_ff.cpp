@@ -22,6 +22,7 @@
 #include "theory/ff/theory_ff.h"
 
 #include <cerrno>
+#include <csignal>
 #include <fstream>
 #include <iostream>
 #include <numeric>
@@ -122,8 +123,9 @@ void TheoryFiniteFields::postCheck(Effort level)
       std::shared_ptr<ProofNode> conflictProof = subTheory.second.getProof();
       Node notConflict = conflict.notNode();
       Node falseNode = nm->mkConst<bool>(false);
-      d_proof.addProof(conflictProof, CDPOverwrite::ASSUME_ONLY, true);
-      d_proof.addStep(notConflict, ProofRule::SCOPE, {falseNode}, {conflict}, true);
+      d_proof.addProof(conflictProof, CDPOverwrite::ALWAYS, true);
+      d_proof.addStep(
+          notConflict, ProofRule::SCOPE, {falseNode}, {conflict}, true);
       std::shared_ptr<ProofNode> pf = d_proof.getProofFor(notConflict);
       std::ostringstream s;
       ProofNode* pff = pf.get();

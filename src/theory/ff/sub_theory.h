@@ -17,6 +17,8 @@
  * [OKTB23]: https://doi.org/10.1007/978-3-031-37703-7_8
  */
 
+#include <CoCoA-0.99800/ring.H>
+
 #include "cvc5_private.h"
 
 #ifdef CVC5_USE_COCOA
@@ -32,11 +34,11 @@
 
 #include "context/cdlist_forward.h"
 #include "expr/node.h"
+#include "proof/proof.h"
 #include "smt/env_obj.h"
 #include "theory/ff/stats.h"
 #include "theory/ff/util.h"
 #include "theory/theory.h"
-#include "proof/proof.h"
 #include "util/integer.h"
 #include "util/result.h"
 
@@ -104,6 +106,8 @@ class SubTheory : protected EnvObj, public FieldObj
    */
   void setTrivialConflict();
 
+  void produceContradiction(std::vector<Node>& fieldPolys,
+                            std::vector<Node>& gens);
   /**
    * Facts, in notification order.
    *

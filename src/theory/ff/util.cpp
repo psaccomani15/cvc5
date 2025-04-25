@@ -117,6 +117,12 @@ bool isFfFact(const Node& n, const FfSize& field)
              && n[0][0].getType().getFfSize() == field);
 }
 
+ProofInfo::ProofInfo(ProofRule id,
+                     std::vector<Node> children,
+                     std::vector<Node> args)
+    : d_id(id), d_children(children), d_args(args)
+{
+}
 }  // namespace ff
 }  // namespace theory
 }  // namespace cvc5::internal

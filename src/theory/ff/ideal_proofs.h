@@ -13,6 +13,8 @@
  * Finite fields UNSAT trace construction
  */
 
+#include <vector>
+
 #include "cvc5_private.h"
 
 #if CVC5_USE_COCOA
@@ -28,8 +30,8 @@
 #include "context/cdlist_forward.h"
 #include "proof/proof.h"
 #include "smt/env_obj.h"
-#include "theory/ff/membership_proofs.h"
 #include "theory/ff/cocoa_encoder.h"
+#include "theory/ff/membership_proofs.h"
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
@@ -55,7 +57,7 @@ class IdealProof : protected EnvObj
   IdealProof(Env& env,
              size_t id,
              const std::vector<CoCoA::RingElem>& inputs,
-             Node nonNullVarPred, CocoaEncoder &enc, 
+             CocoaEncoder& enc,
              CoCoA::ideal cocoaIdeal);
   /**
    * Setup the hooks in cocoalib
@@ -117,33 +119,34 @@ class IdealProof : protected EnvObj
   Node oneInUnsat(CoCoA::RingElem p, CDProof* globalTheoryProofs);
 
   /**
-   * @return The node that represents the fact that the set of generators does not have
-   * any common roots.
+   * @return The node that represents the fact that the set of generators does
+   * not have any common roots.
    */
   Node getUnsatFact();
 
   /**
-   * @return  The node that represents the assumption that the set of generators have
-   * common roots.
+   * @return  The node that represents the assumption that the set of generators
+   * have common roots.
    */
-  
+
   Node getSatFact();
 
-  static Node produceNonNullVarPred(NodeManager *nm, Node ideal);
+  static Node produceNonNullVarPred(NodeManager* nm, Node ideal);
+  void updateIdeal(std::vector<Node>& newGens);
 
  private:
-
   /**
-   * Produces the Node that represents the conclusion of branching rules. Also use those rules to prove its correctness.
-   * @param childrenSatFact: A vector of Nodes that represents the assumption that each of the branching disjuncts is SAT.
-   * @param rootBranching: Represents the proof step taken. If true, then we are branching on roots of a univariate polynomial, else, the branching is exhaustive. 
+   * Produces the Node that represents the conclusion of branching rules. Also
+   * use those rules to prove its correctness.
+   * @param childrenSatFact: A vector of Nodes that represents the assumption
+   * that each of the branching disjuncts is SAT.
+   * @param rootBranching: Represents the proof step taken. If true, then we are
+   * branching on roots of a univariate polynomial, else, the branching is
+   * exhaustive.
    */
-  Node produceConclusion(std::vector<Node> &childrenSatFact, bool rootBranching);
+  Node produceConclusion(std::vector<Node>& childrenSatFact,
+                         bool rootBranching);
 
-  /**
-   * Converts a cocoa polynomial to the term that represents them. 
-   */
-  Node cocoaToTerm(Poly &p);
   /**
    * A representation of the Ideal that we are currently proving membership
    * facts.
@@ -155,33 +158,31 @@ class IdealProof : protected EnvObj
    */
   CoCoA::ideal d_cocoaIdeal;
   /**
-   * The encoder used during node -> CoCoA translation. Used to get terms associated with indeterminates.  
+   * The encoder used during node -> CoCoA translation. Used to get terms
+   * associated with indeterminates.
    */
   CocoaEncoder d_enc;
-  /**
-   * A node that represents the fact that our set of generators has common roots.
-   */
-  Node d_validFact;
 
   /**
    * A node representing the fact that our set of generators does not have any
    * common roots.
-   * Initialized only when there is a proof for this fact. 
+   * Initialized only when there is a proof for this fact.
    */
   Node d_emptyVarFact;
 
   /**
-   * The polynomial used in the branching steps. 
+   * The polynomial used in the branching steps.
    */
   Node d_branchPoly;
-    
+
   /**
    * The proof of membership for the branching polynomial.
    */
   Node d_branchPolyProof;
 
   /**
-   * The roots of the above polynomial. An sexpr of finite field constants. If there is no roots, it's an empty sexpr.
+   * The roots of the above polynomial. An sexpr of finite field constants. If
+   * there is no roots, it's an empty sexpr.
    */
   Node d_branchPolyRoots;
 
@@ -199,11 +200,6 @@ class IdealProof : protected EnvObj
    * The user-context-dependent proof object
    */
   CDProof d_proof;
-
-  /**
-   * Useful for 
-   */
-  //CDProof owner_cd_proof;
   /**
    * The id of the proof object.
    */

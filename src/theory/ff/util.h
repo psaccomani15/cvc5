@@ -29,6 +29,7 @@
 
 // internal includes
 #include "expr/node.h"
+#include "proof/proof.h"
 #include "util/finite_field_value.h"
 
 namespace cvc5::internal {
@@ -99,6 +100,14 @@ bool isFfLeaf(const Node& n, const FfSize& field);
 bool isFfTerm(const Node& n, const FfSize& field);
 /** Is this a (this) field fact (equality of disequality)? */
 bool isFfFact(const Node& n, const FfSize& field);
+class ProofInfo
+{
+ public:
+  ProofInfo(ProofRule id, std::vector<Node> children, std::vector<Node> args);
+  ProofRule d_id;
+  std::vector<Node> d_children;
+  std::vector<Node> d_args;
+};
 
 }  // namespace ff
 }  // namespace theory

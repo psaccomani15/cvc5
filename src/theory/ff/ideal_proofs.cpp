@@ -10,13 +10,13 @@
  * directory for licensing information.
  * ****************************************************************************
  *
- * Finite fields Ideal Branching Proofs Generator 
+ * Finite fields Ideal Branching Proofs Generator
  */
+
+#include <CoCoA-0.99800/ring.H>
 
 #include "theory/shared_terms_database.h"
 #if CVC5_USE_COCOA
-
-#include "theory/ff/ideal_proofs.h"
 
 #include <CoCoA/SparsePolyOps-ideal.H>
 #include <CoCoA/TmpGPoly.H>
@@ -26,12 +26,12 @@
 #include "proof/proof.h"
 #include "proof/proof_node.h"
 #include "smt/assertions.h"
+#include "theory/ff/ideal_proofs.h"
 #include "util/rational.h"
 
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
-
 
 std::string buildName(size_t id)
 {
@@ -42,40 +42,41 @@ std::string buildName(size_t id)
 IdealProof::IdealProof(Env& env,
                        size_t id,
                        const std::vector<CoCoA::RingElem>& inputs,
-                       Node nonNullVarPred, CocoaEncoder &enc, 
+                       CocoaEncoder& enc,
                        CoCoA::ideal cocoaIdeal)
     : EnvObj(env),
       d_cocoaIdeal(cocoaIdeal),
       d_enc(enc),
-      d_validFact(nonNullVarPred),
       d_branchPolyProof(),
       d_branchPolyRoots(),
       d_childrenProofs(),
       d_proof(env, nullptr, buildName(id)),
       d_id(id)
 {
-std::vector<Node> polys;
+  std::vector<Node> polys;
   NodeManager* nm = nodeManager();
-  for(auto gen : inputs)
+  for (auto gen : inputs)
   {
     Node polyVar = d_enc.encodeBack(gen);
     polys.push_back(polyVar);
   }
   d_ideal = nm->mkNode(Kind::FINITE_FIELD_IDEAL, polys);
-  d_membershipProofs = new GBProof(env, inputs, d_ideal, enc, &d_proof);
+  d_membershipProofs = new GBProof(env, polys, d_ideal, enc, &d_proof);
 }
-
-Node IdealProof::getSatFact() { return d_validFact; }
+Node IdealProof::getSatFact()
+{
+  return produceNonNullVarPred(nodeManager(), d_ideal);
+}
 Node IdealProof::getUnsatFact() { return d_emptyVarFact; }
 
-Node IdealProof::oneInUnsat(CoCoA::RingElem p,
-                                  CDProof* globalTheoryProofs)
+Node IdealProof::oneInUnsat(CoCoA::RingElem p, CDProof* globalTheoryProofs)
 {
-  d_emptyVarFact = nodeManager()->mkNode(Kind::NOT, d_validFact);
+  d_emptyVarFact = nodeManager()->mkNode(Kind::NOT, getSatFact());
+  d_membershipProofs->registerProofs();
   Node membershipFact = d_membershipProofs->getMembershipFact(p);
   Assert(d_proof.getProof(membershipFact) != nullptr);
   d_proof.addStep(
-		  d_emptyVarFact, ProofRule::FF_ONE_UNSAT, {membershipFact}, {}, true);
+      d_emptyVarFact, ProofRule::FF_ONE_UNSAT, {membershipFact}, {}, true);
   std::shared_ptr<ProofNode> emptyVarProof = d_proof.getProof(d_emptyVarFact);
   globalTheoryProofs->addProof(
       emptyVarProof, CDPOverwrite::ASSUME_ONLY, true);  //
@@ -93,7 +94,7 @@ void IdealProof::registerBranchPolynomial(CoCoA::RingElem branchPoly)
 {
   Trace("ff::proof") << "registering Proof for branchPoly: " << branchPoly
                      << std::endl;
-  // Should check if the node representation of this polynomial is cached. 
+  // Should check if the node representation of this polynomial is cached.
   d_branchPoly = d_enc.encodeBack(branchPoly);
   d_branchPolyProof =
       d_membershipProofs->proofIdealMembership(branchPoly, d_cocoaIdeal);
@@ -112,19 +113,13 @@ void IdealProof::registerRoots(std::vector<CoCoA::RingElem> roots)
 std::shared_ptr<IdealProof> IdealProof::registerConclusion(
     CoCoA::RingElem choicePoly, CoCoA::ideal newIdeal)
 {
-  NodeManager* nm = nodeManager();
-  std::vector<Node> polysRepr{
-    d_enc.encodeBack(choicePoly)};
   std::vector<CoCoA::RingElem> newGens{choicePoly};
   for (auto poly : CoCoA::GBasis(d_cocoaIdeal))
   {
     newGens.push_back(poly);
-    polysRepr.push_back(d_enc.encodeBack(poly));
   }
-  Node idealRepr = nm->mkNode(Kind::FINITE_FIELD_IDEAL, polysRepr);
-  Node nonNullVarPred = produceNonNullVarPred(nm, idealRepr);
   std::shared_ptr<IdealProof> childrenProof(
-					    new IdealProof(d_env, d_id + 1, newGens, nonNullVarPred, d_enc, newIdeal));
+      new IdealProof(d_env, d_id + 1, newGens, d_enc, newIdeal));
   d_childrenProofs.push_back(childrenProof);
   return childrenProof;
 }
@@ -133,23 +128,26 @@ Node IdealProof::produceConclusion(std::vector<Node>& childrenSatFact,
                                    bool rootBranching)
 {
   Node conclusion = nodeManager()->mkOr(childrenSatFact);
-  std::vector<Node> premises{d_validFact};
+  std::vector<Node> premises{getSatFact()};
   std::vector<Node> arguments{};
-  for (auto poly : CoCoA::GBasis(d_cocoaIdeal)){
+  d_membershipProofs->registerProofs();
+  for (auto poly : CoCoA::GBasis(d_cocoaIdeal))
+  {
     premises.push_back(d_membershipProofs->getMembershipFact(poly));
     Assert(d_proof.getProof(premises.back()) != nullptr) << premises.back();
   }
   if (!rootBranching)
   {
     d_proof.addStep(
-		    conclusion, ProofRule::FF_EXHAUST_BRANCH, premises, arguments, true);
+        conclusion, ProofRule::FF_EXHAUST_BRANCH, premises, arguments, true);
     return conclusion;
   }
   premises.push_back(d_branchPolyProof);
   Assert(d_proof.getProof(d_branchPolyProof) != nullptr);
   arguments = {d_branchPolyRoots};
   arguments.push_back(d_branchPoly);
-  d_proof.addStep(conclusion, ProofRule::FF_ROOT_BRANCH, premises, arguments, true);
+  d_proof.addStep(
+      conclusion, ProofRule::FF_ROOT_BRANCH, premises, arguments, true);
   return conclusion;
 }
 
@@ -168,7 +166,8 @@ void IdealProof::finishProof(bool rootBranching, CDProof* globalTheoryProofs)
   // This usually happens when the Branching Polynomial have no roots. In this
   // case, the conclusion is the disjunction of empty nodes, i.e the node that
   // represents false.
-  if (!d_childrenProofs.size()){
+  if (!d_childrenProofs.size())
+  {
     falseNode = conclusion;
   }
   else
@@ -193,27 +192,28 @@ void IdealProof::finishProof(bool rootBranching, CDProof* globalTheoryProofs)
                     ProofRule::CHAIN_RESOLUTION,
                     resolutionPremises,
                     {nodeManager()->mkNode(Kind::SEXPR, polarity),
-                     nodeManager()->mkNode(Kind::SEXPR, pivot)}, true);
+                     nodeManager()->mkNode(Kind::SEXPR, pivot)},
+                    true);
   }
-  d_emptyVarFact = nodeManager()->mkNode(Kind::NOT, d_validFact);
-  Assert(d_proof.getProof(falseNode) != nullptr);
-  d_proof.addStep(d_emptyVarFact, ProofRule::SCOPE, {falseNode}, {d_validFact}, true);
-  std::stringstream s;
-  // s << "size is: " << d_proof.getProof(d_emptyVarFact).get()->getChildren().size() << std::endl; 
-  // d_proof.getProof(d_emptyVarFact).get()->printDebug(s, true);
-  Assert(d_proof.getProof(d_emptyVarFact) != nullptr) << s.str();
+  d_emptyVarFact = nodeManager()->mkNode(Kind::NOT, getSatFact());
+  // Assert(d_proof.getProof(falseNode) != nullptr);
+  d_proof.addStep(
+      d_emptyVarFact, ProofRule::SCOPE, {falseNode}, {getSatFact()}, true);
   globalTheoryProofs->addProof(
       d_proof.getProof(d_emptyVarFact), CDPOverwrite::ASSUME_ONLY, true);
 }
 
-  Node IdealProof::produceNonNullVarPred(NodeManager *nm, Node ideal)
+Node IdealProof::produceNonNullVarPred(NodeManager* nm, Node ideal)
 {
-  TypeNode typeOfIdealB = ideal.getType();
-  Node nonNullVarietyPred =
-      nm->mkNode(Kind::FINITE_FIELD_NON_NULL_VAR, ideal);
+  Node nonNullVarietyPred = nm->mkNode(Kind::FINITE_FIELD_NON_NULL_VAR, ideal);
   return nonNullVarietyPred;
 }
-
+void IdealProof::updateIdeal(std::vector<Node>& polys)
+{
+  Node ideal = nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, polys);
+  d_ideal = ideal;
+  d_membershipProofs->updateIdeal(ideal);
+}
 
 }  // namespace ff
 }  // namespace theory

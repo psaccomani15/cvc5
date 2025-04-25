@@ -10,7 +10,7 @@
  * directory for licensing information.
  * ****************************************************************************
  *
- * Finite fields UNSAT trace construction
+ * Ideal Membership Proofs Engine
  */
 
 #include "cvc5_private.h"
@@ -20,14 +20,16 @@
 #define CVC5__THEORY__GB__PROOF_H
 
 #include <CoCoA/TmpGPoly.H>
-#include <CoCoA/ring.H>
 #include <CoCoA/ideal.H>
+#include <CoCoA/ring.H>
+
 #include <functional>
 #include <unordered_map>
-#include "smt/env_obj.h"
-#include "expr/node.h"
-#include "theory/ff/cocoa_encoder.h"
 
+#include "expr/node.h"
+#include "proof/proof.h"
+#include "smt/env_obj.h"
+#include "theory/ff/cocoa_encoder.h"
 namespace cvc5::internal {
 
 class CDProof;
@@ -36,127 +38,142 @@ namespace theory {
 namespace ff {
 
 /**
- * A non-incremental dependency graph for CoCoA polynomials in Groebner basis
- * computation.
- *
- * We represent polynomials as their strings.
+ * Tracks computations done by CoCoALib.
+ * First, we collect all information needed for proof construction, to build the
+ * proof later. The reason for this choice, is that we may need to restrict
+ * ourselves to an Unsat Core.
  */
-  class GBProof : protected EnvObj
-  {
-   public:
-    GBProof(Env& env,
-            const std::vector<CoCoA::RingElem> polys,
-            Node ideal, CocoaEncoder &enc,  
-            CDProof* proof);
+class GBProof : protected EnvObj
+{
+ public:
+  GBProof(Env& env,
+          std::vector<Node> polys,
+          Node ideal,
+          CocoaEncoder& enc,
+          CDProof* proof);
 
-    /**
-     * Hooks into CoCoA. The functions are then called by CoCoA Groebner Basis
-     * during Reduction and computation of SPolynomials
-     */
-    void setFunctionPointers();
-    /**
-     * Returns a membership proof for a given polynomial.
-     * @param poly: The polynomial must be already registered in d_polyToVar.
-     */
-    Node getMembershipFact(CoCoA::ConstRefRingElem poly);
+  /**
+   * Hooks into CoCoA. The functions are then called by CoCoA Groebner Basis
+   * during Reduction and computation of SPolynomials
+   */
+  void setFunctionPointers();
+  /**
+   * Returns a membership proof for a given polynomial.
+   * @param poly: The polynomial must be already registered in d_polyToVar.
+   */
+  Node getMembershipFact(CoCoA::ConstRefRingElem poly);
 
-    /**
-     * Produces/uses a membership fact for arbitrary polynomials in the ideal.
-     * @param poly: The polynomial that we are proving membership: *must* be an element of the ideal.
-     * @param Ideal: the cocoalib representantion for the ideal. 
-     */
-    Node proofIdealMembership(CoCoA::RingElem poly, CoCoA::ideal ideal);
+  /**
+   * Produces/uses a membership fact for arbitrary polynomials in the ideal.
+   * @param poly: The polynomial that we are proving membership: *must* be an
+   * element of the ideal.
+   * @param ideal: the cocoalib representantion for the ideal.
+   */
+  Node proofIdealMembership(CoCoA::RingElem poly, CoCoA::ideal ideal);
+  /**
+   * Restrict oursevels to a subset of of the original ideal representation.
+   * Used for Unsat Core Restriction.
+   */
+  void updateIdeal(Node ideal);
+  void registerProofs();
 
-   private:
-    /**
-     * Produces Nodes that represents ideal membership facts.
-     */
-    Node produceMembershipNode(Node poly, NodeManager* nm);
+ private:
+  /**
+   * Produces Nodes that represents ideal membership facts.
+   */
+  Node produceMembershipNode(Node poly);
 
-    /**
-     * Call this when s = spoly(p, q);
-     */
-    void sPoly(CoCoA::ConstRefRingElem p,
-               CoCoA::ConstRefRingElem q,
-               CoCoA::ConstRefRingElem s);
-    /**
-     * Call this when we start reducing p.
-     */
-    void reductionStart(CoCoA::ConstRefRingElem p);
-    /**
-     * Call this when there is a reduction on q.
-     */
-    void reductionStep(CoCoA::ConstRefRingElem q);
-    /**
-     * Call this when we finish reducing with r.
-     */
-    void reductionEnd(CoCoA::ConstRefRingElem r);
-    /**
-     * Call this when len(gens) == 1 i.e GBasis(poly) = {monic(poly)}
-     */
-    void monicProof(CoCoA::ConstRefRingElem poly, CoCoA::ConstRefRingElem monic);
- 
-    void membershipStart(CoCoA::ConstRefRingElem p);
+  void storeProof(Node poly,
+                  ProofRule id,
+                  std::vector<Node> children,
+                  std::vector<Node> args);
 
-    void membershipStep(CoCoA::RingElem s);
+  /**
+   * Call this when s = spoly(p, q);
+   */
+  void sPoly(CoCoA::ConstRefRingElem p,
+             CoCoA::ConstRefRingElem q,
+             CoCoA::ConstRefRingElem s);
+  /**
+   * Call this when we start reducing p.
+   */
+  void reductionStart(CoCoA::ConstRefRingElem p);
+  /**
+   * Call this when there is a reduction on q.
+   */
+  void reductionStep(CoCoA::ConstRefRingElem q);
+  /**
+   * Call this when we finish reducing with r.
+   */
+  void reductionEnd(CoCoA::ConstRefRingElem r);
+  /**
+   * Call this when len(gens) == 1 i.e GBasis(poly) = {monic(poly)}
+   */
+  void monicProof(CoCoA::ConstRefRingElem poly, CoCoA::ConstRefRingElem monic);
 
-    void membershipEnd();
-    /**
-     * For each poly string, its index in the input sequence.
-     */
-    std::unordered_map<std::string, size_t> d_inputNumbers;
+  void membershipStart(CoCoA::ConstRefRingElem p);
 
-    /**
-     * The sequence of polynomials used for reduction during GBasis production.
-     */
-    std::vector<Node> d_reductionSeq{};
+  void membershipStep(CoCoA::RingElem s);
 
-    /**
-     * The sequence of polynomials in GBasis used in the reduction during
-     * independent membership proof production.
-     */
-    std::vector<Node> d_membershipSeq{};
+  void membershipEnd();
+  /**
+   * For each poly string, its index in the input sequence.
+   */
+  std::unordered_map<std::string, size_t> d_inputNumbers;
 
-    /**
-     * Hooks for:
-     * Gbasis Proof Production: sPoly, reductionStart, reductionStep,
-     * reductionEnd Arbitrary Poly Proof Production: membershipStart,
-     * membershipStep and membershipEnd.
-     */
+  /**
+   * The sequence of polynomials used for reduction during GBasis production.
+   */
+  std::vector<Node> d_reductionSeq{};
 
-    std::function<void(CoCoA::ConstRefRingElem,
-                       CoCoA::ConstRefRingElem,
-                       CoCoA::ConstRefRingElem)>
-        d_sPoly{};
-    std::function<void(CoCoA::ConstRefRingElem)> d_reductionStart{};
-    std::function<void(CoCoA::ConstRefRingElem)> d_reductionStep{};
-    std::function<void(CoCoA::ConstRefRingElem)> d_reductionEnd{};
-    std::function<void(CoCoA::ConstRefRingElem, CoCoA::ConstRefRingElem)> d_monicProof{};
-    std::function<void(CoCoA::ConstRefRingElem)> d_membershipStart{};
-    std::function<void(CoCoA::ConstRefRingElem)> d_membershipStep{};
-    std::function<void(void)> d_membershipEnd{};
+  /**
+   * The sequence of polynomials in GBasis used in the reduction during
+   * independent membership proof production.
+   */
+  std::vector<Node> d_membershipSeq{};
 
-    /**
-     * A representation of the Ideal that we are currently proving membership
-     * facts from An sExpr of bound variables that represents the initial set of
-     * generators.
-     */
-    Node d_ideal;
-    CocoaEncoder d_enc;
-    /**
-     * Maps polynomials to their ideal membership proofs
-     */
-    std::unordered_map<Node, Node> d_polyToMembership;
-    /**
-     * Used for arbitrary membership proofs.
-     * Represents the polynomial that we are currently testing for membership
-     */
-    Node  d_reducingPoly;
-    /**
-     * The user-context-dependent proof object
-     */
-    CDProof* d_proof;
-  };
+  /**
+   * Hooks for:
+   * Gbasis Proof Production: sPoly, reductionStart, reductionStep,
+   * reductionEnd Arbitrary Poly Proof Production: membershipStart,
+   * membershipStep and membershipEnd.
+   */
+
+  std::function<void(CoCoA::ConstRefRingElem,
+                     CoCoA::ConstRefRingElem,
+                     CoCoA::ConstRefRingElem)>
+      d_sPoly{};
+  std::function<void(CoCoA::ConstRefRingElem)> d_reductionStart{};
+  std::function<void(CoCoA::ConstRefRingElem)> d_reductionStep{};
+  std::function<void(CoCoA::ConstRefRingElem)> d_reductionEnd{};
+  std::function<void(CoCoA::ConstRefRingElem, CoCoA::ConstRefRingElem)>
+      d_monicProof{};
+  std::function<void(CoCoA::ConstRefRingElem)> d_membershipStart{};
+  std::function<void(CoCoA::ConstRefRingElem)> d_membershipStep{};
+  std::function<void(void)> d_membershipEnd{};
+
+  /**
+   * A representation of the Ideal that we are currently proving membership
+   * facts from An sExpr of bound variables that represents the initial set of
+   * generators.
+   */
+  Node d_ideal;
+  std::unordered_map<Node, ProofInfo> d_factToProof;
+  CocoaEncoder d_enc;
+  /**
+   * Maps polynomials to their ideal membership proofs
+   */
+  std::unordered_map<Node, Node> d_polyToMembership;
+  /**
+   * Used for arbitrary membership proofs.
+   * Represents the polynomial that we are currently testing for membership
+   */
+  Node d_reducingPoly;
+  /**
+   * The user-context-dependent proof object
+   */
+  CDProof* d_proof;
+};
 
 }  // namespace ff
 }  // namespace theory
