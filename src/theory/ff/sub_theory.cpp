@@ -54,7 +54,8 @@ SubTheory::SubTheory(Env& env, FfStatistics* stats, Integer modulus)
   d_proofEnabled = options().ff.ffProof
                    && options().ff.ffSolver == options::FfSolver::GB
                    && d_env.isTheoryProofProducing();
-  if (d_proofEnabled) d_proof = new CDProof(env, nullptr, "GlobalFFProofs");
+  // if (d_proofEnabled) d_proof = new CDProof(env, nullptr, "GlobalFFProofs");
+  if (d_proofEnabled) d_proof = new CDProof(env, context(), "GlobalFFProofs");
   AlwaysAssert(modulus.isProbablePrime()) << "non-prime fields are unsupported";
   // must be initialized before using CoCoA.
   initCocoaGlobalManager();

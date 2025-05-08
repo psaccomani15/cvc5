@@ -205,7 +205,8 @@ void IdealProof::finishProof(bool rootBranching, CDProof* globalTheoryProofs)
 
 Node IdealProof::produceNonNullVarPred(NodeManager* nm, Node ideal)
 {
-  Node nonNullVarietyPred = nm->mkNode(Kind::FINITE_FIELD_NON_NULL_VAR, ideal);
+  Node nonNullVarietyPred =
+      nm->mkNode(Kind::FINITE_FIELD_NON_NULL_VARIETY, ideal);
   return nonNullVarietyPred;
 }
 void IdealProof::updateIdeal(std::vector<Node>& polys)

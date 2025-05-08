@@ -104,7 +104,7 @@ TypeNode FiniteFieldIdeal::computeType(NodeManager* nm,
 {
   return nm->mkAbstractType(Kind::FINITE_FIELD_IDEAL);
 }
-  
+
 TypeNode FiniteFieldIdealMembership::preComputeType(NodeManager* nm, TNode n)
 {
   return nm->booleanType();
@@ -117,19 +117,17 @@ TypeNode FiniteFieldIdealMembership::computeType(NodeManager* nm,
   return nm->booleanType();
 }
 
-
 TypeNode FiniteFieldNonNullVar::preComputeType(NodeManager* nm, TNode n)
 {
   return nm->booleanType();
 }
 TypeNode FiniteFieldNonNullVar::computeType(NodeManager* nm,
-                                                TNode n,
-                                                bool check,
-                                                std::ostream* errOut)
+                                            TNode n,
+                                            bool check,
+                                            std::ostream* errOut)
 {
   return nm->booleanType();
 }
-
 
 }  // namespace ff
 }  // namespace theory

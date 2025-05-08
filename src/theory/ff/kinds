@@ -54,7 +54,7 @@ operator FINITE_FIELD_BITSUM 2: "bitsum of field elements"
 
 # TODO: Add a type-checker for both operators. 
 operator FINITE_FIELD_IDEAL_MEMBERSHIP 2: "ideal membership predicate; first parameter is a member of the second; second parameter must be an application of FINITE_FIELD_IDEAL"
-operator FINITE_FIELD_NON_NULL_VAR 1: "non null variety predicate: states that the variety of an ideal is non-empty."
+operator FINITE_FIELD_NON_NULL_VARIETY 1: "non null variety predicate: states that the variety of an ideal is non-empty."
 
 typerule CONST_FINITE_FIELD ::cvc5::internal::theory::ff::FiniteFieldConstantTypeRule
 typerule FINITE_FIELD_MULT ::cvc5::internal::theory::ff::FiniteFieldFixedFieldTypeRule
@@ -64,7 +64,7 @@ typerule FINITE_FIELD_BITSUM ::cvc5::internal::theory::ff::FiniteFieldFixedField
 
 typerule FINITE_FIELD_IDEAL  ::cvc5::internal::theory::ff::FiniteFieldIdeal
 typerule FINITE_FIELD_IDEAL_MEMBERSHIP  ::cvc5::internal::theory::ff::FiniteFieldIdealMembership
-typerule FINITE_FIELD_NON_NULL_VAR  ::cvc5::internal::theory::ff::FiniteFieldNonNullVar
+typerule FINITE_FIELD_NON_NULL_VARIETY  ::cvc5::internal::theory::ff::FiniteFieldNonNullVar
 
 
 endtheory

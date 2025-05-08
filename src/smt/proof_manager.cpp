@@ -182,7 +182,9 @@ std::shared_ptr<ProofNode> PfManager::connectProofToAssertions(
   {
     Trace("smt-proof-debug")
         << "SolverEngine::connectProofToAssertions(): Proof node for false:\n";
-    Trace("smt-proof-debug") << *pfn.get() << std::endl;
+      std::ostringstream s;
+      pfn->printDebug(s, true);
+    Trace("smt-proof-debug") << s.str() << std::endl;
     Trace("smt-proof-debug") << "=====" << std::endl;
   }
   std::vector<Node> assertions;
