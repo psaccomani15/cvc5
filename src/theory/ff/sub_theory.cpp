@@ -245,7 +245,7 @@ void SubTheory::produceContradiction(std::vector<Node>& fieldPolys,
   const Node unsatCore = nodeManager()->mkAnd(d_conflict);
   d_proof->addStep(unsatCore, ProofRule::ASSUME, {}, {unsatCore});
   Trace("ff::proof") << "Assumption: " << unsatCore << std::endl;
-  Node commonRoot = IdealProof::produceNonNullVarPred(nodeManager(), idealGens);
+  Node commonRoot = IdealProof::nonEmptyVarPred(nodeManager(), idealGens);
   Node satIffCRoot = nodeManager()->mkNode(Kind::EQUAL, unsatCore, commonRoot);
   d_proof->addStep(satIffCRoot, ProofRule::FF_FIELD_SPLIT, {}, {});
   d_proof->addStep(
@@ -257,7 +257,7 @@ void SubTheory::produceContradiction(std::vector<Node>& fieldPolys,
     Node idealNewGens =
         nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, newGens);
     Node commonRootFieldPolys =
-        IdealProof::produceNonNullVarPred(nodeManager(), idealNewGens);
+        IdealProof::nonEmptyVarPred(nodeManager(), idealNewGens);
     d_proof->addStep(commonRootFieldPolys,
                      ProofRule::FF_FIELD_POLYS,
                      {commonRoot},

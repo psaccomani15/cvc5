@@ -39,8 +39,7 @@ GBProof::GBProof(Env& env,
 void GBProof::updateIdeal(Node ideal) { d_ideal = ideal; }
 Node GBProof::produceMembershipNode(Node poly)
 {
-  return nodeManager()->mkNode(
-      Kind::FINITE_FIELD_IDEAL_MEMBERSHIP, poly, d_ideal);
+  return nodeManager()->mkNode(Kind::SET_MEMBER, poly, d_ideal);
 }
 void GBProof::setFunctionPointers()
 {

@@ -143,11 +143,9 @@ std::string RoundRobinEnumerator::name() { return "round-robin"; }
 
 bool RoundRobinEnumerator::empty() { return d_empty; }
 
-bool isUnsat(const CoCoA::ideal& ideal, std::shared_ptr<IdealProof> idealProof)
+bool isUnsat(const CoCoA::ideal& ideal)
 {
-  idealProof->enableProofHooks();
   const auto& gens = CoCoA::GBasis(ideal);
-  idealProof->disableProofHooks();
   return !(gens.size() > 1 || CoCoA::deg(gens[0]) > 0);
 }
 
@@ -201,9 +199,7 @@ std::unique_ptr<AssignmentEnumerator> applyRule(
     if (varNumber >= 0 && CoCoA::deg(p) > 1)
     {
       Trace("ff::model::branch") << "univariate branching " << p << std::endl;
-      idealProof->enableProofHooks();
       idealProof->registerBranchPolynomial(p);
-      idealProof->disableProofHooks();
       return factorEnumerator(p, idealProof);
     }
   }
@@ -219,9 +215,7 @@ std::unique_ptr<AssignmentEnumerator> applyRule(
       if (!alreadySet.count(ostring(var)))
       {
         CoCoA::RingElem minPoly = CoCoA::MinPolyQuot(var, ideal, var);
-        idealProof->enableProofHooks();
         idealProof->registerBranchPolynomial(minPoly);
-        idealProof->disableProofHooks();
         return factorEnumerator(minPoly, idealProof);
       }
     }
@@ -298,14 +292,12 @@ std::vector<CoCoA::RingElem> findZero(
     const auto& ideal = ideals.back();
     std::shared_ptr<IdealProof> idealProof = idealsProofs.back();
     idealProof->setFunctionPointers();
-    idealProof->disableProofHooks();
     // make sure we have a GBasis:
     GBasisTimeout(ideal, env.getResourceManager());
     Assert(CoCoA::HasGBasis(ideal));
     // If the ideal is UNSAT, drop it.
-    if (isUnsat(ideal, idealProof))
+    if (isUnsat(ideal))
     {
-      // Unreachable();
       idealProof->oneInUnsat(CoCoA::GBasis(ideal)[0], globalTheoryProofs);
       idealsProofs.pop_back();
       ideals.pop_back();
@@ -358,8 +350,8 @@ std::vector<CoCoA::RingElem> findZero(
             << "level: " << branchers.size()
             << ", brancher: " << branchers.back()->name()
             << ", branch: " << choicePoly.value() << std::endl;
-        Assert(CoCoA::HasGBasis(ideal));
         std::vector<CoCoA::RingElem> newGens = CoCoA::GBasis(ideal);
+        Assert(CoCoA::HasGBasis(ideal));
         newGens.push_back(choicePoly.value());
         CoCoA::ideal newIdeal = CoCoA::ideal(newGens);
         std::shared_ptr<IdealProof> branchingIdeal =

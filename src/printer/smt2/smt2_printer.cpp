@@ -1228,7 +1228,8 @@ std::string Smt2Printer::smtKindString(Kind k)
     case Kind::FINITE_FIELD_NEG: return "ff.neg";
     case Kind::FINITE_FIELD_IDEAL_MEMBERSHIP: return "@ff.ideal_membership";
     case Kind::FINITE_FIELD_IDEAL: return "@ff.ideal";
-    case Kind::FINITE_FIELD_NON_NULL_VARIETY: return "@ff.non_null_variety";
+    case Kind::FINITE_FIELD_VARIETY: return "@ff.variety";
+    case Kind::FINITE_FIELD_NON_EMPTY_VARIETY: return "@ff.non_empty_variety";
 
     // bv theory
     case Kind::BITVECTOR_CONCAT: return "concat";

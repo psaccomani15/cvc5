@@ -600,7 +600,7 @@ bool NodeManager::isSortKindAbstractable(Kind k)
          || k == Kind::BAG_TYPE || k == Kind::BITVECTOR_TYPE
          || k == Kind::TUPLE_TYPE || k == Kind::FINITE_FIELD_TYPE
          || k == Kind::FLOATINGPOINT_TYPE || k == Kind::FUNCTION_TYPE
-    || k == Kind::SEQUENCE_TYPE || k == Kind::SET_TYPE || k == Kind::FINITE_FIELD_IDEAL;
+         || k == Kind::SEQUENCE_TYPE || k == Kind::SET_TYPE;
 }
 
 TypeNode NodeManager::mkAbstractType(Kind k)
@@ -974,12 +974,12 @@ TypeNode NodeManager::mkNullableType(const TypeNode& type)
   std::stringstream sst;
   sst << "__cvc5_nullable_" << type;
   DType dt(sst.str());
-  dt.setNullable();  
+  dt.setNullable();
   std::shared_ptr<DTypeConstructor> null =
       std::make_shared<DTypeConstructor>("nullable.null");
   dt.addConstructor(null);
   std::shared_ptr<DTypeConstructor> some =
-      std::make_shared<DTypeConstructor>("nullable.some");  
+      std::make_shared<DTypeConstructor>("nullable.some");
   some->addArg("nullable.val", type);
   dt.addConstructor(some);
   TypeNode datatype = mkDatatypeType(dt);

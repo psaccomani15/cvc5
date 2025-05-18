@@ -271,6 +271,12 @@ Node AletheNodeConverter::postConvert(Node n)
     case Kind::IS_INTEGER:
     case Kind::TO_INTEGER:
     case Kind::TO_REAL:
+    /* from ff */
+    case Kind::FINITE_FIELD_ADD:
+    case Kind::FINITE_FIELD_MULT:
+    case Kind::CONST_FINITE_FIELD:
+    case Kind::FINITE_FIELD_IDEAL_MEMBERSHIP:
+    case Kind::FINITE_FIELD_NON_EMPTY_VARIETY:
     /* from BV */
     case Kind::BITVECTOR_TYPE:
     case Kind::CONST_BITVECTOR:
@@ -419,6 +425,7 @@ Node AletheNodeConverter::postConvert(Node n)
         case Kind::SELECTOR_TYPE:
         case Kind::TESTER_TYPE:
         case Kind::ASCRIPTION_TYPE:
+        case Kind::FINITE_FIELD_TYPE:
         {
           return n;
         }

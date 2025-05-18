@@ -55,7 +55,7 @@ class FiniteFieldFixedFieldTypeRule
                               bool check,
                               std::ostream* errOut);
 };
- 
+
 class FiniteFieldIdeal
 {
  public:
@@ -65,7 +65,16 @@ class FiniteFieldIdeal
                               bool check,
                               std::ostream* errOut);
 };
- 
+
+class FiniteFieldVariety
+{
+ public:
+  static TypeNode preComputeType(NodeManager* nm, TNode n);
+  static TypeNode computeType(NodeManager* nodeManager,
+                              TNode n,
+                              bool check,
+                              std::ostream* errOut);
+};
 class FiniteFieldIdealMembership
 {
  public:
@@ -75,8 +84,8 @@ class FiniteFieldIdealMembership
                               bool check,
                               std::ostream* errOut);
 };
- 
-class FiniteFieldNonNullVar
+
+class FiniteFieldNonEmptyVar
 {
  public:
   static TypeNode preComputeType(NodeManager* nm, TNode n);
@@ -85,7 +94,6 @@ class FiniteFieldNonNullVar
                               bool check,
                               std::ostream* errOut);
 };
- 
 
 }  // namespace ff
 }  // namespace theory

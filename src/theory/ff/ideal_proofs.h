@@ -50,7 +50,7 @@ class IdealProof : protected EnvObj
    * @param The cvc5 enviroment
    * @param id: The id of the proof engine
    * @param inputs: The set of generators.
-   * @param nonNullVarPred: A predicate representing that the set of common
+   * @param nonEmptyVarPred: A predicate representing that the set of common
    * roots of inputs is non empty.
    * @param cocoaIdeal: The data structure of an ideal in cocoalib.
    */
@@ -131,7 +131,7 @@ class IdealProof : protected EnvObj
 
   Node getSatFact();
 
-  static Node produceNonNullVarPred(NodeManager* nm, Node ideal);
+  static Node nonEmptyVarPred(NodeManager* nm, Node ideal);
   void updateIdeal(std::vector<Node>& newGens);
 
  private:

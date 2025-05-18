@@ -95,16 +95,34 @@ TypeNode FiniteFieldFixedFieldTypeRule::computeType(NodeManager* nodeManager,
 
 TypeNode FiniteFieldIdeal::preComputeType(NodeManager* nm, TNode n)
 {
-  return nm->mkAbstractType(Kind::FINITE_FIELD_IDEAL);
+  return TypeNode::null();
 }
 TypeNode FiniteFieldIdeal::computeType(NodeManager* nm,
                                        TNode n,
                                        bool check,
                                        std::ostream* errOut)
 {
-  return nm->mkAbstractType(Kind::FINITE_FIELD_IDEAL);
+  TypeNode ffType = n[0].getType();
+  Assert(ffType.isFiniteField());
+  return nm->mkSetType(ffType);
 }
 
+TypeNode FiniteFieldVariety::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
+
+TypeNode FiniteFieldVariety::computeType(NodeManager* nodeManager,
+                                         TNode n,
+                                         bool check,
+                                         std::ostream* errOut)
+{
+  // Children must be an Ideal (set type)
+  Assert(n[0].getType().isSet());
+  TypeNode ffType = n[0][0].getType();
+  Assert(ffType.isFiniteField());
+  return nodeManager->mkSetType(ffType);
+}
 TypeNode FiniteFieldIdealMembership::preComputeType(NodeManager* nm, TNode n)
 {
   return nm->booleanType();
@@ -117,14 +135,14 @@ TypeNode FiniteFieldIdealMembership::computeType(NodeManager* nm,
   return nm->booleanType();
 }
 
-TypeNode FiniteFieldNonNullVar::preComputeType(NodeManager* nm, TNode n)
+TypeNode FiniteFieldNonEmptyVar::preComputeType(NodeManager* nm, TNode n)
 {
   return nm->booleanType();
 }
-TypeNode FiniteFieldNonNullVar::computeType(NodeManager* nm,
-                                            TNode n,
-                                            bool check,
-                                            std::ostream* errOut)
+TypeNode FiniteFieldNonEmptyVar::computeType(NodeManager* nm,
+                                             TNode n,
+                                             bool check,
+                                             std::ostream* errOut)
 {
   return nm->booleanType();
 }
