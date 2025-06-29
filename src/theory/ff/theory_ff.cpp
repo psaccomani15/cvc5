@@ -79,7 +79,7 @@ TheoryRewriter* TheoryFiniteFields::getTheoryRewriter()
   return &d_rewriter;
 }
 
-ProofRuleChecker* TheoryFiniteFields::getProofChecker() { return nullptr; }
+ProofRuleChecker* TheoryFiniteFields::getProofChecker() { return &d_checker; }
 
 bool TheoryFiniteFields::needsEqualityEngine(EeSetupInfo& esi)
 {

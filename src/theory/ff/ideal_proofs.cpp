@@ -181,9 +181,11 @@ Node IdealProof::proveBrancher(std::vector<Node>& childrenSatFact,
   for (auto poly : CoCoA::GBasis(d_cocoaIdeal))
   {
     membershipFacts.push_back(d_membershipProofs->getMembershipFact(poly));
-    Assert(d_proof.getProof(premises.back()) != nullptr) << premises.back();
+    Assert(d_proof.getProof(membershipFacts.back()) != nullptr)
+        << premises.back();
   }
-  premises.push_back(nodeManager()->mkNode(Kind::SEXPR, membershipFacts));
+  if (membershipFacts.size() > 1)
+    premises.push_back(nodeManager()->mkNode(Kind::AND, membershipFacts));
   // Here comes the main difference: Exhaust_branch do not contain facts about
   // a branch polynomial.
   if (!rootBranching)
@@ -250,7 +252,7 @@ void IdealProof::finishProof(bool rootBranching, CDProof* globalTheoryProofs)
   }
   // This variety is empty and may be used to either conclude that the ideal
   // that branched into this have an empty variety or conclude unsat
-  d_emptyVarFact = nodeManager()->mkNode(Kind::NOT, getSatFact());
+  d_emptyVarFact = emptyVarPred(nodeManager(), d_ideal);
   d_proof.addStep(
       d_emptyVarFact, ProofRule::SCOPE, {falseNode}, {getSatFact()});
   globalTheoryProofs->addProof(d_proof.getProofFor(d_emptyVarFact));

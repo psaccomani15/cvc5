@@ -254,10 +254,8 @@ void SubTheory::produceContradiction(std::vector<Node>& fieldPolys,
   {
     std::vector<Node> newGens = gens;
     newGens.insert(newGens.end(), fieldPolys.begin(), fieldPolys.end());
-    Node idealNewGens =
-        nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, newGens);
-    Node commonRootFieldPolys =
-        emptyVarPred(nodeManager(), idealNewGens).negate();
+    idealGens = nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, newGens);
+    Node commonRootFieldPolys = emptyVarPred(nodeManager(), idealGens).negate();
     d_proof->addStep(commonRootFieldPolys,
                      ProofRule::FF_FIELD_POLYS,
                      {commonRoot},
@@ -265,7 +263,7 @@ void SubTheory::produceContradiction(std::vector<Node>& fieldPolys,
     commonRoot = commonRootFieldPolys;
   }
   Node falseNode = nodeManager()->mkConst<bool>(false);
-  Node noCommonRoot = nodeManager()->mkNode(Kind::NOT, commonRoot);
+  Node noCommonRoot = emptyVarPred(nodeManager(), idealGens);
   d_proof->addStep(
       falseNode, ProofRule::CONTRA, {commonRoot, noCommonRoot}, {});
 }

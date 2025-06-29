@@ -36,10 +36,18 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     Assert(children.size() >= 2);
     std::vector<Node> generators;
     // Get all nodes that represents a Gb element
-    for (Node membershipProof : children[1])
+    if (children[1].getKind() == Kind::AND)
     {
-      Assert(membershipProof.getKind() == Kind::SET_MEMBER);
-      generators.push_back(membershipProof[0]);
+      for (Node membershipProof : children[1])
+      {
+        Assert(membershipProof.getKind() == Kind::SET_MEMBER);
+        generators.push_back(membershipProof[0]);
+      }
+    }
+    else
+    {
+      Assert(children[1].getKind() == Kind::SET_MEMBER);
+      generators.push_back(children[1]);
     }
     // Compute each disjunct separately
     std::vector<Node> disjuncts;
@@ -85,8 +93,8 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
       Assert(varNonAssigned);
       for (Node root : args[2])
       {
-        // The polynomial will be x - root. We need then proceed to compute r =
-        // -root and represent it as x + r
+        // The polynomial will be x - root. We need then proceed to compute r
+        // = -root and represent it as x + r
         Integer rootValue = root.getConst<FiniteFieldValue>().getValue();
         Node branchValue = nodeManager()->mkConst(
             FiniteFieldValue(maxValue - rootValue, fieldSize));

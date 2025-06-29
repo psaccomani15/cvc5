@@ -275,8 +275,8 @@ Node AletheNodeConverter::postConvert(Node n)
     case Kind::FINITE_FIELD_ADD:
     case Kind::FINITE_FIELD_MULT:
     case Kind::CONST_FINITE_FIELD:
-    case Kind::FINITE_FIELD_IDEAL_MEMBERSHIP:
-    case Kind::FINITE_FIELD_NON_EMPTY_VARIETY:
+    case Kind::FINITE_FIELD_VARIETY:
+    case Kind::FINITE_FIELD_IDEAL:
     /* from BV */
     case Kind::BITVECTOR_TYPE:
     case Kind::CONST_BITVECTOR:

@@ -90,7 +90,7 @@ class TheoryFiniteFields : public Theory
  private:
   /** The context dependent proof manager */
   CDProof d_proof;
-
+  /** Our proof checker */
   FfProofRuleChecker d_checker;
   TheoryFiniteFieldsRewriter d_rewriter;
 
