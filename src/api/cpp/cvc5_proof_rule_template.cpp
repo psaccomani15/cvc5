@@ -205,7 +205,6 @@ const char* toString(ProofRule rule)
     case ProofRule::FF_EXHAUST_BRANCH: return "FF_EXHAUST_BRANCH";
     case ProofRule::FF_FIELD_POLYS: return "FF_FIELD_POLYS";
     case ProofRule::FF_ONE_UNSAT: return "FF_ONE_UNSAT";
-    case ProofRule::FF_NO_ROOTS_UNSAT: return "FF_NO_ROOTS_UNSAT";
     case ProofRule::FF_FIELD_SPLIT: return "FF_FIELD_SPLIT";
     case ProofRule::FF_Z: return "FF_Z";
     case ProofRule::FF_G: return "FF_G";

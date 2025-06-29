@@ -56,6 +56,7 @@ TheoryFiniteFields::TheoryFiniteFields(Env& env,
                                        Valuation valuation)
     : Theory(THEORY_FF, env, out, valuation),
       d_proof(env, userContext(), "theory::ff::proof"),
+      d_checker(nodeManager()),
       d_rewriter(nodeManager()),
       d_state(env, valuation),
       d_im(env, *this, d_state, getStatsPrefix(THEORY_FF)),

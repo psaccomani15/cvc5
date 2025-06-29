@@ -162,7 +162,6 @@ std::pair<size_t, CoCoA::RingElem> extractAssignment(
 
 std::unordered_set<std::string> assignedVars(const CoCoA::ideal& ideal)
 {
-  // Unreachable();
   std::unordered_set<std::string> ret{};
   Assert(CoCoA::HasGBasis(ideal));
   for (const auto& g : CoCoA::GBasis(ideal))
@@ -188,7 +187,6 @@ bool allVarsAssigned(const CoCoA::ideal& ideal)
 std::unique_ptr<AssignmentEnumerator> applyRule(
     const CoCoA::ideal& ideal, std::shared_ptr<IdealProof> idealProof)
 {
-  // Unreachable();
   CoCoA::ring polyRing = ideal->myRing();
   // first, we look for super-linear univariate polynomials.
   Assert(CoCoA::HasGBasis(ideal));
@@ -355,8 +353,7 @@ std::vector<CoCoA::RingElem> findZero(
         newGens.push_back(choicePoly.value());
         CoCoA::ideal newIdeal = CoCoA::ideal(newGens);
         std::shared_ptr<IdealProof> branchingIdeal =
-            idealsProofs.back()->registerConclusion(choicePoly.value(),
-                                                    newIdeal);
+            idealsProofs.back()->registerBranch(choicePoly.value(), newIdeal);
         idealsProofs.push_back(branchingIdeal);
         ideals.push_back(newIdeal);
       }
@@ -364,6 +361,7 @@ std::vector<CoCoA::RingElem> findZero(
       else
       {
         bool rootBranching = branchers.back()->name() == "list";
+        // The associated variety must be empty. Produce a proof for that.
         idealsProofs.back()->finishProof(rootBranching, globalTheoryProofs);
         idealsProofs.pop_back();
         branchers.pop_back();

@@ -30,6 +30,7 @@
 #include "proof/proof.h"
 #include "smt/env_obj.h"
 #include "theory/ff/cocoa_encoder.h"
+#include "theory/ff/proof_utils.h"
 namespace cvc5::internal {
 
 class CDProof;
@@ -39,9 +40,9 @@ namespace ff {
 
 /**
  * Tracks computations done by CoCoALib.
- * First, we collect all information needed for proof construction, to build the
- * proof later. The reason for this choice, is that we may need to restrict
- * ourselves to an Unsat Core.
+ * First, we collect all information needed for proof construction to build the
+ * proof later. This is justified by the fact that we may be an unsat core
+ * restriction.
  */
 class GBProof : protected EnvObj
 {
@@ -75,6 +76,9 @@ class GBProof : protected EnvObj
    * Used for Unsat Core Restriction.
    */
   void updateIdeal(Node ideal);
+  /**
+   * Register stored in proof steps into d_proof
+   */
   void registerProofs();
 
  private:
@@ -83,6 +87,9 @@ class GBProof : protected EnvObj
    */
   Node produceMembershipNode(Node poly);
 
+  /**
+   * Store essential information for a later proof step insertion into d_proof
+   */
   void storeProof(Node poly,
                   ProofRule id,
                   std::vector<Node> children,
@@ -110,11 +117,17 @@ class GBProof : protected EnvObj
    * Call this when len(gens) == 1 i.e GBasis(poly) = {monic(poly)}
    */
   void monicProof(CoCoA::ConstRefRingElem poly, CoCoA::ConstRefRingElem monic);
-
+  /**
+   * Call this at the start of a membership test
+   */
   void membershipStart(CoCoA::ConstRefRingElem p);
-
+  /**
+   * Call this when a reduction step is made during a membership test
+   */
   void membershipStep(CoCoA::RingElem s);
-
+  /**
+   * Call this when a membership test is ended.
+   */
   void membershipEnd();
   /**
    * For each poly string, its index in the input sequence.
@@ -158,15 +171,17 @@ class GBProof : protected EnvObj
    * generators.
    */
   Node d_ideal;
+  /**
+   * A cache of information that will be used for proof steps insertion
+   */
   std::unordered_map<Node, ProofInfo> d_factToProof;
+  /**
+   * The encoder built in sub_theory. Used for decoding.
+   */
   CocoaEncoder d_enc;
   /**
-   * Maps polynomials to their ideal membership proofs
-   */
-  std::unordered_map<Node, Node> d_polyToMembership;
-  /**
    * Used for arbitrary membership proofs.
-   * Represents the polynomial that we are currently testing for membership
+   * Represents the polynomial that we are currently testing membership
    */
   Node d_reducingPoly;
   /**

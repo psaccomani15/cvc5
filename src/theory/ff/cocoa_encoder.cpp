@@ -340,7 +340,7 @@ void CocoaEncoder::encodeFact(const Node& f)
   d_polyFacts.insert({extractStr(p), f});
 }
 
-Node CocoaEncoder::encodeBack(CoCoA::ConstRefRingElem p)
+Node CocoaEncoder::decode(CoCoA::ConstRefRingElem p)
 {
   std::string strRep = extractStr(p);
   // If the term is already registered, we just return it.

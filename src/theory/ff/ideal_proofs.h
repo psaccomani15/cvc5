@@ -9,8 +9,9 @@
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
  * ****************************************************************************
- *
- * Finite fields UNSAT trace construction
+ * Manager for proofs related to a given Ideal:
+ *  Stores proof of memberships in d_membershipProofs
+ *  Produces proofs using branching rules (translation of findZero rules)
  */
 
 #include <vector>
@@ -32,16 +33,11 @@
 #include "smt/env_obj.h"
 #include "theory/ff/cocoa_encoder.h"
 #include "theory/ff/membership_proofs.h"
+#include "theory/ff/proof_utils.h"
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
 
-/**
- * A non-incremental dependency graph for CoCoA polynomials in Groebner basis
- * computation.
- *
- * We represent polynomials as their strings.
- */
 class IdealProof : protected EnvObj
 {
  public:
@@ -50,8 +46,6 @@ class IdealProof : protected EnvObj
    * @param The cvc5 enviroment
    * @param id: The id of the proof engine
    * @param inputs: The set of generators.
-   * @param nonEmptyVarPred: A predicate representing that the set of common
-   * roots of inputs is non empty.
    * @param cocoaIdeal: The data structure of an ideal in cocoalib.
    */
   IdealProof(Env& env,
@@ -97,8 +91,8 @@ class IdealProof : protected EnvObj
    * the set of generators.
    * @return An IdealProof object for the newIdeal.
    */
-  std::shared_ptr<IdealProof> registerConclusion(CoCoA::RingElem choicePoly,
-                                                 CoCoA::ideal newIdeal);
+  std::shared_ptr<IdealProof> registerBranch(CoCoA::RingElem choicePoly,
+                                             CoCoA::ideal newIdeal);
   /**
    * Called only when the branching of the current object is unsat.
    * Register a node in globalTheoryProofs containing the fact that the set of
@@ -119,33 +113,41 @@ class IdealProof : protected EnvObj
   Node oneInUnsat(CoCoA::RingElem p, CDProof* globalTheoryProofs);
 
   /**
-   * @return The node that represents the fact that the set of generators does
-   * not have any common roots.
+   * @return The predicate stating that the variety is empty.
    */
   Node getUnsatFact();
 
   /**
-   * @return  The node that represents the assumption that the set of generators
-   * have common roots.
+   * @return The predicate stating that the variety is non empty
    */
-
   Node getSatFact();
 
-  static Node nonEmptyVarPred(NodeManager* nm, Node ideal);
+  /**
+   * Updates the generators of this ideal. Used for unsat core restriction.
+   * @param newGens: The new generators.
+   */
   void updateIdeal(std::vector<Node>& newGens);
 
  private:
   /**
-   * Produces the Node that represents the conclusion of branching rules. Also
-   * use those rules to prove its correctness.
+   * Determines the non-assigned variables in the current branch. Used for
+   * producing branch proof arguments.
+   * @return A vector of Nodes representing those variables
+   * */
+  std::vector<Node> nonAssignedVars();
+  /**
+   * Produces and prove the Node that represents the conclusion of branching
+   * rules.
    * @param childrenSatFact: A vector of Nodes that represents the assumption
    * that each of the branching disjuncts is SAT.
    * @param rootBranching: Represents the proof step taken. If true, then we are
    * branching on roots of a univariate polynomial, else, the branching is
    * exhaustive.
+   * needed. Use CocoA Ideal to compute this. The argument will actually be all
+   * TODO
+   * *non*-assigned variables.
    */
-  Node produceConclusion(std::vector<Node>& childrenSatFact,
-                         bool rootBranching);
+  Node proveBrancher(std::vector<Node>& childrenSatFact, bool rootBranching);
 
   /**
    * A representation of the Ideal that we are currently proving membership
@@ -171,21 +173,25 @@ class IdealProof : protected EnvObj
   Node d_emptyVarFact;
 
   /**
-   * The polynomial used in the branching steps.
+   * (Univariate Branching) The polynomial used in the branching steps.
    */
   Node d_branchPoly;
 
   /**
-   * The proof of membership for the branching polynomial.
+   * (Univariate Branching) The proof of membership for the branching
+   * polynomial.
    */
   Node d_branchPolyProof;
 
   /**
-   * The roots of the above polynomial. An sexpr of finite field constants. If
-   * there is no roots, it's an empty sexpr.
+   * (Univariate Branching) The roots of the above polynomial represented as an
+   * sexpr
    */
   Node d_branchPolyRoots;
-
+  /**
+   * (Univariate Branching) The variable that we will be branching through
+   */
+  Node d_branchVar;
   /**
    * Holds elements in the branching disjunct.
    */

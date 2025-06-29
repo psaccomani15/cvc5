@@ -87,10 +87,10 @@ class CocoaEncoder : public FieldObj
   const Poly& getTermEncoding(const Node& t) const { return d_cache.at(t); }
 
   /**
-   * Construct the term that represents the poly.
+   * Build the term that represents p.
    */
-  Node encodeBack(CoCoA::ConstRefRingElem p);
-  
+  Node decode(CoCoA::ConstRefRingElem p);
+
   /**
    * Get the bitsum terms (for the bitsumPolys).
    * Available in Stage::Encode.
@@ -126,11 +126,12 @@ class CocoaEncoder : public FieldObj
    */
   CoCoA::symbol freshSym(const std::string& varName,
                          std::optional<size_t> index = {});
-  /** a bitsum or a var */
-  const Node& symNode(CoCoA::symbol s) const;
   /** have we assigned this symbol to some Node? */
   bool hasNode(CoCoA::symbol s) const;
   /** get the poly for this symbol */
+  /** a bitsum or a var */
+  const Node& symNode(CoCoA::symbol s) const;
+
   const Poly& symPoly(CoCoA::symbol s) const;
   /** encode this term as a poly (caching) */
   void encodeTerm(const Node& t);

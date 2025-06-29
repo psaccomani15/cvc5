@@ -28,6 +28,7 @@
 
 #include "smt/logic_exception.h"
 #include "theory/care_pair_argument_callback.h"
+#include "theory/ff/proof_checker.h"
 #include "theory/ff/stats.h"
 #include "theory/ff/sub_theory.h"
 #include "theory/ff/theory_ff_rewriter.h"
@@ -87,8 +88,10 @@ class TheoryFiniteFields : public Theory
   TrustNode explain(TNode n) override;
 
  private:
+  /** The context dependent proof manager */
   CDProof d_proof;
 
+  FfProofRuleChecker d_checker;
   TheoryFiniteFieldsRewriter d_rewriter;
 
   /** The state of the ff solver at full effort */

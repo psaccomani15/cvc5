@@ -113,7 +113,7 @@ Result SubTheory::postCheck(Theory::Effort e)
         std::vector<Node> gens{};
         for (auto& poly : generators)
         {
-          gens.push_back(enc.encodeBack(poly));
+          gens.push_back(enc.decode(poly));
         }
         std::vector<Node> fieldPolys{};
         if (options().ff.ffFieldPolys)
@@ -124,7 +124,7 @@ Result SubTheory::postCheck(Theory::Effort e)
             long power = CoCoA::LogCardinality(coeffRing());
             CoCoA::BigInt size = CoCoA::power(characteristic, power);
             auto poly = CoCoA::power(var, size) - var;
-            Node polyTerm = enc.encodeBack(poly);
+            Node polyTerm = enc.decode(poly);
             fieldPolys.push_back(polyTerm);
             generators.push_back(poly);
           }
@@ -166,7 +166,7 @@ Result SubTheory::postCheck(Theory::Effort e)
                 Trace("ff::core")
                     << "Core: " << i << " : " << d_facts[i] << std::endl;
                 d_conflict.push_back(enc.polyFact(generators[i]));
-                corePolys.push_back(enc.encodeBack(generators[i]));
+                corePolys.push_back(enc.decode(generators[i]));
               }
             }
             if (d_conflict.size() != enc.polys().size())
@@ -245,7 +245,7 @@ void SubTheory::produceContradiction(std::vector<Node>& fieldPolys,
   const Node unsatCore = nodeManager()->mkAnd(d_conflict);
   d_proof->addStep(unsatCore, ProofRule::ASSUME, {}, {unsatCore});
   Trace("ff::proof") << "Assumption: " << unsatCore << std::endl;
-  Node commonRoot = IdealProof::nonEmptyVarPred(nodeManager(), idealGens);
+  Node commonRoot = emptyVarPred(nodeManager(), idealGens).negate();
   Node satIffCRoot = nodeManager()->mkNode(Kind::EQUAL, unsatCore, commonRoot);
   d_proof->addStep(satIffCRoot, ProofRule::FF_FIELD_SPLIT, {}, {});
   d_proof->addStep(
@@ -257,7 +257,7 @@ void SubTheory::produceContradiction(std::vector<Node>& fieldPolys,
     Node idealNewGens =
         nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, newGens);
     Node commonRootFieldPolys =
-        IdealProof::nonEmptyVarPred(nodeManager(), idealNewGens);
+        emptyVarPred(nodeManager(), idealNewGens).negate();
     d_proof->addStep(commonRootFieldPolys,
                      ProofRule::FF_FIELD_POLYS,
                      {commonRoot},

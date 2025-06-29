@@ -1,0 +1,180 @@
+#include "theory/ff/proof_checker.h"
+
+#include "theory/arith/theory_arith.h"
+#include "theory/ff/proof_utils.h"
+namespace cvc5::internal {
+namespace theory {
+namespace ff {
+
+FfProofRuleChecker::FfProofRuleChecker(NodeManager* nm) : ProofRuleChecker(nm)
+{
+}
+void FfProofRuleChecker::registerTo(ProofChecker* pc)
+{
+  pc->registerChecker(ProofRule::FF_EXHAUST_BRANCH, this);
+  pc->registerChecker(ProofRule::FF_ROOT_BRANCH, this);
+  pc->registerChecker(ProofRule::FF_FIELD_POLYS, this);
+  pc->registerChecker(ProofRule::FF_G, this);
+  pc->registerChecker(ProofRule::FF_Z, this);
+  pc->registerChecker(ProofRule::FF_MONIC, this);
+  pc->registerChecker(ProofRule::FF_R_UP, this);
+  pc->registerChecker(ProofRule::FF_R_DOWN, this);
+  pc->registerChecker(ProofRule::FF_S, this);
+  pc->registerChecker(ProofRule::FF_FIELD_SPLIT, this);
+}
+
+/**TODO: Refactor. Create Proof Utils file. Put membership utility defined in
+ * membership_proofs there and use here*/
+Node FfProofRuleChecker::checkInternal(ProofRule id,
+                                       const std::vector<Node>& children,
+                                       const std::vector<Node>& args)
+{
+  if (id == ProofRule::FF_EXHAUST_BRANCH || id == ProofRule::FF_ROOT_BRANCH)
+  {
+    // First, check the common structure of both rules
+    Assert(args.size() >= 1);
+    Assert(children.size() >= 2);
+    std::vector<Node> generators;
+    // Get all nodes that represents a Gb element
+    for (Node membershipProof : children[1])
+    {
+      Assert(membershipProof.getKind() == Kind::SET_MEMBER);
+      generators.push_back(membershipProof[0]);
+    }
+    // Compute each disjunct separately
+    std::vector<Node> disjuncts;
+    TypeNode field = generators[0].getType();
+    Assert(field.isFiniteField());
+    Integer maxValue = field.getFfSize();
+    FfSize fieldSize = FfSize(maxValue);
+    if (id == ProofRule::FF_EXHAUST_BRANCH)
+    {
+      // All non-assigned variables branch through all elements in the field
+      for (auto var : args[0])
+      {
+        for (Integer it = 0; it < fieldSize; it += 1)
+        {
+          Node assignmentPoly = var;
+          if (it > 0)
+          {
+            Node assignmentValue =
+                nodeManager()->mkConst(FiniteFieldValue(maxValue - it));
+            assignmentPoly = nodeManager()->mkNode(
+                Kind::FINITE_FIELD_ADD, var, assignmentValue);
+          }
+          generators.push_back(assignmentPoly);
+          Node newIdeal =
+              nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, generators);
+          disjuncts.push_back(emptyVarPred(nodeManager(), newIdeal).negate());
+          generators.pop_back();
+        }
+      }
+    }
+    else
+    {
+      Node branchVar = args[1];
+      bool varNonAssigned = false;
+      for (auto nonAssigned : args[0])
+      {
+        if (nonAssigned == branchVar)
+        {
+          varNonAssigned = true;
+          break;
+        }
+      }
+      Assert(varNonAssigned);
+      for (Node root : args[2])
+      {
+        // The polynomial will be x - root. We need then proceed to compute r =
+        // -root and represent it as x + r
+        Integer rootValue = root.getConst<FiniteFieldValue>().getValue();
+        Node branchValue = nodeManager()->mkConst(
+            FiniteFieldValue(maxValue - rootValue, fieldSize));
+        generators.push_back(nodeManager()->mkNode(
+            Kind::FINITE_FIELD_ADD, branchVar, branchValue));
+        Node newIdeal =
+            nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, generators);
+        disjuncts.push_back(emptyVarPred(nodeManager(), newIdeal).negate());
+        generators.pop_back();
+      }
+    }
+    return nodeManager()->mkOr(disjuncts);
+  }
+
+  if (id == ProofRule::FF_G)
+  {
+    Assert(children.empty());
+    Assert(args.size() == 2);
+    Assert(args[1].getKind() == Kind::FINITE_FIELD_IDEAL);
+    for (const auto& poly : args[1])
+    {
+      if (args[0] == poly)
+        return d_nm->mkNode(Kind::SET_MEMBER, args[0], args[1]);
+    }
+  }
+  if (id == ProofRule::FF_Z)
+  {
+    Assert(children.empty());
+    Assert(args.size() == 2);
+    Assert(args[1].getKind() == Kind::FINITE_FIELD_IDEAL);
+    return d_nm->mkNode(Kind::SET_MEMBER, args[0], args[1]);
+  }
+  if (id == ProofRule::FF_S)
+  {
+    Assert(children.size() == 2);
+    Assert(args.size() == 1);
+    // Both children are proofs of membership to the *same* ideal
+    Assert(children[0].getKind() == children[1].getKind()
+           && children[0].getKind() == Kind::SET_MEMBER);
+    Assert(children[0][1] == children[1][1]);
+    Node ideal = children[0][1];
+    return d_nm->mkNode(Kind::SET_MEMBER, args[0], args[1]);
+  }
+  if (id == ProofRule::FF_R_DOWN || id == ProofRule::FF_R_UP)
+  {
+    // The number of children are exactly the number of *unique* reductors
+    Assert(children.size() <= args.size() - 1);
+    Assert(children[0].getKind() == Kind::SET_MEMBER);
+    Node ideal = children[0][1];
+    // All children must be proofs of membership for the *same* ideal
+    Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
+    for (const auto& child : children)
+    {
+      Assert(child.getKind() == Kind::SET_MEMBER);
+      Assert(ideal == child[1]);
+    }
+    return d_nm->mkNode(Kind::SET_MEMBER, args[0], ideal);
+  }
+  if (id == ProofRule::FF_MONIC)
+  {
+    Assert(args.size() == 2);
+    Assert(children.size() == 1);
+    Assert(children[0].getKind() == Kind::SET_MEMBER);
+    Node ideal = children[0][1];
+    Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
+    return d_nm->mkNode(Kind::SET_MEMBER, args[1], ideal);
+  }
+  if (id == ProofRule::FF_FIELD_SPLIT)
+  {
+    Assert(children.size() == 0);
+    Assert(args.size() == 2);
+    return d_nm->mkNode(Kind::EQUAL, args[0], args[1]);
+  }
+  if (id == ProofRule::FF_FIELD_POLYS)
+  {
+    Assert(children.size() == 1);
+    Assert(args.size() >= 1);
+    Assert(children[0].getKind() == Kind::NOT
+           && children[0][0].getKind() == Kind::SET_IS_EMPTY);
+    Assert(children[0][0][0].getKind() == Kind::FINITE_FIELD_IDEAL);
+    Node ideal = children[0][0][0];
+    std::vector<Node> gens(ideal.begin(), ideal.end());
+    gens.insert(gens.end(), args.begin(), args.end());
+    Node newIdeal = d_nm->mkNode(Kind::FINITE_FIELD_IDEAL, gens);
+    return emptyVarPred(nodeManager(), newIdeal).negate();
+  }
+  return Node::null();
+}
+}  // namespace ff
+}  // namespace theory
+}  // namespace cvc5::internal
