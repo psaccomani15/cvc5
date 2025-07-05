@@ -15,8 +15,15 @@
 
 #include "smt/smt_solver.h"
 
+#include "options/arith_options.h"
+#include "options/arrays_options.h"
+#include "options/bags_options.h"
 #include "options/base_options.h"
+#include "options/datatypes_options.h"
+#include "options/ff_options.h"
+#include "options/fp_options.h"
 #include "options/main_options.h"
+#include "options/sets_options.h"
 #include "options/smt_options.h"
 #include "preprocessing/assertion_pipeline.h"
 #include "prop/prop_engine.h"

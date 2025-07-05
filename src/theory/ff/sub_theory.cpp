@@ -32,6 +32,7 @@
 
 #include "expr/node_traversal.h"
 #include "options/ff_options.h"
+#include "proof/proof_node.h"
 #include "smt/env_obj.h"
 #include "theory/ff/cocoa_encoder.h"
 #include "theory/ff/core.h"
@@ -41,205 +42,209 @@
 #include "theory/ff/util.h"
 #include "util/cocoa_globals.h"
 #include "util/finite_field_value.h"
-#include "proof/proof_node.h"
 #include "util/resource_manager.h"
 
->>>>>>> upstream/main
-namespace cvc5::internal {
-namespace theory {
-namespace ff {
-
-template <typename T>
-std::string ostring(const T& t)
+>>>>>>> upstream/main namespace cvc5::internal
 {
-  std::ostringstream o;
-  o << t;
-  return o.str();
-}
+  namespace theory {
+  namespace ff {
 
-Node produceNonNullVarPred(NodeManager* nm, Node ideal)
-{
-  TypeNode typeOfIdealB = ideal.getType();
-  TypeNode pType = nm->mkFunctionType(typeOfIdealB, nm->booleanType());
-  Node nonNullVarietySymb = nm->mkRawSymbol("nonNullVariety", pType);
-  Node nonNullVarietyPred =
-      nm->mkNode(Kind::APPLY_UF, nonNullVarietySymb, ideal);
-  return nonNullVarietyPred;
-}
-
-SubTheory::SubTheory(Env& env, FfStatistics* stats, Integer modulus)
-    : EnvObj(env),
-      FieldObj(modulus),
-      d_facts(context()),
-      d_proof(env, nullptr, "ffProofManager"),
-      d_stats(stats)
-{
-  AlwaysAssert(modulus.isProbablePrime()) << "non-prime fields are unsupported";
-  // must be initialized before using CoCoA.
-  initCocoaGlobalManager();
-}
-
-void SubTheory::notifyFact(TNode fact) { d_facts.emplace_back(fact); }
-
-Result SubTheory::postCheck(Theory::Effort e)
-{
-  d_conflict.clear();
-  d_model.clear();
-  if (e == Theory::EFFORT_FULL)
+  template <typename T>
+  std::string ostring(const T& t)
   {
-    try
+    std::ostringstream o;
+    o << t;
+    return o.str();
+  }
+
+  Node produceNonNullVarPred(NodeManager* nm, Node ideal)
+  {
+    TypeNode typeOfIdealB = ideal.getType();
+    TypeNode pType = nm->mkFunctionType(typeOfIdealB, nm->booleanType());
+    Node nonNullVarietySymb = nm->mkRawSymbol("nonNullVariety", pType);
+    Node nonNullVarietyPred =
+        nm->mkNode(Kind::APPLY_UF, nonNullVarietySymb, ideal);
+    return nonNullVarietyPred;
+  }
+
+  SubTheory::SubTheory(Env& env, FfStatistics* stats, Integer modulus)
+      : EnvObj(env),
+        FieldObj(modulus),
+        d_facts(context()),
+        d_proof(env, nullptr, "ffProofManager"),
+        d_stats(stats)
+  {
+    AlwaysAssert(modulus.isProbablePrime())
+        << "non-prime fields are unsupported";
+    // must be initialized before using CoCoA.
+    initCocoaGlobalManager();
+  }
+
+  void SubTheory::notifyFact(TNode fact) { d_facts.emplace_back(fact); }
+
+  Result SubTheory::postCheck(Theory::Effort e)
+  {
+    d_conflict.clear();
+    d_model.clear();
+    // on some branches, we'll overwrite this result
+    Result result = {
+        Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON, "internal"};
+    if (e == Theory::EFFORT_FULL)
     {
-      if (d_facts.empty()) return Result::SAT;
-      if (options().ff.ffSolver == options::FfSolver::SPLIT_GB)
+      try
       {
-        std::vector<Node> facts{};
-        std::copy(d_facts.begin(), d_facts.end(), std::back_inserter(facts));
-        auto result = split(facts, size(), d_env);
-        if (result.has_value())
+        if (d_facts.empty()) return Result::SAT;
+        if (options().ff.ffSolver == options::FfSolver::SPLIT_GB)
         {
-          const auto nm = nodeManager();
-          for (const auto& [var, val] : result.value())
-c          {
-            d_model.insert({var, nm->mkConst<FiniteFieldValue>(val)});
-          }
-          return Result::SAT;
-        }
-        std::copy(
-            d_facts.begin(), d_facts.end(), std::back_inserter(d_conflict));
-        return Result::UNSAT;
-      }
-      else if (options().ff.ffSolver == options::FfSolver::GB)
-      {
-        CocoaEncoder enc(nodeManager(), size());
-        // collect leaves
-        for (const Node& node : d_facts)
-        {
-          enc.addFact(node);
-        }
-        enc.endScan();
-        // assert facts
-        for (const Node& node : d_facts)
-        {
-          enc.addFact(node);
-        }
-
-        // compute a GB
-        std::vector<CoCoA::RingElem> generators;
-        generators.insert(
-            generators.end(), enc.polys().begin(), enc.polys().end());
-        generators.insert(generators.end(),
-                          enc.bitsumPolys().begin(),
-                          enc.bitsumPolys().end());
-        if (options().ff.ffFieldPolys)
-        {
-          for (const auto& var : CoCoA::indets(enc.polyRing()))
+          std::vector<Node> facts{};
+          std::copy(d_facts.begin(), d_facts.end(), std::back_inserter(facts));
+          const auto optModel = split(facts, size(), d_env);
+          if (optModel.has_value())
           {
-            CoCoA::BigInt characteristic = CoCoA::characteristic(coeffRing());
-            long power = CoCoA::LogCardinality(coeffRing());
-            CoCoA::BigInt size = CoCoA::power(characteristic, power);
-            generators.push_back(CoCoA::power(var, size) - var);
-          }
-        }
-        Tracer tracer(generators);
-        if (options().ff.ffTraceGb) tracer.setFunctionPointers();
-        CoCoA::ideal ideal = CoCoA::ideal(generators);
-        const auto basis = GBasisTimeout(ideal, d_env.getResourceManager());
-        if (options().ff.ffTraceGb) tracer.unsetFunctionPointers();
-
-        // if it is trivial, create a conflict
-        bool is_trivial = basis.size() == 1 && CoCoA::deg(basis.front()) == 0;
-        if (is_trivial)
-        {
-          Trace("ff::gb") << "Trivial GB" << std::endl;
-          if (options().ff.ffTraceGb)
-          {
-            std::vector<size_t> coreIndices = tracer.trace(basis.front());
-            Assert(d_conflict.empty());
-            for (size_t i = 0, n = d_facts.size(); i < n; ++i)
+            const auto nm = nodeManager();
+            for (const auto& [var, val] : optModel.value())
             {
-              Trace("ff::core")
-                  << "In " << i << " : " << d_facts[i] << std::endl;
+              d_model.insert({var, nm->mkConst<FiniteFieldValue>(val)});
             }
-            for (size_t i : coreIndices)
+            return Result::SAT;
+          }
+          std::copy(
+              d_facts.begin(), d_facts.end(), std::back_inserter(d_conflict));
+          return Result::UNSAT;
+        }
+        else if (options().ff.ffSolver == options::FfSolver::GB)
+        {
+          CocoaEncoder enc(nodeManager(), size());
+          // collect leaves
+          for (const Node& node : d_facts)
+          {
+            enc.addFact(node);
+          }
+          enc.endScan();
+          // assert facts
+          for (const Node& node : d_facts)
+          {
+            enc.addFact(node);
+          }
+
+          // compute a GB
+          std::vector<CoCoA::RingElem> generators;
+          generators.insert(
+              generators.end(), enc.polys().begin(), enc.polys().end());
+          generators.insert(generators.end(),
+                            enc.bitsumPolys().begin(),
+                            enc.bitsumPolys().end());
+          if (options().ff.ffFieldPolys)
+          {
+            for (const auto& var : CoCoA::indets(enc.polyRing()))
             {
-              // omit (field polys, bitsum polys, ...) from core
-              if (enc.polyHasFact(generators[i]))
+              CoCoA::BigInt characteristic = CoCoA::characteristic(coeffRing());
+              const long power = CoCoA::LogCardinality(coeffRing());
+              CoCoA::BigInt size = CoCoA::power(characteristic, power);
+              generators.push_back(CoCoA::power(var, size) - var);
+            }
+          }
+          Tracer tracer(generators);
+          if (options().ff.ffTraceGb) tracer.setFunctionPointers();
+          CoCoA::ideal ideal = CoCoA::ideal(generators);
+          const auto basis = GBasisTimeout(ideal, d_env.getResourceManager());
+          if (options().ff.ffTraceGb) tracer.unsetFunctionPointers();
+
+          // if it is trivial, create a conflict
+          bool is_trivial = basis.size() == 1 && CoCoA::deg(basis.front()) == 0;
+          if (is_trivial)
+          {
+            Trace("ff::gb") << "Trivial GB" << std::endl;
+            result = Result::UNSAT;
+            if (options().ff.ffTraceGb)
+            {
+              std::vector<size_t> coreIndices = tracer.trace(basis.front());
+              Assert(d_conflict.empty());
+              for (size_t i = 0, n = d_facts.size(); i < n; ++i)
               {
                 Trace("ff::core")
-                    << "Core: " << i << " : " << d_facts[i] << std::endl;
-                d_conflict.push_back(enc.polyFact(generators[i]));
+                    << "In " << i << " : " << d_facts[i] << std::endl;
               }
+              for (size_t i : coreIndices)
+              {
+                // omit (field polys, bitsum polys, ...) from core
+                if (enc.polyHasFact(generators[i]))
+                {
+                  Trace("ff::core")
+                      << "Core: " << i << " : " << d_facts[i] << std::endl;
+                  d_conflict.push_back(enc.polyFact(generators[i]));
+                }
+              }
+            }
+            else
+            {
+              setTrivialConflict();
             }
           }
           else
           {
-            setTrivialConflict();
+            Trace("ff::gb") << "Non-trivial GB" << std::endl;
+
+            // common root (vec of CoCoA base ring elements)
+            std::vector<CoCoA::RingElem> root = findZero(ideal, d_env);
+
+            if (root.empty())
+            {
+              result = Result::UNSAT;
+              setTrivialConflict();
+            }
+            else
+            {
+              result = Result::SAT;
+              // populate d_model from the root
+              Assert(d_model.empty());
+              const auto nm = nodeManager();
+              Trace("ff::model") << "Model GF(" << size() << "):" << std::endl;
+              for (const auto& [idx, node] : enc.nodeIndets())
+              {
+                if (isFfLeaf(node))
+                {
+                  Node value = nm->mkConst(enc.cocoaFfToFfVal(root[idx]));
+                  Trace("ff::model")
+                      << " " << node << " = " << value << std::endl;
+                  d_model.emplace(node, value);
+                }
+              }
+            }
           }
         }
         else
         {
-          Trace("ff::gb") << "Non-trivial GB" << std::endl;
-
-          // common root (vec of CoCoA base ring elements)
-          std::vector<CoCoA::RingElem> root = findZero(ideal, d_env);
-
-          if (root.empty())
-          {
-            // UNSAT
-            setTrivialConflict();
-          }
-          else
-          {
-            // SAT: populate d_model from the root
-            Assert(d_model.empty());
-            const auto nm = nodeManager();
-            Trace("ff::model") << "Model GF(" << size() << "):" << std::endl;
-            for (const auto& [idx, node] : enc.nodeIndets())
-            {
-              if (isFfLeaf(node))
-              {
-                Node value = nm->mkConst(enc.cocoaFfToFfVal(root[idx]));
-                Trace("ff::model")
-                    << " " << node << " = " << value << std::endl;
-                d_model.emplace(node, value);
-              }
-            }
-          }
+          Unreachable() << options().ff.ffSolver << std::endl;
         }
+        AlwaysAssert(result.getStatus() != Result::UNKNOWN);
+        return result;
       }
-      else
+      catch (FfTimeoutException& exc)
       {
-        Unreachable() << options().ff.ffSolver << std::endl;
+        return {Result::UNKNOWN, UnknownExplanation::TIMEOUT, exc.getMessage()};
       }
-      AlwaysAssert((!d_conflict.empty() ^ !d_model.empty()) || d_facts.empty());
-      return d_facts.empty() || d_conflict.empty() ? Result::SAT
-                                                   : Result::UNSAT;
     }
-    catch (FfTimeoutException& exc)
-    {
-      return {Result::UNKNOWN, UnknownExplanation::TIMEOUT, exc.getMessage()};
-    }
+    return {Result::UNKNOWN, UnknownExplanation::REQUIRES_FULL_CHECK, ""};
   }
-  return {Result::UNKNOWN, UnknownExplanation::REQUIRES_FULL_CHECK, ""};
-}
 
-void SubTheory::setTrivialConflict()
-{
-  std::copy(d_facts.begin(), d_facts.end(), std::back_inserter(d_conflict));
-}
+  void SubTheory::setTrivialConflict()
+  {
+    std::copy(d_facts.begin(), d_facts.end(), std::back_inserter(d_conflict));
+  }
 
-bool SubTheory::inConflict() const { return !d_conflict.empty(); }
+  bool SubTheory::inConflict() const { return !d_conflict.empty(); }
 
-const std::vector<Node>& SubTheory::conflict() const { return d_conflict; }
+  const std::vector<Node>& SubTheory::conflict() const { return d_conflict; }
 
-const std::unordered_map<Node, Node>& SubTheory::model() const
-{
-  return d_model;
-}
+  const std::unordered_map<Node, Node>& SubTheory::model() const
+  {
+    return d_model;
+  }
 
-Node SubTheory::getUnsatProof() { return unsatProofNode; }
-}  // namespace ff
-}  // namespace theory
+  Node SubTheory::getUnsatProof() { return unsatProofNode; }
+  }  // namespace ff
+  }  // namespace theory
 }  // namespace cvc5::internal
 
 #endif /* CVC5_USE_COCOA */

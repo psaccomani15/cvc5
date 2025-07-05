@@ -57,15 +57,18 @@ class ProofPostprocessDsl : protected EnvObj, public ProofNodeUpdaterCallback
               const std::vector<Node>& args,
               CDProof* cdp,
               bool& continueUpdate) override;
+  /** Finalize this proof node */
+  void finalize(std::shared_ptr<ProofNode> pn) override;
 
  private:
+  /** Common constants */
   Node d_true;
   /** The rewrite database proof generator */
   rewriter::RewriteDbProofCons d_rdbPc;
   /** The default mode for if/when to try theory rewrites */
   rewriter::TheoryRewriteMode d_tmode;
-  /** The accumulated subgoals from calls to d_rdbPc */
-  std::vector<std::shared_ptr<ProofNode>> d_subgoals;
+  /** The current proofs we are traversing */
+  std::vector<std::shared_ptr<ProofNode>> d_traversing;
 };
 
 }  // namespace smt
