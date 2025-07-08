@@ -6410,15 +6410,6 @@ Term TermManager::mkString(const std::u32string& s)
   CVC5_API_TRY_CATCH_END;
 }
 
-Term TermManager::mkString(const std::u32string& s)
-{
-  CVC5_API_TRY_CATCH_BEGIN;
-  //////// all checks before this line
-  return mkValHelper(internal::String(s));
-  ////////
-  CVC5_API_TRY_CATCH_END;
-}
-
 Term TermManager::mkEmptySequence(const Sort& sort)
 {
   CVC5_API_TRY_CATCH_BEGIN;

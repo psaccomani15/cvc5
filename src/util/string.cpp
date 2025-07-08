@@ -53,15 +53,6 @@ String::String(const std::u32string& s)
   }
 }
 
-String::String(const std::u32string& s)
-{
-  d_str.resize(s.size());
-  for (size_t i = 0, n = s.size(); i < n; ++i)
-  {
-    d_str[i] = static_cast<unsigned>(s[i]);
-  }
-}
-
 String::String(const std::vector<unsigned> &s) : d_str(s)
 {
 #ifdef CVC5_ASSERTIONS
