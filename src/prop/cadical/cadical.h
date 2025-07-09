@@ -37,6 +37,7 @@ class CadicalPropagator;
 class ProofTracer;
 }  // namespace cadical
 class ClauseLearner;
+class ProofTracer;
 
 class CadicalSolver : public CDCLTSatSolver, protected EnvObj
 {
@@ -136,7 +137,7 @@ class CadicalSolver : public CDCLTSatSolver, protected EnvObj
   /** Clause learner instance for notifications about learned clauses. */
   std::unique_ptr<ClauseLearner> d_clause_learner;
   /** Proof tracer instance for extracting unsat cores. */
-  std::unique_ptr<cadical::ProofTracer> d_proof_tracer;
+  std::unique_ptr<ProofTracer> d_proof_tracer;
 
   /**
    * Stores the current set of assumptions provided via solve() and is used to
