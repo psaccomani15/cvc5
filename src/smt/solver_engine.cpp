@@ -1202,6 +1202,11 @@ Node SolverEngine::simplify(const Node& t, bool applySubs)
 
 Node SolverEngine::getValue(const Node& t, bool fromUser)
 {
+  // can invoke satisfiability check below
+  if (fromUser)
+  {
+    beginCall(true);
+  }
   ensureWellFormedTerm(t, "get value");
   Trace("smt") << "SMT getValue(" << t << ")" << endl;
   TypeNode expectedType = t.getType();
@@ -1259,9 +1264,6 @@ Node SolverEngine::getValue(const Node& t, bool fromUser)
       // given in an assertion.
       if (NonClosedNodeConverter::isClosed(*d_env.get(), resultNode))
       {
-        // set up a resource limit
-        ResourceManager* rm = getResourceManager();
-        rm->beginCall();
         TypeNode rtn = resultNode.getType();
         SkolemManager* skm = d_env->getNodeManager()->getSkolemManager();
         Node k = skm->mkInternalSkolemFunction(
@@ -1290,8 +1292,6 @@ Node SolverEngine::getValue(const Node& t, bool fromUser)
           resultNode = getValueChecker->getValue(k);
           subSuccess = m->isValue(resultNode);
         }
-        // end resource limit
-        rm->refresh();
       }
     }
     if (!subSuccess)
@@ -1319,6 +1319,10 @@ Node SolverEngine::getValue(const Node& t, bool fromUser)
       resultNode = a;
       Trace("smt") << "--- abstract value >> " << resultNode << endl;
     }
+  }
+  if (fromUser)
+  {
+    endCall();
   }
   return resultNode;
 }

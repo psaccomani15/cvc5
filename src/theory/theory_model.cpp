@@ -17,8 +17,6 @@
 #include "expr/attribute.h"
 #include "expr/cardinality_constraint.h"
 #include "expr/node_algorithm.h"
-#include "expr/skolem_manager.h"
-#include "expr/sort_to_term.h"
 #include "expr/subs.h"
 #include "options/quantifiers_options.h"
 #include "options/smt_options.h"
