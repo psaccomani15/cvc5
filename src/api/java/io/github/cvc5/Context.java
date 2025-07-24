@@ -31,7 +31,8 @@ import java.lang.Long;
  */
 public class Context
 {
-  // Store pointers for term managers, solvers, terms, sorts, etc
+  // store pointers for terms, sorts, etc
+
   private static Map<Long, AbstractPointer> abstractPointers = new LinkedHashMap<>();
 
   /**
@@ -52,9 +53,7 @@ public class Context
   }
 
   /**
-   * Remove a previously registered {@link AbstractPointer} from the context.
-   *
-   * @param pointer the {@link AbstractPointer} to remove
+   * Remove our record of a cpp pointer when it is deleted.
    */
   static void removeAbstractPointer(AbstractPointer pointer) {
     if (pointer.getPointer() != 0) {
