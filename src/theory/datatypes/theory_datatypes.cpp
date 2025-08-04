@@ -332,7 +332,7 @@ void TheoryDatatypes::preRegisterTerm(TNode n)
         std::stringstream ss;
         ss << "Codatatypes not available in this configuration, try "
               "--datatypes-exp.";
-        throw LogicException(ss.str());
+        throw SafeLogicException(ss.str());
       }
     }
   }
@@ -342,6 +342,15 @@ void TheoryDatatypes::preRegisterTerm(TNode n)
       // add predicate trigger for testers and equalities
       // Get triggered for both equal and dis-equal
       d_state.addEqualityEngineTriggerPredicate(n);
+      break;
+    case Kind::MATCH:
+    {
+      Assert (!options().datatypes.datatypesExp);
+      std::stringstream ss;
+      ss << "Match terms not available in this configuration, try "
+            "--datatypes-exp.";
+      throw SafeLogicException(ss.str());
+    }
       break;
     default:
       // do initial lemmas (e.g. for dt.size)
@@ -1198,7 +1207,9 @@ Node TheoryDatatypes::getInstantiateCons(Node n, const DType& dt, int index)
   Node k = getTermSkolemFor( n );
   Node n_ic =
       utils::getInstCons(k, dt, index, options().datatypes.dtSharedSelectors);
-  Assert (n_ic == rewrite(n_ic));
+  // generally n_ic is in rewritten form but this is not the case if
+  // n is not in rewritten form, e.g. if another theory added an unrewritten
+  // term to the equality engine.
   Trace("dt-enum") << "Made instantiate cons " << n_ic << std::endl;
   return n_ic;
 }
@@ -1265,6 +1276,9 @@ void TheoryDatatypes::checkCycles() {
   Trace("datatypes-cycle-check") << "Check acyclicity" << std::endl;
   std::vector< Node > cdt_eqc;
   eq::EqClassesIterator eqcs_i = eq::EqClassesIterator(d_equalityEngine);
+  std::map< TNode, bool > visited;
+  std::map< TNode, bool > proc;
+  std::vector<Node> expl;
   while( !eqcs_i.isFinished() ){
     Node eqc = (*eqcs_i);
     TypeNode tn = eqc.getType();
@@ -1273,9 +1287,6 @@ void TheoryDatatypes::checkCycles() {
         if (options().datatypes.dtCyclic)
         {
           //do cycle checks
-          std::map< TNode, bool > visited;
-          std::map< TNode, bool > proc;
-          std::vector<Node> expl;
           Trace("datatypes-cycle-check") << "...search for cycle starting at " << eqc << std::endl;
           Node cn = searchForCycle( eqc, eqc, visited, proc, expl );
           Trace("datatypes-cycle-check") << "...finish." << std::endl;

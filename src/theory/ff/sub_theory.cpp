@@ -67,6 +67,8 @@ Result SubTheory::postCheck(Theory::Effort e)
 {
   d_conflict.clear();
   d_model.clear();
+  Result result = {
+      Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON, "internal"};
   if (e == Theory::EFFORT_FULL)
   {
     try
@@ -76,11 +78,11 @@ Result SubTheory::postCheck(Theory::Effort e)
       {
         std::vector<Node> facts{};
         std::copy(d_facts.begin(), d_facts.end(), std::back_inserter(facts));
-        auto result = split(facts, size(), d_env);
-        if (result.has_value())
+        const auto optModel = split(facts, size(), d_env);
+        if (optModel.has_value())
         {
           const auto nm = nodeManager();
-          for (const auto& [var, val] : result.value())
+          for (const auto& [var, val] : optModel.value())
           {
             d_model.insert({var, nm->mkConst<FiniteFieldValue>(val)});
           }
@@ -148,6 +150,8 @@ Result SubTheory::postCheck(Theory::Effort e)
         bool is_trivial = basis.size() == 1 && CoCoA::deg(basis.front()) == 0;
         if (is_trivial)
         {
+          Trace("ff::gb") << "Trivial GB" << std::endl;
+          result = Result::UNSAT;
           std::vector<Node> corePolys{};
           if (options().ff.ffTraceGb)
           {
@@ -156,7 +160,9 @@ Result SubTheory::postCheck(Theory::Effort e)
             for (size_t i = 0, n = d_facts.size(); i < n; ++i)
             {
               Trace("ff::core")
-                  << "In " << i << " : " << d_facts[i] << std::endl;
+                  << "In" << i << " : " << d_facts[i] << std::endl;
+              d_conflict.push_back(enc.polyFact(generators[i]));
+              corePolys.push_back(enc.decode(generators[i]));
             }
             for (size_t i : coreIndices)
             {
@@ -166,24 +172,22 @@ Result SubTheory::postCheck(Theory::Effort e)
                 Trace("ff::core")
                     << "Core: " << i << " : " << d_facts[i] << std::endl;
                 d_conflict.push_back(enc.polyFact(generators[i]));
-                corePolys.push_back(enc.decode(generators[i]));
               }
-            }
-            if (d_conflict.size() != enc.polys().size())
-            {
-              std::vector<Node> coreGenerators = corePolys;
-              coreGenerators.insert(
-                  coreGenerators.end(), fieldPolys.begin(), fieldPolys.end());
-              idealProofs->updateIdeal(coreGenerators);
-              Trace("ff::proof") << "Restriction on unsat core" << std::endl;
             }
           }
           else
           {
-            corePolys = gens;
             setTrivialConflict();
           }
-          Node unsatVar = idealProofs->oneInUnsat(basis.front(), d_proof);
+          if (d_conflict.size() != enc.polys().size())
+          {
+            std::vector<Node> coreGenerators = corePolys;
+            coreGenerators.insert(
+                coreGenerators.end(), fieldPolys.begin(), fieldPolys.end());
+            idealProofs->updateIdeal(coreGenerators);
+            Trace("ff::proof") << "Restriction on unsat core" << std::endl;
+          }
+          Node unsatVariety = idealProofs->oneInUnsat(basis.front(), d_proof);
           produceContradiction(fieldPolys, corePolys);
         }
         else
@@ -196,6 +200,7 @@ Result SubTheory::postCheck(Theory::Effort e)
           if (root.empty())
           {
             // UNSAT
+            result = Result::UNSAT;
             setTrivialConflict();
             produceContradiction(fieldPolys, gens);
           }
@@ -222,16 +227,15 @@ Result SubTheory::postCheck(Theory::Effort e)
       {
         Unreachable() << options().ff.ffSolver << std::endl;
       }
-      AlwaysAssert((!d_conflict.empty() ^ !d_model.empty()) || d_facts.empty());
-      return d_facts.empty() || d_conflict.empty() ? Result::SAT
-                                                   : Result::UNSAT;
-    }
-    catch (FfTimeoutException& exc)
-    {
-      return {Result::UNKNOWN, UnknownExplanation::TIMEOUT, exc.getMessage()};
-    }
+    AlwaysAssert(result.getStatus() != Result::UNKNOWN);
+    return result;
   }
-  return {Result::UNKNOWN, UnknownExplanation::REQUIRES_FULL_CHECK, ""};
+  catch (FfTimeoutException& exc)
+  {
+    return {Result::UNKNOWN, UnknownExplanation::TIMEOUT, exc.getMessage()};
+  }
+}
+return {Result::UNKNOWN, UnknownExplanation::REQUIRES_FULL_CHECK, ""};
 }
 
 void SubTheory::setTrivialConflict()
@@ -267,7 +271,6 @@ void SubTheory::produceContradiction(std::vector<Node>& fieldPolys,
   d_proof->addStep(
       falseNode, ProofRule::CONTRA, {commonRoot, noCommonRoot}, {});
 }
-
 bool SubTheory::inConflict() const { return !d_conflict.empty(); }
 
 const std::vector<Node>& SubTheory::conflict() const { return d_conflict; }
@@ -284,9 +287,7 @@ std::shared_ptr<ProofNode> SubTheory::getProof()
   Assert(d_proof->hasStep(falseNode));
   return d_proof->getProof(falseNode);
 }
-
-}  // namespace ff
+}
 }  // namespace theory
 }  // namespace cvc5::internal
-
 #endif /* CVC5_USE_COCOA */

@@ -164,7 +164,7 @@ versions; more recent versions should be compatible.
   + module `tomli <https://pypi.org/project/tomli/>`_ (Python < 3.11)
   + module `pyparsing <https://pypi.org/project/pyparsing/>`_
 - `GMP v6.3 (GNU Multi-Precision arithmetic library) <https://gmplib.org>`_
-- `CaDiCaL >= 1.6.0 (SAT solver) <https://github.com/arminbiere/cadical>`_
+- `CaDiCaL >= 2.1.0 (SAT solver) <https://github.com/arminbiere/cadical>`_
 - `SymFPU <https://github.com/martin-cs/symfpu/tree/CVC4>`_
 
 If ``--auto-download`` is given, the Python modules will be installed automatically in
@@ -207,7 +207,7 @@ CryptoMiniSat (Optional SAT solver)
 can be used for solving bit-vector problems with eager bit-blasting. This
 dependency may improve performance. It can be downloaded and built
 automatically. Configure cvc5 with ``configure.sh --cryptominisat`` to build
-with this dependency.
+with this dependency. Minimum version required is ``5.11.2``.
 
 
 Kissat (Optional SAT solver)
@@ -219,7 +219,7 @@ may improve performance. It can be downloaded and built automatically. Configure
 cvc5 with ``configure.sh --kissat`` to build with this dependency.
 
 
-LibPoly >= v0.1.13 (Optional polynomial library)
+LibPoly >= v0.2.0 (Optional polynomial library)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 `LibPoly <https://github.com/SRI-CSL/libpoly>`_ is required for CAD-based
@@ -274,10 +274,13 @@ cvc5's license is more permissive; see above discussion.)
 Editline library (Improved Interactive Experience)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The `Editline Library <https://thrysoee.dk/editline/>`_ library is optionally
+The `Editline Library <https://thrysoee.dk/editline/>`_ is optionally
 used to provide command editing, tab completion, and history functionality at
 the cvc5 prompt (when running in interactive mode).  Check your distribution for
-a package named "libedit-dev" or "libedit-devel" or similar.
+a package named `libedit-dev`, `libedit-devel`, or similar.  Configure cvc5 with
+``configure.sh --editline`` to build with this dependency.  Additionally,
+to run tests related to interactive mode with this dependency, you will need
+the Python module `pexpect <https://pexpect.readthedocs.io/en/stable/>`_.
 
 
 Google Test Unit Testing Framework (Unit Tests)
