@@ -295,16 +295,13 @@ Node AletheNodeConverter::postConvert(Node n)
     case Kind::IS_INTEGER:
     case Kind::TO_INTEGER:
     case Kind::TO_REAL:
-<<<<<<< HEAD
+    case Kind::POW2:
     /* from ff */
     case Kind::FINITE_FIELD_ADD:
     case Kind::FINITE_FIELD_MULT:
     case Kind::CONST_FINITE_FIELD:
     case Kind::FINITE_FIELD_VARIETY:
     case Kind::FINITE_FIELD_IDEAL:
-=======
-    case Kind::POW2:
->>>>>>> origin/main
     /* from BV */
     case Kind::BITVECTOR_TYPE:
     case Kind::CONST_BITVECTOR:
@@ -449,23 +446,9 @@ Node AletheNodeConverter::postConvert(Node n)
       TypeNode unsupported = TypeNode::null();
       for (const TypeNode& ttn : allTypes)
       {
-<<<<<<< HEAD
-        case Kind::SORT_TYPE:
-        case Kind::INSTANTIATED_SORT_TYPE:
-        case Kind::FUNCTION_TYPE:
-        case Kind::BITVECTOR_TYPE:
-        case Kind::ARRAY_TYPE:
-        case Kind::CONSTRUCTOR_TYPE:
-        case Kind::SELECTOR_TYPE:
-        case Kind::TESTER_TYPE:
-        case Kind::ASCRIPTION_TYPE:
-        case Kind::FINITE_FIELD_TYPE:
-=======
-
         Kind tnk = ttn.getKind();
         Trace("test") << "Test " << ttn << ", kind " << tnk << "\n";
         switch (tnk)
->>>>>>> origin/main
         {
           case Kind::SORT_TYPE:
           case Kind::INSTANTIATED_SORT_TYPE:
@@ -476,6 +459,7 @@ Node AletheNodeConverter::postConvert(Node n)
           case Kind::SELECTOR_TYPE:
           case Kind::TESTER_TYPE:
           case Kind::ASCRIPTION_TYPE:
+          case Kind::FINITE_FIELD_TYPE:
           {
             continue;
           }

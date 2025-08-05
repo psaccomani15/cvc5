@@ -13,12 +13,6 @@
  * encoding Nodes as cocoa ring elements.
  */
 
-#include <CoCoA-0.99800/BigIntOps.H>
-#include <CoCoA-0.99800/PPMonoid.H>
-#include <CoCoA-0.99800/PolyRing.H>
-#include <CoCoA-0.99800/ring.H>
-#include <CoCoA-0.99800/symbol.H>
-
 #include "theory/shared_terms_database.h"
 #ifdef CVC5_USE_COCOA
 
@@ -36,6 +30,7 @@
 
 // internal includes
 #include "expr/node_traversal.h"
+#include "expr/node.h"
 #include "theory/ff/cocoa_util.h"
 #include "theory/theory.h"
 
@@ -345,8 +340,6 @@ Node CocoaEncoder::decode(CoCoA::ConstRefRingElem p)
   std::string strRep = extractStr(p);
   // If the term is already registered, we just return it.
   if (d_symNodes.count(strRep)) return d_symNodes.at(strRep);
-  NodeManager* nm = NodeManager::currentNM();
-  Node polyRepr = nm->mkConst(FiniteFieldValue::mkZero(size()));
   std::vector<Node> monomials;
   std::vector<CoCoA::RingElem> indets = CoCoA::indets(CoCoA::owner(p));
   size_t indetsNum = indets.size();
@@ -354,7 +347,8 @@ Node CocoaEncoder::decode(CoCoA::ConstRefRingElem p)
        ++it)
   {
     auto pp = CoCoA::PP(it);
-    Node ppRepr = nm->mkConst(cocoaFfToFfVal(CoCoA::coeff(it)));
+    std::vector<Node> terms{};
+    if (!CoCoA::IsOne(CoCoA::coeff(it))) terms.push_back(FieldObj::mkConst(cocoaFfToFfVal(CoCoA::coeff(it))));
     // Start by representing the coefficient as a constant term.
     // Find all indets in this pp and their exponent.
     for (size_t idx = 0; idx < indetsNum; ++idx)
@@ -370,22 +364,16 @@ Node CocoaEncoder::decode(CoCoA::ConstRefRingElem p)
           Assert(d_diseqNodes.count(extractStr(indets[idx])));
           indetSymbol = d_diseqNodes.at(extractStr(indets[idx]));
         }
-        std::vector<Node> term;
-        if (!CoCoA::IsOne(CoCoA::coeff(it))) term.push_back(ppRepr);
-        term.insert(term.end(), exponent, indetSymbol);
-        if (term.size() > 1) ppRepr = nm->mkNode(Kind::FINITE_FIELD_MULT, term);
+        terms.insert(terms.end(), exponent, indetSymbol);
       }
     }
+    Node ppRepr = mkMul(terms);
     monomials.push_back(ppRepr);
-    polyRepr = ppRepr;
   }
-  // If there is more than one monomial, polyRepr already contains it.
-  if (monomials.size() > 1)
-    polyRepr = nm->mkNode(Kind::FINITE_FIELD_ADD, monomials);
-  return polyRepr;
+
+  return mkAdd(monomials);
 }
 }  // namespace ff
 }  // namespace theory
 }  // namespace cvc5::internal
-
 #endif /* CVC5_USE_COCOA */
