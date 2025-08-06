@@ -51,7 +51,7 @@ public final class Utils
     /**
      * Apple macOS operating system.
      */
-    OSX,
+    MAC,
     /**
      * Linux-based operating system.
      */
@@ -82,51 +82,6 @@ public final class Utils
       if (osName.startsWith("linux"))
         return LINUX;
       return UNKNOWN;
-    }
-  }
-
-  /**
-   * Represent the CPU architecture supported by cvc5.
-   *
-   * It includes logic to detect the current CPU architecture at runtime.
-   */
-  public enum CPUArchitecture {
-    /**
-     * ARMv8 64 bit.
-     */
-    AARCH_64,
-    /**
-     * Intel x86_64/AMD 64 bit.
-     */
-    X86_64,
-    /**
-     * Unknown or unsupported CPU architecture.
-     */
-    UNKNOWN;
-
-     /**
-     * The detected CPU architecture on which the application is currently running.
-     */
-    public static final CPUArchitecture CURRENT = detectCPUArchitecture();
-
-    /**
-     * Detect the current CPU architecture by examining the {@code os.arch} system property.
-     *
-     * @return the {@link CPUArchitecture} enum constant that matches the current CPU architecture,
-     *         or {@link #UNKNOWN} if it cannot be determined.
-     */
-    private static CPUArchitecture detectCPUArchitecture()
-    {
-      String osArch = System.getProperty("os.arch").toLowerCase(Locale.ROOT);
-      switch (osArch) {
-        case "aarch64":
-          return AARCH_64;
-        case "amd64":
-        case "x86_64":
-          return X86_64;
-        default:
-          return UNKNOWN;
-      }
     }
   }
 
