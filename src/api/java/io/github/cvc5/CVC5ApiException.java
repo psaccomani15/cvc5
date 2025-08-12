@@ -19,7 +19,7 @@ package io.github.cvc5;
  * Base class for all API exceptions.
  * If thrown, all API objects may be in an unsafe state.
  */
-public class CVC5ApiException extends RuntimeException
+public class CVC5ApiException extends Exception
 {
   /**
    * Construct with message from a string.
