@@ -129,10 +129,10 @@ name   = "Proof"
 
 [[option]]
   name       = "proofChainMRes"
-  category   = "regular"
+  category   = "expert"
   long       = "proof-chain-m-res"
   type       = "bool"
-  default    = "true"
+  default    = "false"
   help       = "Use chain multiset resolution"
 
 [[option]]
