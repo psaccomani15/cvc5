@@ -33,11 +33,6 @@ endif()
 configure_file(conf.py.in ${CMAKE_CURRENT_BINARY_DIR}/conf.py)
 configure_file(references.bib ${CMAKE_CURRENT_BINARY_DIR}/references.bib COPYONLY)
 
-set(SPHINX_WARNING_AS_ERROR "")
-if(TREAT_WARNING_AS_ERROR)
-  set(SPHINX_WARNING_AS_ERROR "-W")
-endif()
-
 add_custom_target(
   docs
   DEPENDS docs-cpp docs-c docs-java docs-python gen-options cvc5-bin
