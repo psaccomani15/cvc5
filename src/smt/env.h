@@ -250,10 +250,6 @@ class Env
    */
   bool isFiniteType(TypeNode tn) const;
   /**
-   * Is the given cardinality class infinite based on the options?
-   */
-  bool isFiniteCardinalityClass(CardinalityClass cc) const;
-  /**
    * Is first class type.
    */
   bool isFirstClassType(TypeNode tn) const;
