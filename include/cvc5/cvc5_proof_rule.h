@@ -2224,7 +2224,7 @@ enum ENUM(ProofRule)
    *
    * .. math::
    *
-   *   \inferrule{- \mid t}{(t < 0.0) \leftrightarrow (\exp(t) < 1.0)}
+   *   \inferrule{- \mid t}{(t < 0) \leftrightarrow (\exp(t) < 1)}
    *
    * \endverbatim
    */
@@ -2235,7 +2235,7 @@ enum ENUM(ProofRule)
    *
    * .. math::
    *
-   *   \inferrule{- \mid t}{\exp(t) > 0.0}
+   *   \inferrule{- \mid t}{\exp(t) > 0}
    *
    * \endverbatim
    */
@@ -2247,7 +2247,7 @@ enum ENUM(ProofRule)
    *
    * .. math::
    *
-   *   \inferrule{- \mid t}{t \leq 0.0 \lor \exp(t) > t+1.0}
+   *   \inferrule{- \mid t}{t \leq 0 \lor \exp(t) > t+1}
    *
    * \endverbatim
    */
@@ -2258,7 +2258,7 @@ enum ENUM(ProofRule)
    *
    * .. math::
    *
-   *   \inferrule{- \mid t}{(t=0.0) \leftrightarrow (\exp(t) = 1.0)}
+   *   \inferrule{- \mid t}{(t=0) \leftrightarrow (\exp(t) = 1)}
    *
    * \endverbatim
    */
@@ -2352,7 +2352,7 @@ enum ENUM(ProofRule)
    *
    * .. math::
    *
-   *   \inferrule{- \mid t}{\sin(t) \leq 1.0 \land \sin(t) \geq -1.0}
+   *   \inferrule{- \mid t}{\sin(t) \leq 1 \land \sin(t) \geq -1}
    *
    * \endverbatim
    */
@@ -2384,7 +2384,7 @@ enum ENUM(ProofRule)
    *
    * .. math::
    *
-   *   \inferrule{- \mid t}{\sin(t) + \sin(-t) = 0.0}
+   *   \inferrule{- \mid t}{\sin(t) - \sin(-t) = 0}
    *
    * \endverbatim
    */
@@ -2395,7 +2395,7 @@ enum ENUM(ProofRule)
    *
    * .. math::
    *
-   *   \inferrule{- \mid t}{(t > 0.0 \rightarrow \sin(t) < t) \land (t < 0.0
+   *   \inferrule{- \mid t}{(t > 0 \rightarrow \sin(t) < t) \land (t < 0
    *   \rightarrow \sin(t) > t)}
    *
    * \endverbatim
