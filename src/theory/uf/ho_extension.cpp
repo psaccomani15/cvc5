@@ -456,13 +456,15 @@ unsigned HoExtension::checkExtensionality(TheoryModel* m)
                 te++;
                 Node v2 = *te;
                 Assert(!v2.isNull() && v2 != v1);
-                Trace("uf-ho-debug") << "Finite witness: " << edeq[0][0] << " == " << v1 << std::endl;
-                Trace("uf-ho-debug") << "Finite witness: " << edeq[0][1] << " == " << v2 << std::endl;
                 success = m->assertEquality(edeq[0][0], v1, true);
                 if (success)
                 {
                   success = m->assertEquality(edeq[0][1], v2, true);
                 }
+              }
+              else
+              {
+                success = m->assertEquality(edeq[0][0], edeq[0][1], false);
               }
             }
             if (!success)
