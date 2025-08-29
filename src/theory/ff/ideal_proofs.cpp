@@ -211,7 +211,7 @@ void IdealProof::finishProof(bool rootBranching, CDProof* globalTheoryProofs)
   d_membershipProofs->registerProofs();
   std::vector<Node> childrenSatFact;
   std::vector<Node> childrenUnsatFact;
-  for (auto branchProofs : d_childrenProofs)
+  for (const auto& branchProofs : d_childrenProofs)
   {
     childrenSatFact.push_back(branchProofs->getSatFact());
     childrenUnsatFact.push_back(branchProofs->getUnsatFact());
@@ -235,14 +235,14 @@ void IdealProof::finishProof(bool rootBranching, CDProof* globalTheoryProofs)
     std::vector<Node> polarity;
     std::vector<Node> pivot;
     std::vector<Node> resolutionPremises{conclusion};
-    for (Node unsatFacts : childrenUnsatFact)
+    for (const auto& unsatFacts : childrenUnsatFact)
     {
       d_proof.addProof(globalTheoryProofs->getProofFor(unsatFacts));
       resolutionPremises.push_back(unsatFacts);
     }
     for (size_t it = 0; it < childrenSatFact.size(); ++it)
       polarity.push_back(trueNode);
-    for (Node satFact : childrenSatFact) pivot.push_back(satFact);
+    for (const auto& satFact : childrenSatFact) pivot.push_back(satFact);
     d_proof.addStep(falseNode,
                     ProofRule::CHAIN_RESOLUTION,
                     resolutionPremises,

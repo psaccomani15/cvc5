@@ -41,7 +41,8 @@ Node AletheNodeConverter::maybeConvert(Node n, bool isAssumption)
   return res;
 }
 
-void collectTypes(std::vector<TypeNode>& allTypesVec, std::unordered_set<TypeNode>& allTypes)
+void collectTypes(std::vector<TypeNode>& allTypesVec,
+                  std::unordered_set<TypeNode>& allTypes)
 {
   for (size_t i = 0, size = allTypesVec.size(); i < size; ++i)
   {

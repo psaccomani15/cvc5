@@ -133,7 +133,6 @@ bool isFfTerm(const Node& n, const FfSize& field);
 /** Is this a (this) field fact (equality of disequality)? */
 bool isFfFact(const Node& n, const FfSize& field);
 }  // namespace ff
-   // namespace ff
 }  // namespace theory
 }  // namespace cvc5::internal
 
