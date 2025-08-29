@@ -2551,10 +2551,11 @@ enum ENUM(ProofRule)
    *
    * .. math::
    *
-   *   \inferrule{\mathcal{V}(\langle G \rangle) \neq \emptyset, p \in \langle G \rangle, g_1 \in \langle G \rangle, \dots, g_m \in \langle G \rangle \mid \mathbb{Roots} (p)}
+   *   \inferrule{\mathcal{V}(\langle G \rangle) \neq \emptyset, p \in \langle G \rangle, g_1 \in \langle G \rangle, \dots, g_m \in \langle G \rangle \mid N, \mathbb{Roots} (p)}
    *   {\lor_{v \in \mathbb{Roots}(p)} \mathcal V(\langle G \cup \{x - v \}\rangle) \neq \emptset}
    *
-   *   where :math:`p` is an univariate polynomial and G is a set of polynomials. This rule unifies both Triangular
+   *   where :math:`p` is an univariate polynomial, G is a set of polynomials and N is the
+   *   set of non-assigned variables. This rule unifies both Triangular
    *   and Univariate present in the paper Ozdemir et al, CAV 2023, "Satisfiability
    *   Modulo Finite Fields".
    */

@@ -177,15 +177,10 @@ Node IdealProof::proveBrancher(std::vector<Node>& childrenSatFact,
   std::vector<Node> arguments = {
       nodeManager()->mkNode(Kind::SEXPR, nonAssignedVars())};
   d_membershipProofs->registerProofs();
-  std::vector<Node> membershipFacts;
   for (auto poly : CoCoA::GBasis(d_cocoaIdeal))
   {
-    membershipFacts.push_back(d_membershipProofs->getMembershipFact(poly));
-    Assert(d_proof.getProof(membershipFacts.back()) != nullptr)
-        << premises.back();
+    premises.push_back(d_membershipProofs->getMembershipFact(poly));
   }
-  if (membershipFacts.size() > 1)
-    premises.push_back(nodeManager()->mkNode(Kind::AND, membershipFacts));
   // Here comes the main difference: Exhaust_branch do not contain facts about
   // a branch polynomial.
   if (!rootBranching)

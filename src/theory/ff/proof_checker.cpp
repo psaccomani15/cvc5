@@ -29,87 +29,80 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
                                        const std::vector<Node>& children,
                                        const std::vector<Node>& args)
 {
-  if (id == ProofRule::FF_EXHAUST_BRANCH || id == ProofRule::FF_ROOT_BRANCH)
+  if (id == ProofRule::FF_EXHAUST_BRANCH)
   {
-    // First, check the common structure of both rules
     Assert(args.size() >= 1);
     Assert(children.size() >= 2);
     std::vector<Node> generators;
-    // Get all nodes that represents a Gb element
-    if (children[1].getKind() == Kind::AND)
+    for (size_t it = 1; it < children.size(); ++it)
     {
-      for (Node membershipProof : children[1])
-      {
-        Assert(membershipProof.getKind() == Kind::SET_MEMBER);
-        generators.push_back(membershipProof[0]);
-      }
+      Assert(children[it].getKind() == Kind::SET_MEMBER);
+      generators.push_back(children[it][0]);
     }
-    else
-    {
-      Assert(children[1].getKind() == Kind::SET_MEMBER);
-      generators.push_back(children[1]);
-    }
-    // Compute each disjunct separately
     std::vector<Node> disjuncts;
     TypeNode field = generators[0].getType();
     Assert(field.isFiniteField());
     Integer maxValue = field.getFfSize();
-    FfSize fieldSize = FfSize(maxValue);
-    if (id == ProofRule::FF_EXHAUST_BRANCH)
+    FfSize fieldCard(maxValue);
+    for (const auto& var : args[0])
     {
-      // All non-assigned variables branch through all elements in the field
-      for (auto var : args[0])
+      for (Integer it = 0; it < maxValue; it += 1)
       {
-        for (Integer it = 0; it < fieldSize; it += 1)
-        {
-          Node assignmentPoly = var;
-          if (it > 0)
-          {
-            Node assignmentValue =
-                nodeManager()->mkConst(FiniteFieldValue(maxValue - it));
-            assignmentPoly = nodeManager()->mkNode(
-                Kind::FINITE_FIELD_ADD, var, assignmentValue);
-          }
-          generators.push_back(assignmentPoly);
-          Node newIdeal =
-              nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, generators);
-          disjuncts.push_back(emptyVarPred(nodeManager(), newIdeal).negate());
-          generators.pop_back();
-        }
-      }
-    }
-    else
-    {
-      Node branchVar = args[1];
-      bool varNonAssigned = false;
-      for (auto nonAssigned : args[0])
-      {
-        if (nonAssigned == branchVar)
-        {
-          varNonAssigned = true;
-          break;
-        }
-      }
-      Assert(varNonAssigned);
-      for (Node root : args[2])
-      {
-        // The polynomial will be x - root. We need then proceed to compute r
-        // = -root and represent it as x + r
-        Integer rootValue = root.getConst<FiniteFieldValue>().getValue();
-        Node branchValue = nodeManager()->mkConst(
-            FiniteFieldValue(maxValue - rootValue, fieldSize));
-        generators.push_back(nodeManager()->mkNode(
-            Kind::FINITE_FIELD_ADD, branchVar, branchValue));
+        Node assignmentPoly = var;
+        if (it > 0)
+          assignmentPoly = nodeManager()->mkNode(
+              Kind::FINITE_FIELD_ADD,
+              var,
+              nodeManager()->mkConst(FiniteFieldValue(maxValue - it, fieldCard)));
+        generators.push_back(assignmentPoly);
         Node newIdeal =
             nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, generators);
         disjuncts.push_back(emptyVarPred(nodeManager(), newIdeal).negate());
-        generators.pop_back();
       }
     }
     return nodeManager()->mkOr(disjuncts);
   }
-
-  if (id == ProofRule::FF_G)
+  if (id == ProofRule::FF_ROOT_BRANCH)
+  {
+    Assert(args.size() >= 1);
+    Assert(children.size() >= 2);
+    std::vector<Node> generators;
+    for (size_t it = 1; it < children.size() - 1; ++it)
+    {
+      Assert(children[it].getKind() == Kind::SET_MEMBER);
+      generators.push_back(children[it][0]);
+    }
+    std::vector<Node> disjuncts;
+    TypeNode field = generators[0].getType();
+    Assert(field.isFiniteField());
+    Integer maxValue = field.getFfSize();
+    FfSize fieldCard(maxValue);
+    Node branchVariable = args[1];
+    bool isNonAssigned = false;
+    for (const auto& nonAssigned : args[0])
+    {
+      if (nonAssigned == branchVariable)
+      {
+        isNonAssigned = true;
+        break;
+      }
+    }
+    Assert(isNonAssigned);
+    for (const auto& root : args[2])
+    {
+      Integer rootValue = root.getConst<FiniteFieldValue>().getValue();
+      Node branchValue = nodeManager()->mkConst(
+          FiniteFieldValue(maxValue - rootValue, fieldCard));
+      generators.push_back(nodeManager()->mkNode(
+          Kind::FINITE_FIELD_ADD, branchVariable, branchValue));
+      Node newIdeal =
+          nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, generators);
+      disjuncts.push_back(emptyVarPred(nodeManager(), newIdeal).negate());
+      generators.pop_back();
+    }
+    return nodeManager()->mkOr(disjuncts);
+  }
+    if (id == ProofRule::FF_G)
   {
     Assert(children.empty());
     Assert(args.size() == 2);

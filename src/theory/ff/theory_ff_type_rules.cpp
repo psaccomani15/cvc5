@@ -121,7 +121,7 @@ TypeNode FiniteFieldVariety::computeType(NodeManager* nodeManager,
   Assert(n[0].getType().isSet());
   TypeNode ffType = n[0][0].getType();
   Assert(ffType.isFiniteField());
-  return nodeManager->mkSetType(ffType);
+  return n[0].getType();
 }
 TypeNode FiniteFieldIdealMembership::preComputeType(NodeManager* nm, TNode n)
 {
