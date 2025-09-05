@@ -2384,7 +2384,7 @@ enum ENUM(ProofRule)
    *
    * .. math::
    *
-   *   \inferrule{- \mid t}{\sin(t) - \sin(-t) = 0.0}
+   *   \inferrule{- \mid t}{\sin(t) + \sin(-t) = 0.0}
    *
    * \endverbatim
    */
