@@ -331,24 +331,16 @@ unsigned HoExtension::checkExtensionality(TheoryModel* m)
       // We classify a function here to determine whether we need to apply
       // extensionality eagerly during solving. We apply extensionality
       // eagerly during solving if
-      // (A) The function type has finite cardinality,
-      // (B) All of its arguments have finite cardinality, or
-      // (C) It has a function as an argument.
-      // The latter is required so that we recursively consider extensionality
-      // between function constants introduced for extensionality lemmas.
-      bool eagerExtType = true;
+      // (A) The function type has finite cardinality, or
+      // (B) All of its arguments have finite cardinality.
+      bool finiteExtType = true;
       if (!d_env.isFiniteType(tn))
       {
         for (const TypeNode& tna : argTypes)
         {
           if (!d_env.isFiniteType(tna))
           {
-            eagerExtType = false;
-          }
-          if (tna.isFunction())
-          {
-            eagerExtType = true;
-            break;
+            finiteExtType = false;
           }
         }
       }
@@ -357,7 +349,7 @@ unsigned HoExtension::checkExtensionality(TheoryModel* m)
       // such function are not necessary to be handled during solving.
       // If not during collect model, must have a finite function type, since
       // such function symbols must be handled during solving.
-      if (eagerExtType != isCollectModel)
+      if (finiteExtType != isCollectModel)
       {
         func_eqcs[tn].push_back(eqc);
         Trace("uf-ho-debug")
@@ -456,15 +448,13 @@ unsigned HoExtension::checkExtensionality(TheoryModel* m)
                 te++;
                 Node v2 = *te;
                 Assert(!v2.isNull() && v2 != v1);
+                Trace("uf-ho-debug") << "Finite witness: " << edeq[0][0] << " == " << v1 << std::endl;
+                Trace("uf-ho-debug") << "Finite witness: " << edeq[0][1] << " == " << v2 << std::endl;
                 success = m->assertEquality(edeq[0][0], v1, true);
                 if (success)
                 {
                   success = m->assertEquality(edeq[0][1], v2, true);
                 }
-              }
-              else
-              {
-                success = m->assertEquality(edeq[0][0], edeq[0][1], false);
               }
             }
             if (!success)
