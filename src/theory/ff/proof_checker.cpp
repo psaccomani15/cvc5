@@ -20,7 +20,7 @@ void FfProofRuleChecker::registerTo(ProofChecker* pc)
   pc->registerChecker(ProofRule::FF_R_UP, this);
   pc->registerChecker(ProofRule::FF_R_DOWN, this);
   pc->registerChecker(ProofRule::FF_S, this);
-  pc->registerChecker(ProofRule::FF_FIELD_SPLIT, this);
+  pc->registerChecker(ProofRule::FF_POLY_CONVERSION, this);
 }
 
 /**TODO: Refactor. Create Proof Utils file. Put membership utility defined in
@@ -155,7 +155,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
     return d_nm->mkNode(Kind::SET_MEMBER, args[1], ideal);
   }
-  if (id == ProofRule::FF_FIELD_SPLIT)
+  if (id == ProofRule::FF_POLY_CONVERSION)
   {
     Assert(children.size() == 0);
     Assert(args.size() == 2);

@@ -2444,7 +2444,8 @@ enum ENUM(ProofRule)
    * \endverbatim
    */
   EVALUE(ARITH_TRANS_SINE_APPROX_BELOW_POS),
-  /*  Finite Field Rules */
+  // Finite Field Rules
+
   /**
    * \verbatim embed:rst:leading-asterisk
    * **Finite Fields - Polynomial Conversion**
@@ -2458,7 +2459,7 @@ enum ENUM(ProofRule)
    * in which each :math:`g_i` is a polynomial that represents the literal :math:`\ell_i`.
    * \endverbatim
    */
-  EVALUE(FF_FIELD_SPLIT),
+  EVALUE(FF_POLY_CONVERSION),
    /**
    * \verbatim embed:rst:leading-asterisk
    * **Finite Fields -- Field Polynomial Inclusion**

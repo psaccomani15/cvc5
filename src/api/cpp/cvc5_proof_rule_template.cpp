@@ -208,7 +208,7 @@ const char* toString(ProofRule rule)
     case ProofRule::FF_EXHAUST_BRANCH: return "FF_EXHAUST_BRANCH";
     case ProofRule::FF_FIELD_POLYS: return "FF_FIELD_POLYS";
     case ProofRule::FF_ONE_UNSAT: return "FF_ONE_UNSAT";
-    case ProofRule::FF_FIELD_SPLIT: return "FF_FIELD_SPLIT";
+    case ProofRule::FF_POLY_CONVERSION: return "FF_POLY_CONVERSION";
     case ProofRule::FF_Z: return "FF_Z";
     case ProofRule::FF_G: return "FF_G";
     case ProofRule::FF_R_UP: return "F_RUP";
@@ -242,7 +242,8 @@ const char* toString(cvc5::ProofRewriteRule rule)
     case ProofRewriteRule::UBV_TO_INT_ELIM: return "ubv-to-int-elim";
     case ProofRewriteRule::INT_TO_BV_ELIM: return "int-to-bv-elim";
     case ProofRewriteRule::MACRO_BOOL_NNF_NORM: return "macro-bool-nnf-norm";
-    case ProofRewriteRule::MACRO_BOOL_BV_INVERT_SOLVE: return "macro-bool-bv-invert-solve";
+    case ProofRewriteRule::MACRO_BOOL_BV_INVERT_SOLVE:
+      return "macro-bool-bv-invert-solve";
     case ProofRewriteRule::MACRO_ARITH_INT_EQ_CONFLICT:
       return "macro-arith-int-eq-conflict";
     case ProofRewriteRule::MACRO_ARITH_INT_GEQ_TIGHTEN:
@@ -259,7 +260,8 @@ const char* toString(cvc5::ProofRewriteRule rule)
     case ProofRewriteRule::MACRO_LAMBDA_CAPTURE_AVOID:
       return "macro-lambda-capture-avoid";
     case ProofRewriteRule::ARRAYS_SELECT_CONST: return "arrays-select-const";
-    case ProofRewriteRule::MACRO_ARRAYS_NORMALIZE_OP: return "macro-arrays-normalize-op";
+    case ProofRewriteRule::MACRO_ARRAYS_NORMALIZE_OP:
+      return "macro-arrays-normalize-op";
     case ProofRewriteRule::MACRO_ARRAYS_NORMALIZE_CONSTANT:
       return "macro-arrays-normalize-constant";
     case ProofRewriteRule::ARRAYS_EQ_RANGE_EXPAND:
@@ -362,7 +364,7 @@ const char* toString(cvc5::ProofRewriteRule rule)
     case ProofRewriteRule::STR_IN_RE_SIGMA_STAR: return "str-in-re-sigma-star";
     case ProofRewriteRule::MACRO_SUBSTR_STRIP_SYM_LENGTH:
       return "macro-substr-strip-sym-length";
-   case ProofRewriteRule::SETS_EVAL_OP: return "sets-eval-op";
+    case ProofRewriteRule::SETS_EVAL_OP: return "sets-eval-op";
     case ProofRewriteRule::SETS_INSERT_ELIM:
       return "sets-insert-elim";
       //================================================= RARE rules

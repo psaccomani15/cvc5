@@ -251,7 +251,7 @@ void SubTheory::produceContradiction(std::vector<Node>& fieldPolys,
   Trace("ff::proof") << "Assumption: " << unsatCore << std::endl;
   Node commonRoot = emptyVarPred(nodeManager(), idealGens).negate();
   Node satIffCRoot = nodeManager()->mkNode(Kind::EQUAL, unsatCore, commonRoot);
-  d_proof->addStep(satIffCRoot, ProofRule::FF_FIELD_SPLIT, {}, {});
+  d_proof->addStep(satIffCRoot, ProofRule::FF_POLY_CONVERSION, {}, {});
   d_proof->addStep(
       commonRoot, ProofRule::EQ_RESOLVE, {unsatCore, satIffCRoot}, {});
   if (!fieldPolys.empty())
