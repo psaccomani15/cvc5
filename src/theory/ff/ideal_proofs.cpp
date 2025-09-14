@@ -110,8 +110,8 @@ void IdealProof::registerBranchPolynomial(CoCoA::RingElem branchPoly)
                      << std::endl;
   // Should check if the node representation of this polynomial is cached.
   d_branchPoly = d_enc.decode(branchPoly);
-  d_branchPolyProof =
-      d_membershipProofs->proofIdealMembership(branchPoly, d_cocoaIdeal);
+  d_branchPolyProof  =
+      d_membershipProofs->proveIdealMembership(branchPoly, d_cocoaIdeal);
   d_branchVar = d_enc.decode(CoCoA::indet(
       d_cocoaIdeal->myRing(), CoCoA::UnivariateIndetIndex(branchPoly)));
   Trace("ff::proof") << d_branchPolyProof << std::endl;
@@ -119,12 +119,12 @@ void IdealProof::registerBranchPolynomial(CoCoA::RingElem branchPoly)
 
 void IdealProof::registerRoots(std::vector<CoCoA::RingElem> roots)
 {
-  std::vector<Node> rootsTerms;
+  std::vector<Node> rootsNode;
   for (auto root : roots)
   {
-    rootsTerms.push_back(d_enc.decode(root));
+    rootsNode.push_back(d_enc.decode(root));
   }
-  d_branchPolyRoots = nodeManager()->mkNode(Kind::SEXPR, rootsTerms);
+  d_branchPolyRoots = nodeManager()->mkNode(Kind::SEXPR, rootsNode);
 }
 std::shared_ptr<IdealProof> IdealProof::registerBranch(
     CoCoA::RingElem choicePoly, CoCoA::ideal newIdeal)

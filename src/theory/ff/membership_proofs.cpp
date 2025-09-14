@@ -82,7 +82,7 @@ Node GBProof::getMembershipFact(CoCoA::ConstRefRingElem poly)
 }
 
 // Register or returns a membership proof for a given polynomial
-Node GBProof::proofIdealMembership(CoCoA::RingElem poly, CoCoA::ideal ideal)
+Node GBProof::proveIdealMembership(CoCoA::RingElem poly, CoCoA::ideal ideal)
 {
   Node polyRepr = d_enc.decode(poly);
   Node membershipRepr = produceMembershipNode(polyRepr);

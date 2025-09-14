@@ -67,6 +67,7 @@ Result SubTheory::postCheck(Theory::Effort e)
 {
   d_conflict.clear();
   d_model.clear();
+  std::vector<CoCoA::RingElem> root;
   Result result = {
       Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON, "internal"};
   if (e == Theory::EFFORT_FULL)
@@ -195,7 +196,7 @@ Result SubTheory::postCheck(Theory::Effort e)
           Trace("ff::gb") << "Non-trivial GB" << std::endl;
 
           // common root (vec of CoCoA base ring elements)
-          std::vector<CoCoA::RingElem> root =
+           root =
               findZero(ideal, idealProofs, nodeManager(), d_proof, d_env);
           if (root.empty())
           {
@@ -206,7 +207,8 @@ Result SubTheory::postCheck(Theory::Effort e)
           }
           else
           {
-            // SAT: populate d_model from the root
+            // SAT: populate d_model from the
+            result = Result::SAT;
             Assert(d_model.empty());
             const auto nm = nodeManager();
             Trace("ff::model") << "Model GF(" << size() << "):" << std::endl;
@@ -227,7 +229,7 @@ Result SubTheory::postCheck(Theory::Effort e)
       {
         Unreachable() << options().ff.ffSolver << std::endl;
       }
-    AlwaysAssert(result.getStatus() != Result::UNKNOWN);
+    AlwaysAssert(result.getStatus() != Result::UNKNOWN) << root;
     return result;
   }
   catch (FfTimeoutException& exc)

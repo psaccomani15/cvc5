@@ -70,7 +70,7 @@ class GBProof : protected EnvObj
    * element of the ideal.
    * @param ideal: the cocoalib representantion for the ideal.
    */
-  Node proofIdealMembership(CoCoA::RingElem poly, CoCoA::ideal ideal);
+  Node proveIdealMembership(CoCoA::RingElem poly, CoCoA::ideal ideal);
   /**
    * Restrict oursevels to a subset of of the original ideal representation.
    * Used for Unsat Core Restriction.

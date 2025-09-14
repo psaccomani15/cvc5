@@ -13,6 +13,7 @@
  * encoding Nodes as cocoa ring elements.
  */
 
+#include <CoCoA-0.99800/symbol.H>
 #include "theory/shared_terms_database.h"
 #ifdef CVC5_USE_COCOA
 
@@ -339,7 +340,11 @@ Node CocoaEncoder::decode(CoCoA::ConstRefRingElem p)
 {
   std::string strRep = extractStr(p);
   // If the term is already registered, we just return it.
+  Trace("ff::cocoa::decode") << "Decoding " << strRep << std::endl;
   if (d_symNodes.count(strRep)) return d_symNodes.at(strRep);
+  auto baseRing = CoCoA::owner(p);
+  if (CoCoA::IsFiniteField(baseRing))
+      return FieldObj::mkConst(cocoaFfToFfVal(p));
   std::vector<Node> monomials;
   std::vector<CoCoA::RingElem> indets = CoCoA::indets(CoCoA::owner(p));
   size_t indetsNum = indets.size();
@@ -348,7 +353,7 @@ Node CocoaEncoder::decode(CoCoA::ConstRefRingElem p)
   {
     auto pp = CoCoA::PP(it);
     std::vector<Node> terms{};
-    if (!CoCoA::IsOne(CoCoA::coeff(it))) terms.push_back(FieldObj::mkConst(cocoaFfToFfVal(CoCoA::coeff(it))));
+    terms.push_back(FieldObj::mkConst(cocoaFfToFfVal(CoCoA::coeff(it))));
     // Start by representing the coefficient as a constant term.
     // Find all indets in this pp and their exponent.
     for (size_t idx = 0; idx < indetsNum; ++idx)
@@ -367,10 +372,15 @@ Node CocoaEncoder::decode(CoCoA::ConstRefRingElem p)
         terms.insert(terms.end(), exponent, indetSymbol);
       }
     }
-    Node ppRepr = mkMul(terms);
+    Node ppRepr;
+    if (terms[0] == FieldObj::one() && terms.size() > 1)
+      ppRepr = mkMul(std::vector<Node>(terms.begin() + 1, terms.end()));
+    else
+      ppRepr = mkMul(terms);
     monomials.push_back(ppRepr);
   }
-
+  Node result = mkAdd(monomials);
+  Trace("ff::cocoa::decode") << "\tResult: " << "p" << std::endl;
   return mkAdd(monomials);
 }
 }  // namespace ff
