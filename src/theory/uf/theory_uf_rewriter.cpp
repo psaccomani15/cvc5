@@ -45,10 +45,6 @@ TheoryUfRewriter::TheoryUfRewriter(NodeManager* nm) : TheoryRewriter(nm)
                            TheoryRewriteCtx::PRE_DSL);
   registerProofRewriteRule(ProofRewriteRule::DISTINCT_ELIM,
                            TheoryRewriteCtx::PRE_DSL);
-  registerProofRewriteRule(ProofRewriteRule::DISTINCT_FALSE,
-                           TheoryRewriteCtx::PRE_DSL);
-  registerProofRewriteRule(ProofRewriteRule::DISTINCT_TRUE,
-                           TheoryRewriteCtx::PRE_DSL);
 }
 
 RewriteResponse TheoryUfRewriter::postRewrite(TNode node)
@@ -402,43 +398,10 @@ Node TheoryUfRewriter::rewriteViaRule(ProofRewriteRule id, const Node& n)
         }
       }
       break;
-    case ProofRewriteRule::DISTINCT_FALSE:
-      if (n.getKind() == Kind::DISTINCT)
-      {
-        std::unordered_set<Node> children;
-        for (const Node& c : n)
-        {
-          if (!children.insert(c).second)
-          {
-            // distinct with duplicate child
-            return nodeManager()->mkConst(false);
-          }
-        }
-      }
-      break;
-    case ProofRewriteRule::DISTINCT_TRUE:
-      if (n.getKind() == Kind::DISTINCT)
-      {
-        bool allDistinctConst = true;
-        std::unordered_set<Node> children;
-        for (const Node& c : n)
-        {
-          if (!c.isConst() || !children.insert(c).second)
-          {
-            allDistinctConst = false;
-            break;
-          }
-        }
-        if (allDistinctConst)
-        {
-          return nodeManager()->mkConst(true);
-        }
-      }
-      break;
     case ProofRewriteRule::DISTINCT_ELIM:
       if (n.getKind() == Kind::DISTINCT)
       {
-        return blastDistinct(nodeManager(), n);
+        return blastDistinct(n);
       }
       break;
     default: break;
@@ -650,12 +613,14 @@ RewriteResponse TheoryUfRewriter::rewriteDistinct(TNode node)
     return RewriteResponse(REWRITE_DONE, nodeManager()->mkConst<bool>(false));
   }
   // otherwise, eagerly expand
-  return RewriteResponse(REWRITE_DONE, blastDistinct(nodeManager(), node));
+  return RewriteResponse(REWRITE_DONE, blastDistinct(node));
 }
 
-Node TheoryUfRewriter::blastDistinct(NodeManager* nm, TNode in)
+Node TheoryUfRewriter::blastDistinct(TNode in)
 {
   Assert(in.getKind() == Kind::DISTINCT);
+
+  NodeManager* nm = nodeManager();
 
   if (in.getNumChildren() == 2)
   {

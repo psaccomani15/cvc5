@@ -94,6 +94,10 @@ class TheoryUfRewriter : public TheoryRewriter
   RewriteResponse rewriteIntToBV(TNode node);
   /** rewrite distinct */
   RewriteResponse rewriteDistinct(TNode node);
+  /**
+   * Blast distinct, which eliminates the distinct operator.
+   */
+  Node blastDistinct(TNode node);
 }; /* class TheoryUfRewriter */
 
 }  // namespace uf
