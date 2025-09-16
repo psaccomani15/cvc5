@@ -277,276 +277,271 @@ bool Smt2Printer::toStreamBase(std::ostream& out,
         {
           out << "#b" << bv.toString();
         }
-        break;
-      }
-      case Kind::CONST_FINITE_FIELD:
-      {
-        const FiniteFieldValue& ff = n.getConst<FiniteFieldValue>();
-        out << "#f" << ff.getValue() << "m" << ff.getFieldSize();
-        break;
-      }
-      case Kind::CONST_FLOATINGPOINT:
-      {
-        out << n.getConst<FloatingPoint>().toString(
-            options::ioutils::getBvPrintConstsAsIndexedSymbols(out));
-        break;
-      }
-      case Kind::CONST_ROUNDINGMODE:
-        switch (n.getConst<RoundingMode>())
-        {
-          case RoundingMode::ROUND_NEAREST_TIES_TO_EVEN:
-            out << "roundNearestTiesToEven";
-            break;
-          case RoundingMode::ROUND_NEAREST_TIES_TO_AWAY:
-            out << "roundNearestTiesToAway";
-            break;
-          case RoundingMode::ROUND_TOWARD_POSITIVE:
-            out << "roundTowardPositive";
-            break;
-          case RoundingMode::ROUND_TOWARD_NEGATIVE:
-            out << "roundTowardNegative";
-            break;
-          case RoundingMode::ROUND_TOWARD_ZERO: out << "roundTowardZero"; break;
-          default:
-            Unreachable() << "Invalid value of rounding mode constant ("
-                          << n.getConst<RoundingMode>() << ")";
-        }
-        break;
-      case Kind::CONST_BOOLEAN:
-        // the default would print "1" or "0" for bool, that's not correct
-        // for our purposes
-        out << (n.getConst<bool>() ? "true" : "false");
-        break;
-      case Kind::BUILTIN: out << smtKindString(n.getConst<Kind>()); break;
-      case Kind::CONST_RATIONAL:
-      {
-        const Rational& r = n.getConst<Rational>();
-        toStreamRational(out, r, true, d_variant);
-        break;
-      }
-      case Kind::CONST_INTEGER:
-      {
-        const Rational& r = n.getConst<Rational>();
-        toStreamRational(out, r, false, d_variant);
-        break;
-      }
-
-      case Kind::CONST_STRING:
-      {
-        std::string s = n.getConst<String>().toString();
-        out << '"';
-        for (size_t i = 0; i < s.size(); ++i)
-        {
-          char c = s[i];
-          if (c == '"')
-          {
-            out << "\"\"";
-          }
-          else
-          {
-            out << c;
-          }
-        }
-        out << '"';
-        break;
-      }
-      case Kind::CONST_SEQUENCE:
-      {
-        const Sequence& sn = n.getConst<Sequence>();
-        const std::vector<Node>& snvec = sn.getVec();
-        if (snvec.empty())
-        {
-          out << "(as seq.empty ";
-          toStreamType(out, n.getType());
-          out << ")";
-        }
-        else
-        {
-          // prints as the corresponding concatenation of seq.unit
-          Node cc = theory::strings::utils::mkConcatForConstSequence(n);
-          toStream(out, cc, lbind, toDepth);
-        }
-        break;
-      }
-
-      case Kind::STORE_ALL:
-      {
-        ArrayStoreAll asa = n.getConst<ArrayStoreAll>();
-        out << "((as const ";
-        toStreamType(out, asa.getType());
-        out << ") ";
-        toStream(
-            out, asa.getValue(), lbind, toDepth < 0 ? toDepth : toDepth - 1);
-        out << ")";
-        break;
-      }
-      case Kind::FUNCTION_ARRAY_CONST:
-      {
-        // prints as the equivalent lambda
-        Node lam = theory::uf::FunctionConst::toLambda(n);
-        toStream(out, lam, lbind, toDepth);
-        break;
-      }
-
-      case Kind::UNINTERPRETED_SORT_VALUE:
-      {
-        const UninterpretedSortValue& v = n.getConst<UninterpretedSortValue>();
-        out << "(as " << cvc5::internal::quoteSymbol(v.getSymbol()) << " "
-            << n.getType() << ")";
-        break;
-      }
-      case Kind::CARDINALITY_CONSTRAINT_OP:
-      {
-        const CardinalityConstraint& cc = n.getConst<CardinalityConstraint>();
-        TypeNode tn = cc.getType();
-        out << "(_ fmf.card " << tn << " " << cc.getUpperBound() << ")";
+      break;
+    }
+    case Kind::CONST_FINITE_FIELD:
+    {
+      const FiniteFieldValue& ff = n.getConst<FiniteFieldValue>();
+      out << "#f" << ff.getValue() << "m" << ff.getFieldSize();
+      break;
+    }
+    case Kind::CONST_FLOATINGPOINT:
+    {
+      out << n.getConst<FloatingPoint>().toString(
+          options::ioutils::getBvPrintConstsAsIndexedSymbols(out));
+      break;
+    }
+    case Kind::CONST_ROUNDINGMODE:
+      switch (n.getConst<RoundingMode>()) {
+        case RoundingMode::ROUND_NEAREST_TIES_TO_EVEN:
+          out << "roundNearestTiesToEven";
+          break;
+        case RoundingMode::ROUND_NEAREST_TIES_TO_AWAY:
+          out << "roundNearestTiesToAway";
+          break;
+        case RoundingMode::ROUND_TOWARD_POSITIVE:
+          out << "roundTowardPositive";
+          break;
+        case RoundingMode::ROUND_TOWARD_NEGATIVE:
+          out << "roundTowardNegative";
+          break;
+        case RoundingMode::ROUND_TOWARD_ZERO: out << "roundTowardZero"; break;
+        default:
+          Unreachable() << "Invalid value of rounding mode constant ("
+                        << n.getConst<RoundingMode>() << ")";
       }
       break;
-      case Kind::COMBINED_CARDINALITY_CONSTRAINT_OP:
+    case Kind::CONST_BOOLEAN:
+      // the default would print "1" or "0" for bool, that's not correct
+      // for our purposes
+      out << (n.getConst<bool>() ? "true" : "false");
+      break;
+    case Kind::BUILTIN: out << smtKindString(n.getConst<Kind>()); break;
+    case Kind::CONST_RATIONAL:
+    {
+      const Rational& r = n.getConst<Rational>();
+      toStreamRational(out, r, true, d_variant);
+      break;
+    }
+    case Kind::CONST_INTEGER:
+    {
+      const Rational& r = n.getConst<Rational>();
+      toStreamRational(out, r, false, d_variant);
+      break;
+    }
+
+    case Kind::CONST_STRING:
+    {
+      std::string s = n.getConst<String>().toString();
+      out << '"';
+      for(size_t i = 0; i < s.size(); ++i) {
+        char c = s[i];
+        if(c == '"') {
+          out << "\"\"";
+        } else {
+          out << c;
+        }
+      }
+      out << '"';
+      break;
+    }
+    case Kind::CONST_SEQUENCE:
+    {
+      const Sequence& sn = n.getConst<Sequence>();
+      const std::vector<Node>& snvec = sn.getVec();
+      if (snvec.empty())
       {
-        const CombinedCardinalityConstraint& cc =
-            n.getConst<CombinedCardinalityConstraint>();
-        out << "(_ fmf.combined_card " << cc.getUpperBound() << ")";
+        out << "(as seq.empty ";
+        toStreamType(out, n.getType());
+        out << ")";
+      }
+      else
+      {
+        // prints as the corresponding concatenation of seq.unit
+        Node cc = theory::strings::utils::mkConcatForConstSequence(n);
+        toStream(out, cc, lbind, toDepth);
       }
       break;
-      case Kind::DIVISIBLE_OP:
-        out << "(_ divisible " << n.getConst<Divisible>().k << ")";
-        break;
-      case Kind::SET_EMPTY:
-        out << "(as set.empty ";
-        toStreamType(out, n.getConst<EmptySet>().getType());
-        out << ")";
-        break;
+    }
 
-      case Kind::BAG_EMPTY:
-        out << "(as bag.empty ";
-        toStreamType(out, n.getConst<EmptyBag>().getType());
-        out << ")";
-        break;
-      case Kind::BITVECTOR_EXTRACT_OP:
+    case Kind::STORE_ALL:
+    {
+      ArrayStoreAll asa = n.getConst<ArrayStoreAll>();
+      out << "((as const ";
+      toStreamType(out, asa.getType());
+      out << ") ";
+      toStream(out, asa.getValue(), lbind, toDepth < 0 ? toDepth : toDepth - 1);
+      out << ")";
+      break;
+    }
+    case Kind::FUNCTION_ARRAY_CONST:
+    {
+      // prints as the equivalent lambda
+      Node lam = theory::uf::FunctionConst::toLambda(n);
+      toStream(out, lam, lbind, toDepth);
+      break;
+    }
+
+    case Kind::UNINTERPRETED_SORT_VALUE:
+    {
+      const UninterpretedSortValue& v = n.getConst<UninterpretedSortValue>();
+      out << "(as " << cvc5::internal::quoteSymbol(v.getSymbol()) << " "
+          << n.getType() << ")";
+      break;
+    }
+    case Kind::CARDINALITY_CONSTRAINT_OP:
+    {
+      const CardinalityConstraint& cc =
+          n.getConst<CardinalityConstraint>();
+      TypeNode tn = cc.getType();
+      out << "(_ fmf.card " << tn << " " << cc.getUpperBound() << ")";
+    }
+      break;
+    case Kind::COMBINED_CARDINALITY_CONSTRAINT_OP:
+    {
+      const CombinedCardinalityConstraint& cc =
+          n.getConst<CombinedCardinalityConstraint>();
+      out << "(_ fmf.combined_card " << cc.getUpperBound() << ")";
+    }
+      break;
+    case Kind::DIVISIBLE_OP:
+      out << "(_ divisible " << n.getConst<Divisible>().k << ")";
+      break;
+    case Kind::SET_EMPTY:
+      out << "(as set.empty ";
+      toStreamType(out, n.getConst<EmptySet>().getType());
+      out << ")";
+      break;
+
+    case Kind::BAG_EMPTY:
+      out << "(as bag.empty ";
+      toStreamType(out, n.getConst<EmptyBag>().getType());
+      out << ")";
+      break;
+    case Kind::BITVECTOR_EXTRACT_OP:
+    {
+      BitVectorExtract p = n.getConst<BitVectorExtract>();
+      out << "(_ extract " << p.d_high << ' ' << p.d_low << ")";
+      break;
+    }
+    case Kind::BITVECTOR_REPEAT_OP:
+      out << "(_ repeat " << n.getConst<BitVectorRepeat>().d_repeatAmount
+          << ")";
+      break;
+    case Kind::BITVECTOR_ZERO_EXTEND_OP:
+      out << "(_ zero_extend "
+          << n.getConst<BitVectorZeroExtend>().d_zeroExtendAmount << ")";
+      break;
+    case Kind::BITVECTOR_SIGN_EXTEND_OP:
+      out << "(_ sign_extend "
+          << n.getConst<BitVectorSignExtend>().d_signExtendAmount << ")";
+      break;
+    case Kind::BITVECTOR_ROTATE_LEFT_OP:
+      out << "(_ rotate_left "
+          << n.getConst<BitVectorRotateLeft>().d_rotateLeftAmount << ")";
+      break;
+    case Kind::BITVECTOR_ROTATE_RIGHT_OP:
+      out << "(_ rotate_right "
+          << n.getConst<BitVectorRotateRight>().d_rotateRightAmount << ")";
+      break;
+    case Kind::INT_TO_BITVECTOR_OP:
+      out << "(_ int_to_bv " << n.getConst<IntToBitVector>().d_size << ")";
+      break;
+    case Kind::FLOATINGPOINT_TO_FP_FROM_IEEE_BV_OP:
+      out << "(_ to_fp "
+          << n.getConst<FloatingPointToFPIEEEBitVector>()
+                 .getSize()
+                 .exponentWidth()
+          << ' '
+          << n.getConst<FloatingPointToFPIEEEBitVector>()
+                 .getSize()
+                 .significandWidth()
+          << ")";
+      break;
+    case Kind::FLOATINGPOINT_TO_FP_FROM_FP_OP:
+      out << "(_ to_fp "
+          << n.getConst<FloatingPointToFPFloatingPoint>()
+                 .getSize()
+                 .exponentWidth()
+          << ' '
+          << n.getConst<FloatingPointToFPFloatingPoint>()
+                 .getSize()
+                 .significandWidth()
+          << ")";
+      break;
+    case Kind::FLOATINGPOINT_TO_FP_FROM_REAL_OP:
+      out << "(_ to_fp "
+          << n.getConst<FloatingPointToFPReal>().getSize().exponentWidth()
+          << ' '
+          << n.getConst<FloatingPointToFPReal>().getSize().significandWidth()
+          << ")";
+      break;
+    case Kind::FLOATINGPOINT_TO_FP_FROM_SBV_OP:
+      out << "(_ to_fp "
+          << n.getConst<FloatingPointToFPSignedBitVector>()
+                 .getSize()
+                 .exponentWidth()
+          << ' '
+          << n.getConst<FloatingPointToFPSignedBitVector>()
+                 .getSize()
+                 .significandWidth()
+          << ")";
+      break;
+    case Kind::FLOATINGPOINT_TO_FP_FROM_UBV_OP:
+      out << "(_ to_fp_unsigned "
+          << n.getConst<FloatingPointToFPUnsignedBitVector>()
+                 .getSize()
+                 .exponentWidth()
+          << ' '
+          << n.getConst<FloatingPointToFPUnsignedBitVector>()
+                 .getSize()
+                 .significandWidth()
+          << ")";
+      break;
+    case Kind::FLOATINGPOINT_TO_UBV_OP:
+      out << "(_ fp.to_ubv "
+          << n.getConst<FloatingPointToUBV>().d_bv_size.d_size << ")";
+      break;
+    case Kind::FLOATINGPOINT_TO_SBV_OP:
+      out << "(_ fp.to_sbv "
+          << n.getConst<FloatingPointToSBV>().d_bv_size.d_size << ")";
+      break;
+    case Kind::FLOATINGPOINT_TO_UBV_TOTAL_OP:
+      out << "(_ fp.to_ubv_total "
+          << n.getConst<FloatingPointToUBVTotal>().d_bv_size.d_size << ")";
+      break;
+    case Kind::FLOATINGPOINT_TO_SBV_TOTAL_OP:
+      out << "(_ fp.to_sbv_total "
+          << n.getConst<FloatingPointToSBVTotal>().d_bv_size.d_size << ")";
+      break;
+    case Kind::REGEXP_REPEAT_OP:
+      out << "(_ re.^ " << n.getConst<RegExpRepeat>().d_repeatAmount << ")";
+      break;
+    case Kind::REGEXP_LOOP_OP:
+      out << "(_ re.loop " << n.getConst<RegExpLoop>().d_loopMinOcc << " "
+          << n.getConst<RegExpLoop>().d_loopMaxOcc << ")";
+      break;
+    case Kind::TUPLE_PROJECT_OP:
+    case Kind::TABLE_PROJECT_OP:
+    case Kind::TABLE_AGGREGATE_OP:
+    case Kind::TABLE_JOIN_OP:
+    case Kind::TABLE_GROUP_OP:
+    case Kind::RELATION_GROUP_OP:
+    case Kind::RELATION_AGGREGATE_OP:
+    case Kind::RELATION_PROJECT_OP:
+    case Kind::RELATION_TABLE_JOIN_OP:
+    {
+      ProjectOp op = n.getConst<ProjectOp>();
+      const std::vector<uint32_t>& indices = op.getIndices();
+      Kind k = NodeManager::operatorToKind(n);
+      if (indices.empty())
       {
-        BitVectorExtract p = n.getConst<BitVectorExtract>();
-        out << "(_ extract " << p.d_high << ' ' << p.d_low << ")";
-        break;
+        out << smtKindString(k);
       }
-      case Kind::BITVECTOR_REPEAT_OP:
-        out << "(_ repeat " << n.getConst<BitVectorRepeat>().d_repeatAmount
-            << ")";
-        break;
-      case Kind::BITVECTOR_ZERO_EXTEND_OP:
-        out << "(_ zero_extend "
-            << n.getConst<BitVectorZeroExtend>().d_zeroExtendAmount << ")";
-        break;
-      case Kind::BITVECTOR_SIGN_EXTEND_OP:
-        out << "(_ sign_extend "
-            << n.getConst<BitVectorSignExtend>().d_signExtendAmount << ")";
-        break;
-      case Kind::BITVECTOR_ROTATE_LEFT_OP:
-        out << "(_ rotate_left "
-            << n.getConst<BitVectorRotateLeft>().d_rotateLeftAmount << ")";
-        break;
-      case Kind::BITVECTOR_ROTATE_RIGHT_OP:
-        out << "(_ rotate_right "
-            << n.getConst<BitVectorRotateRight>().d_rotateRightAmount << ")";
-        break;
-      case Kind::INT_TO_BITVECTOR_OP:
-        out << "(_ int_to_bv " << n.getConst<IntToBitVector>().d_size << ")";
-        break;
-      case Kind::FLOATINGPOINT_TO_FP_FROM_IEEE_BV_OP:
-        out << "(_ to_fp "
-            << n.getConst<FloatingPointToFPIEEEBitVector>()
-                   .getSize()
-                   .exponentWidth()
-            << ' '
-            << n.getConst<FloatingPointToFPIEEEBitVector>()
-                   .getSize()
-                   .significandWidth()
-            << ")";
-        break;
-      case Kind::FLOATINGPOINT_TO_FP_FROM_FP_OP:
-        out << "(_ to_fp "
-            << n.getConst<FloatingPointToFPFloatingPoint>()
-                   .getSize()
-                   .exponentWidth()
-            << ' '
-            << n.getConst<FloatingPointToFPFloatingPoint>()
-                   .getSize()
-                   .significandWidth()
-            << ")";
-        break;
-      case Kind::FLOATINGPOINT_TO_FP_FROM_REAL_OP:
-        out << "(_ to_fp "
-            << n.getConst<FloatingPointToFPReal>().getSize().exponentWidth()
-            << ' '
-            << n.getConst<FloatingPointToFPReal>().getSize().significandWidth()
-            << ")";
-        break;
-      case Kind::FLOATINGPOINT_TO_FP_FROM_SBV_OP:
-        out << "(_ to_fp "
-            << n.getConst<FloatingPointToFPSignedBitVector>()
-                   .getSize()
-                   .exponentWidth()
-            << ' '
-            << n.getConst<FloatingPointToFPSignedBitVector>()
-                   .getSize()
-                   .significandWidth()
-            << ")";
-        break;
-      case Kind::FLOATINGPOINT_TO_FP_FROM_UBV_OP:
-        out << "(_ to_fp_unsigned "
-            << n.getConst<FloatingPointToFPUnsignedBitVector>()
-                   .getSize()
-                   .exponentWidth()
-            << ' '
-            << n.getConst<FloatingPointToFPUnsignedBitVector>()
-                   .getSize()
-                   .significandWidth()
-            << ")";
-        break;
-      case Kind::FLOATINGPOINT_TO_UBV_OP:
-        out << "(_ fp.to_ubv "
-            << n.getConst<FloatingPointToUBV>().d_bv_size.d_size << ")";
-        break;
-      case Kind::FLOATINGPOINT_TO_SBV_OP:
-        out << "(_ fp.to_sbv "
-            << n.getConst<FloatingPointToSBV>().d_bv_size.d_size << ")";
-        break;
-      case Kind::FLOATINGPOINT_TO_UBV_TOTAL_OP:
-        out << "(_ fp.to_ubv_total "
-            << n.getConst<FloatingPointToUBVTotal>().d_bv_size.d_size << ")";
-        break;
-      case Kind::FLOATINGPOINT_TO_SBV_TOTAL_OP:
-        out << "(_ fp.to_sbv_total "
-            << n.getConst<FloatingPointToSBVTotal>().d_bv_size.d_size << ")";
-        break;
-      case Kind::REGEXP_REPEAT_OP:
-        out << "(_ re.^ " << n.getConst<RegExpRepeat>().d_repeatAmount << ")";
-        break;
-      case Kind::REGEXP_LOOP_OP:
-        out << "(_ re.loop " << n.getConst<RegExpLoop>().d_loopMinOcc << " "
-            << n.getConst<RegExpLoop>().d_loopMaxOcc << ")";
-        break;
-      case Kind::TUPLE_PROJECT_OP:
-      case Kind::TABLE_PROJECT_OP:
-      case Kind::TABLE_AGGREGATE_OP:
-      case Kind::TABLE_JOIN_OP:
-      case Kind::TABLE_GROUP_OP:
-      case Kind::RELATION_GROUP_OP:
-      case Kind::RELATION_AGGREGATE_OP:
-      case Kind::RELATION_PROJECT_OP:
-      case Kind::RELATION_TABLE_JOIN_OP:
+      else
       {
-        ProjectOp op = n.getConst<ProjectOp>();
-        const std::vector<uint32_t>& indices = op.getIndices();
-        Kind k = NodeManager::operatorToKind(n);
-        if (indices.empty())
-        {
-          out << smtKindString(k);
-        }
-        else
-        {
-          out << "(_ " << smtKindString(k);
-          for (uint32_t i : indices)
+        out << "(_ " << smtKindString(k);
+        for (uint32_t i : indices)
           {
             out << " " << i;
           }
@@ -1609,7 +1604,7 @@ void Smt2Printer::toStreamModelSort(std::ostream& out,
       Assert(trn.getKind() == Kind::UNINTERPRETED_SORT_VALUE);
       // prints as raw symbol
       const UninterpretedSortValue& av =
-        trn.getConst<UninterpretedSortValue>();
+          trn.getConst<UninterpretedSortValue>();
       out << "(" << cvc5::internal::quoteSymbol(av.getSymbol()) << ")";
     }
     out << "))" << std::endl;
