@@ -120,19 +120,27 @@ void TheoryFiniteFields::postCheck(Effort level)
       // - since that proof node must *necessarily* have as free assumptions
       //   exactly the terms in "conflict", we will build in the cdp below a
       //   SCOPE proof of the negation of the conjuction built out of "conflict"
-      CDProof cdp(d_env);
-      std::shared_ptr<ProofNode> conflictProof = subTheory.second.getProof();
-      Node notConflict = conflict.notNode();
-      Node falseNode = nm->mkConst<bool>(false);
-      cdp.addProof(conflictProof);
-      cdp.addStep(notConflict, ProofRule::SCOPE, {falseNode}, {conflict}, true);
-      std::shared_ptr<ProofNode> pf = cdp.getProofFor(notConflict);
-      d_proof.addProof(pf);
-      std::ostringstream s;
-      pf.get()->printDebug(s, true);
-      Trace("ff::proof") << "Proof in theory_ff: " << s.str() << std::endl;
-      TrustNode tn = TrustNode::mkTrustConflict(conflict, &d_proof);
-      d_im.trustedConflict(tn, InferenceId::FF_LEMMA);
+      if (d_env.isTheoryProofProducing())
+      {
+        CDProof cdp(d_env);
+        std::shared_ptr<ProofNode> conflictProof = subTheory.second.getProof();
+        Node notConflict = conflict.notNode();
+        Node falseNode = nm->mkConst<bool>(false);
+        cdp.addProof(conflictProof);
+        cdp.addStep(
+            notConflict, ProofRule::SCOPE, {falseNode}, {conflict}, true);
+        std::shared_ptr<ProofNode> pf = cdp.getProofFor(notConflict);
+        d_proof.addProof(pf);
+        std::ostringstream s;
+        pf.get()->printDebug(s, true);
+        Trace("ff::proof") << "Proof in theory_ff: " << s.str() << std::endl;
+        TrustNode tn = TrustNode::mkTrustConflict(conflict, &d_proof);
+        d_im.trustedConflict(tn, InferenceId::FF_LEMMA);
+      }
+      else
+      {
+        d_im.conflict(conflict, InferenceId::FF_LEMMA);
+      }
     }
   }
 #else  /* CVC5_USE_COCOA */

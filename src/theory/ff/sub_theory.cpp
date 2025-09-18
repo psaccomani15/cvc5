@@ -32,8 +32,9 @@
 #include "smt/env_obj.h"
 #include "theory/ff/cocoa_encoder.h"
 #include "theory/ff/core.h"
-#include "theory/ff/ideal_proofs.h"
+#include "theory/ff/ideal_proof_manager.h"
 #include "theory/ff/multi_roots.h"
+#include "theory/ff/proof_utils.h"
 #include "theory/ff/split_gb.h"
 #include "theory/ff/sub_theory.h"
 #include "theory/ff/util.h"
@@ -50,12 +51,7 @@ SubTheory::SubTheory(Env& env, FfStatistics* stats, Integer modulus)
       d_facts(context()),
       d_stats(stats)
 {
-  // Currently, we support only non-split GB solving.
-  d_proofEnabled = options().ff.ffProof
-                   && options().ff.ffSolver == options::FfSolver::GB
-                   && d_env.isTheoryProofProducing();
-  // if (d_proofEnabled) d_proof = new CDProof(env, nullptr, "GlobalFFProofs");
-  if (d_proofEnabled) d_proof = new CDProof(env, context(), "GlobalFFProofs");
+  if (env.isProofProducing()) d_proof = new CDProof(env, context(), "GlobalFFProofs");
   AlwaysAssert(modulus.isProbablePrime()) << "non-prime fields are unsupported";
   // must be initialized before using CoCoA.
   initCocoaGlobalManager();
@@ -137,11 +133,11 @@ Result SubTheory::postCheck(Theory::Effort e)
         if (options().ff.ffTraceGb) tracer.setFunctionPointers();
 
         CoCoA::ideal ideal = CoCoA::ideal(generators);
-        std::shared_ptr<IdealProof> idealProofs;
-        if (d_proofEnabled)
+        std::shared_ptr<IdealProofManager> idealProofs = nullptr;
+        if (d_env.isProofProducing())
         {
-          idealProofs = std::shared_ptr<IdealProof>(
-              new IdealProof(d_env, 0, generators, enc, ideal));
+          idealProofs = std::shared_ptr<IdealProofManager>(
+              new IdealProofManager(d_env, d_proof,0, generators, enc, ideal));
           idealProofs->setFunctionPointers();
           idealProofs->enableProofHooks();
         }
@@ -163,7 +159,8 @@ Result SubTheory::postCheck(Theory::Effort e)
               Trace("ff::core")
                   << "In" << i << " : " << d_facts[i] << std::endl;
               d_conflict.push_back(enc.polyFact(generators[i]));
-              corePolys.push_back(enc.decode(generators[i]));
+              if (d_env.isTheoryProofProducing())
+                corePolys.push_back(enc.decode(generators[i]));
             }
             for (size_t i : coreIndices)
             {
@@ -185,25 +182,28 @@ Result SubTheory::postCheck(Theory::Effort e)
             std::vector<Node> coreGenerators = corePolys;
             coreGenerators.insert(
                 coreGenerators.end(), fieldPolys.begin(), fieldPolys.end());
-            idealProofs->updateIdeal(coreGenerators);
+            if (d_env.isTheoryProofProducing()) idealProofs->updateIdeal(coreGenerators);
             Trace("ff::proof") << "Restriction on unsat core" << std::endl;
           }
-          Node unsatVariety = idealProofs->oneInUnsat(basis.front(), d_proof);
-          produceContradiction(fieldPolys, corePolys);
+          if (d_env.isTheoryProofProducing())
+          {
+            Node unsatVariety = idealProofs->oneRefutation(basis.front());
+            produceContradiction(nodeManager(), d_proof, fieldPolys, corePolys, d_conflict);
+          }
         }
         else
         {
           Trace("ff::gb") << "Non-trivial GB" << std::endl;
 
           // common root (vec of CoCoA base ring elements)
-           root =
-              findZero(ideal, idealProofs, nodeManager(), d_proof, d_env);
+          root = findZero(ideal, d_env, idealProofs);
           if (root.empty())
           {
             // UNSAT
             result = Result::UNSAT;
             setTrivialConflict();
-            produceContradiction(fieldPolys, gens);
+            if (d_env.isTheoryProofProducing())
+              produceContradiction(nodeManager(), d_proof, fieldPolys, gens, d_conflict);
           }
           else
           {
@@ -229,49 +229,20 @@ Result SubTheory::postCheck(Theory::Effort e)
       {
         Unreachable() << options().ff.ffSolver << std::endl;
       }
-    AlwaysAssert(result.getStatus() != Result::UNKNOWN) << root;
-    return result;
+      AlwaysAssert(result.getStatus() != Result::UNKNOWN) << root;
+      return result;
+    }
+    catch (FfTimeoutException& exc)
+    {
+      return {Result::UNKNOWN, UnknownExplanation::TIMEOUT, exc.getMessage()};
+    }
   }
-  catch (FfTimeoutException& exc)
-  {
-    return {Result::UNKNOWN, UnknownExplanation::TIMEOUT, exc.getMessage()};
-  }
-}
-return {Result::UNKNOWN, UnknownExplanation::REQUIRES_FULL_CHECK, ""};
+  return {Result::UNKNOWN, UnknownExplanation::REQUIRES_FULL_CHECK, ""};
 }
 
 void SubTheory::setTrivialConflict()
 {
   std::copy(d_facts.begin(), d_facts.end(), std::back_inserter(d_conflict));
-}
-void SubTheory::produceContradiction(std::vector<Node>& fieldPolys,
-                                     std::vector<Node>& gens)
-{
-  Node idealGens = nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, gens);
-  const Node unsatCore = nodeManager()->mkAnd(d_conflict);
-  d_proof->addStep(unsatCore, ProofRule::ASSUME, {}, {unsatCore});
-  Trace("ff::proof") << "Assumption: " << unsatCore << std::endl;
-  Node commonRoot = emptyVarPred(nodeManager(), idealGens).negate();
-  Node satIffCRoot = nodeManager()->mkNode(Kind::EQUAL, unsatCore, commonRoot);
-  d_proof->addStep(satIffCRoot, ProofRule::FF_POLY_CONVERSION, {}, {});
-  d_proof->addStep(
-      commonRoot, ProofRule::EQ_RESOLVE, {unsatCore, satIffCRoot}, {});
-  if (!fieldPolys.empty())
-  {
-    std::vector<Node> newGens = gens;
-    newGens.insert(newGens.end(), fieldPolys.begin(), fieldPolys.end());
-    idealGens = nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, newGens);
-    Node commonRootFieldPolys = emptyVarPred(nodeManager(), idealGens).negate();
-    d_proof->addStep(commonRootFieldPolys,
-                     ProofRule::FF_FIELD_POLYS,
-                     {commonRoot},
-                     {fieldPolys});
-    commonRoot = commonRootFieldPolys;
-  }
-  Node falseNode = nodeManager()->mkConst<bool>(false);
-  Node noCommonRoot = emptyVarPred(nodeManager(), idealGens);
-  d_proof->addStep(
-      falseNode, ProofRule::CONTRA, {commonRoot, noCommonRoot}, {});
 }
 bool SubTheory::inConflict() const { return !d_conflict.empty(); }
 
@@ -289,7 +260,7 @@ std::shared_ptr<ProofNode> SubTheory::getProof()
   Assert(d_proof->hasStep(falseNode));
   return d_proof->getProof(falseNode);
 }
-}
+}  // namespace ff
 }  // namespace theory
 }  // namespace cvc5::internal
 #endif /* CVC5_USE_COCOA */

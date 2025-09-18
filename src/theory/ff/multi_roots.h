@@ -33,7 +33,7 @@
 
 #include "expr/node.h"
 #include "smt/env.h"
-#include "theory/ff/ideal_proofs.h"
+#include "theory/ff/ideal_proof_manager.h"
 
 namespace cvc5::internal {
 namespace theory {
@@ -44,13 +44,8 @@ namespace ff {
  */
 std::vector<CoCoA::RingElem> findZero(
     const CoCoA::ideal& ideal,
-    std::shared_ptr<IdealProof> initialIdealProof,
-    NodeManager* nm,
-    CDProof* globalTheoryProofs,
-    const Env& env);
-std::vector<CoCoA::RingElem> findZero(const CoCoA::ideal& ideal,
-                                      const Env& env);
-
+    const Env& env,
+    std::shared_ptr<IdealProofManager> initialIdealProof = nullptr);
 /**
  * Enumerates **assignment**s: monic, degree-one, univariate polynomials.
  */
@@ -95,10 +90,7 @@ class ListEnumerator : public AssignmentEnumerator
  * polynomial.
  */
 std::unique_ptr<ListEnumerator> factorEnumerator(
-    CoCoA::RingElem univariatePoly, std::shared_ptr<IdealProof> idealProof);
-
-std::unique_ptr<ListEnumerator> factorEnumerator(
-    CoCoA::RingElem univariatePoly);
+    CoCoA::RingElem univariatePoly, std::shared_ptr<IdealProofManager> idealProof = nullptr);
 
 /**
  * Guess all values for all variables, in a round robin. Only works for a prime
@@ -182,7 +174,7 @@ bool allVarsAssigned(const CoCoA::ideal& ideal);
  * * Otherwise, do round-robin guessing
  */
 std::unique_ptr<AssignmentEnumerator> applyRule(
-    const CoCoA::ideal& ideal, std::shared_ptr<IdealProof> idealProof);
+    const CoCoA::ideal& ideal, std::shared_ptr<IdealProofManager> idealProof);
 
 }  // namespace ff
 }  // namespace theory

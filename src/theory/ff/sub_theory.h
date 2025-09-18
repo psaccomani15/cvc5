@@ -105,10 +105,7 @@ class SubTheory : protected EnvObj, public FieldObj
    * Set the conflict to be all facts.
    */
   void setTrivialConflict();
-
-  void produceContradiction(std::vector<Node>& fieldPolys,
-                            std::vector<Node>& gens);
-  /**
+ /**
    * Facts, in notification order.
    *
    * Contains only the facts in *this specific field*.
@@ -116,7 +113,6 @@ class SubTheory : protected EnvObj, public FieldObj
    * Uses SAT context.
    */
   context::CDList<Node> d_facts;
-  bool d_proofEnabled;
   CDProof* d_proof;
 
   /**
@@ -135,7 +131,7 @@ class SubTheory : protected EnvObj, public FieldObj
    */
   FfStatistics* d_stats;
 };
-
+void produceContradiction(const NodeManager* nm, std::vector<Node> &fieldPolys, std::vector<Node> &gens, std::vector<Node> &conflict);
 }  // namespace ff
 }  // namespace theory
 }  // namespace cvc5::internal

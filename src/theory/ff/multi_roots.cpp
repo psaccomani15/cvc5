@@ -31,7 +31,7 @@
 #include <memory>
 #include <sstream>
 
-#include "ideal_proofs.h"
+#include "theory/ff/ideal_proof_manager.h"
 #include "smt/assertions.h"
 #include "theory/ff/cocoa_util.h"
 #include "theory/ff/uni_roots.h"
@@ -79,28 +79,13 @@ std::string ListEnumerator::name() { return "list"; }
 bool ListEnumerator::empty() { return d_empty; }
 
 std::unique_ptr<ListEnumerator> factorEnumerator(
-    CoCoA::RingElem univariatePoly, std::shared_ptr<IdealProof> idealProof)
+    CoCoA::RingElem univariatePoly, std::shared_ptr<IdealProofManager> idealProof)
 {
   int varIdx = CoCoA::UnivariateIndetIndex(univariatePoly);
   Assert(varIdx >= 0);
   Trace("ff::model::factor") << "roots for: " << univariatePoly << std::endl;
   std::vector<CoCoA::RingElem> theRoots = roots(univariatePoly);
-  idealProof->registerRoots(theRoots);
-  std::vector<CoCoA::RingElem> linears{};
-  CoCoA::RingElem var = CoCoA::indet(CoCoA::owner(univariatePoly), varIdx);
-  for (const auto& r : theRoots)
-  {
-    linears.push_back(var - r);
-  }
-  return std::make_unique<ListEnumerator>(std::move(linears));
-}
-
-std::unique_ptr<ListEnumerator> factorEnumerator(CoCoA::RingElem univariatePoly)
-{
-  int varIdx = CoCoA::UnivariateIndetIndex(univariatePoly);
-  Assert(varIdx >= 0);
-  Trace("ff::model::factor") << "roots for: " << univariatePoly << std::endl;
-  std::vector<CoCoA::RingElem> theRoots = roots(univariatePoly);
+  if (idealProof) idealProof->registerRoots(theRoots);
   std::vector<CoCoA::RingElem> linears{};
   CoCoA::RingElem var = CoCoA::indet(CoCoA::owner(univariatePoly), varIdx);
   for (const auto& r : theRoots)
@@ -185,7 +170,7 @@ bool allVarsAssigned(const CoCoA::ideal& ideal)
 }
 
 std::unique_ptr<AssignmentEnumerator> applyRule(
-    const CoCoA::ideal& ideal, std::shared_ptr<IdealProof> idealProof)
+    const CoCoA::ideal& ideal, std::shared_ptr<IdealProofManager> idealProof)
 {
   CoCoA::ring polyRing = ideal->myRing();
   // first, we look for super-linear univariate polynomials.
@@ -197,7 +182,7 @@ std::unique_ptr<AssignmentEnumerator> applyRule(
     if (varNumber >= 0 && CoCoA::deg(p) > 1)
     {
       Trace("ff::model::branch") << "univariate branching " << p << std::endl;
-      idealProof->registerBranchPolynomial(p);
+      if (idealProof) idealProof->registerBranchPolynomial(p);
       return factorEnumerator(p, idealProof);
     }
   }
@@ -213,7 +198,7 @@ std::unique_ptr<AssignmentEnumerator> applyRule(
       if (!alreadySet.count(ostring(var)))
       {
         CoCoA::RingElem minPoly = CoCoA::MinPolyQuot(var, ideal, var);
-        idealProof->registerBranchPolynomial(minPoly);
+        if (idealProof) idealProof->registerBranchPolynomial(minPoly);
         return factorEnumerator(minPoly, idealProof);
       }
     }
@@ -243,10 +228,8 @@ std::unique_ptr<AssignmentEnumerator> applyRule(
 
 std::vector<CoCoA::RingElem> findZero(
     const CoCoA::ideal& initialIdeal,
-    std::shared_ptr<IdealProof> initialIdealProof,
-    NodeManager* nm,
-    CDProof* globalTheoryProofs,
-    const Env& env)
+    const Env& env,
+    std::shared_ptr<IdealProofManager> initialIdealProof)
 {
   CoCoA::ring polyRing = initialIdeal->myRing();
   // We maintain two stacks:
@@ -266,8 +249,10 @@ std::vector<CoCoA::RingElem> findZero(
   // continuation context (which iteration of the for loop to return to).
 
   // goal: find a zero for any ideal in the stack.
+  bool proofEnabled = initialIdealProof != nullptr;
   std::vector<CoCoA::ideal> ideals{initialIdeal};
-  std::vector<std::shared_ptr<IdealProof>> idealsProofs{initialIdealProof};
+  std::vector<std::shared_ptr<IdealProofManager>> idealsProofs;
+  if (proofEnabled) idealsProofs.push_back(initialIdealProof);
   if (TraceIsOn("ff::model::branch"))
   {
     Trace("ff::model::branch") << "init polys: " << std::endl;
@@ -288,16 +273,21 @@ std::vector<CoCoA::RingElem> findZero(
     }
     // choose one ideal
     const auto& ideal = ideals.back();
-    std::shared_ptr<IdealProof> idealProof = idealsProofs.back();
-    idealProof->setFunctionPointers();
+    if (proofEnabled)
+    {
+      idealsProofs.back()->setFunctionPointers();
+    }
     // make sure we have a GBasis:
     GBasisTimeout(ideal, env.getResourceManager());
     Assert(CoCoA::HasGBasis(ideal));
     // If the ideal is UNSAT, drop it.
     if (isUnsat(ideal))
     {
-      idealProof->oneInUnsat(CoCoA::GBasis(ideal)[0], globalTheoryProofs);
-      idealsProofs.pop_back();
+      if (proofEnabled)
+      {
+        idealsProofs.back()->oneRefutation(CoCoA::GBasis(ideal)[0]);
+        idealsProofs.pop_back();
+      }
       ideals.pop_back();
     }
     // If the ideal has a linear polynomial in each variable, we've found a
@@ -324,6 +314,7 @@ std::vector<CoCoA::RingElem> findZero(
     else if (ideals.size() > branchers.size())
     {
       Assert(ideals.size() == branchers.size() + 1);
+      auto idealProof = proofEnabled ? idealsProofs.back() : nullptr;
       branchers.push_back(applyRule(ideal, idealProof));
       Trace("ff::model::branch")
           << "brancher: " << branchers.back()->name() << std::endl;
@@ -352,17 +343,20 @@ std::vector<CoCoA::RingElem> findZero(
         Assert(CoCoA::HasGBasis(ideal));
         newGens.push_back(choicePoly.value());
         CoCoA::ideal newIdeal = CoCoA::ideal(newGens);
-        std::shared_ptr<IdealProof> branchingIdeal =
-            idealsProofs.back()->registerBranch(choicePoly.value(), newIdeal);
-        idealsProofs.push_back(branchingIdeal);
+        if (proofEnabled)
+        {
+          std::shared_ptr<IdealProofManager> branchingIdeal =
+              idealsProofs.back()->registerBranch(choicePoly.value(), newIdeal);
+          idealsProofs.push_back(branchingIdeal);
+        }
         ideals.push_back(newIdeal);
       }
       // or drop this ideal & brancher if we're out of branches.
       else
       {
         bool rootBranching = branchers.back()->name() == "list";
-        // The associated variety must be empty. Produce a proof for that.
-        idealsProofs.back()->finishProof(rootBranching, globalTheoryProofs);
+        if (proofEnabled)
+          idealsProofs.back()->finishProof(rootBranching);
         idealsProofs.pop_back();
         branchers.pop_back();
         ideals.pop_back();
