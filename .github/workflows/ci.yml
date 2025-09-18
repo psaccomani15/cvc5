@@ -72,18 +72,6 @@ jobs:
             exclude_regress: 3-4
             run_regression_args: --tester base --tester proof --tester cpc --tester model --tester dump
 
-          - name: ubuntu:production-libc++
-            os: ubuntu-24.04
-            use-clang: true
-            use-libcxx: true
-            config: production --auto-download -DBUILD_GMP=1
-            cache-key: production-libcxx
-            strip-bin: strip
-            check-examples: true
-            package-name: cvc5-Linux-x86_64-libcxx
-            exclude_regress: 3-4
-            run_regression_args: --tester base --tester model --tester synth --tester abduct --tester dump
-
           - name: ubuntu:production-arm64
             os: ubuntu-22.04-arm
             config: production --auto-download --all-bindings --editline -DBUILD_GMP=1
