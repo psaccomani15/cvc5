@@ -21,6 +21,9 @@ add_subdirectory(cpp)
 if (BUILD_BINDINGS_PYTHON)
   add_subdirectory(python)
 endif()
+if (BUILD_BINDINGS_JAVA)
+  add_subdirectory(java)
+endif()
 
 add_custom_target(apitests
   COMMAND ctest --output-on-failure -L "api" -j${CTEST_NTHREADS} $$ARGS
