@@ -13,7 +13,6 @@
  * encoding Nodes as cocoa ring elements.
  */
 
-#include <CoCoA/symbol.H>
 #include "theory/shared_terms_database.h"
 #ifdef CVC5_USE_COCOA
 
