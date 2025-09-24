@@ -14,12 +14,6 @@
  *  Stores proof of memberships in d_membershipProofs
  *  Produces proofs using branching rules (translation of findZero rules)
  */
-
-#include <CoCoA-0.99800/PolyRing.H>
-#include <CoCoA-0.99800/SparsePolyOps-RingElem.H>
-#include <CoCoA-0.99800/ring.H>
-#include <CoCoA-0.99800/symbol.H>
-
 #include <algorithm>
 #include <iterator>
 #include <unordered_set>
@@ -29,6 +23,11 @@
 
 #include <CoCoA/SparsePolyOps-ideal.H>
 #include <CoCoA/TmpGPoly.H>
+#include <CoCoA/PolyRing.H>
+#include <CoCoA/SparsePolyOps-RingElem.H>
+#include <CoCoA/ring.H>
+#include <CoCoA/symbol.H>
+
 
 #include <sstream>
 

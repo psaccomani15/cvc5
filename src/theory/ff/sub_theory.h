@@ -17,7 +17,6 @@
  * [OKTB23]: https://doi.org/10.1007/978-3-031-37703-7_8
  */
 
-#include <CoCoA-0.99800/ring.H>
 
 #include "cvc5_private.h"
 
@@ -27,6 +26,7 @@
 #define CVC5__THEORY__FF__SUB_THEORY_H
 
 #include <CoCoA/RingFp.H>
+#include <CoCoA/ring.H>
 
 #include <string>
 #include <unordered_map>
