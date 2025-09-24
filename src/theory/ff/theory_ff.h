@@ -38,6 +38,7 @@
 #include "theory/theory_state.h"
 
 namespace cvc5::internal {
+class CDProof;
 namespace theory {
 namespace ff {
 
@@ -89,7 +90,7 @@ class TheoryFiniteFields : public Theory
 
  private:
   /** The context dependent proof manager */
-  CDProof d_proof;
+  CDProof *d_proof;
   /** Our proof checker */
   FfProofRuleChecker d_checker;
   TheoryFiniteFieldsRewriter d_rewriter;

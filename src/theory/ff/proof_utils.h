@@ -18,10 +18,6 @@
 
 #ifndef CVC5__THEORY__FF__PROOF__UTIL_H
 #define CVC5__THEORY__FF__PROOF__UTIL_H
-// external includes
-#ifdef CVC5_USE_COCOA
-#include <CoCoA/ring.H>
-#endif /* CVC5_USE_COCOA */
 
 // internal includes
 #include "expr/node.h"
@@ -49,4 +45,4 @@ class ProofInfo
 }  // namespace theory
 }  // namespace cvc5::internal
 
-#endif // CVC5_USE_COCOA
+#endif 

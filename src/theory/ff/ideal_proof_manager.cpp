@@ -33,6 +33,7 @@
 #include "proof/proof_node.h"
 #include "smt/assertions.h"
 #include "theory/ff/ideal_proof_manager.h"
+#include "theory/ff/proof_utils.h"
 #include "util/rational.h"
 
 namespace cvc5::internal {
