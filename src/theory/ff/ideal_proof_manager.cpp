@@ -15,10 +15,6 @@
  *  Produces proofs using branching rules (translation of findZero rules)
  */
 
-#include <CoCoA-0.99800/PolyRing.H>
-#include <CoCoA-0.99800/SparsePolyOps-RingElem.H>
-#include <CoCoA-0.99800/ring.H>
-#include <CoCoA-0.99800/symbol.H>
 
 #include <algorithm>
 #include <iterator>
@@ -29,6 +25,7 @@
 
 #include <CoCoA/SparsePolyOps-ideal.H>
 #include <CoCoA/TmpGPoly.H>
+#include <CoCoA/SparsePolyOps-RingElem.H>
 
 #include <sstream>
 
