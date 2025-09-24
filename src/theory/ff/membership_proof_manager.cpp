@@ -1,6 +1,5 @@
 #include "theory/ff/membership_proof_manager.h"
 
-#include <CoCoA/SparsePolyOps-ideal.H>
 #include <CoCoA/SparsePolyRing.H>
 #include <CoCoA/TmpGPoly.H>
 #include <CoCoA/library.H>
