@@ -13,6 +13,7 @@
  * Ideal Membership Proofs Engine
  */
 
+#include <CoCoA-0.99800/module.H>
 #include "cvc5_private.h"
 
 #if CVC5_USE_COCOA
@@ -137,13 +138,13 @@ class MembershipProofManager : protected EnvObj
   /**
    * The sequence of polynomials used for reduction during GBasis production.
    */
-  std::vector<Node> d_reductionSeq{};
+  std::vector<CoCoA::RingElem> d_reductionSeq{};
 
   /**
    * The sequence of polynomials in GBasis used in the reduction during
    * independent membership proof production.
    */
-  std::vector<Node> d_membershipSeq{};
+  std::vector<CoCoA::RingElem> d_membershipSeq{};
 
   /**
    * Hooks for:
@@ -181,9 +182,9 @@ class MembershipProofManager : protected EnvObj
   CocoaEncoder d_enc;
   /**
    * Used for arbitrary membership proofs.
-   * Represents the polynomial that we are currently testing membership
+   * The polynomial that we are currently testing membership
    */
-  Node d_reducingPoly;
+  CoCoA::RingElem d_reducingPoly;
   /**
    * The user-context-dependent proof object
    */

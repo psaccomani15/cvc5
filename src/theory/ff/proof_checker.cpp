@@ -14,12 +14,12 @@ void FfProofRuleChecker::registerTo(ProofChecker* pc)
   pc->registerChecker(ProofRule::FF_EXHAUST_BRANCH, this);
   pc->registerChecker(ProofRule::FF_ROOT_BRANCH, this);
   pc->registerChecker(ProofRule::FF_FIELD_POLYS, this);
-  pc->registerChecker(ProofRule::FF_G, this);
-  pc->registerChecker(ProofRule::FF_Z, this);
-  pc->registerChecker(ProofRule::FF_MONIC, this);
-  pc->registerChecker(ProofRule::FF_R_UP, this);
-  pc->registerChecker(ProofRule::FF_R_DOWN, this);
-  pc->registerChecker(ProofRule::FF_S, this);
+  pc->registerChecker(ProofRule::FF_IDEAL_GENERATOR, this);
+  pc->registerChecker(ProofRule::FF_IDEAL_ZERO, this);
+  pc->registerChecker(ProofRule::FF_IDEAL_MONIC, this);
+  pc->registerChecker(ProofRule::FF_IDEAL_REDUCE_ZERO, this);
+  pc->registerChecker(ProofRule::FF_IDEAL_REDUCE, this);
+  pc->registerChecker(ProofRule::FF_IDEAL_SPOLY, this);
   pc->registerChecker(ProofRule::FF_POLY_CONVERSION, this);
 }
 
@@ -102,7 +102,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     }
     return nodeManager()->mkOr(disjuncts);
   }
-    if (id == ProofRule::FF_G)
+    if (id == ProofRule::FF_IDEAL_GENERATOR)
   {
     Assert(children.empty());
     Assert(args.size() == 2);
@@ -113,14 +113,14 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
         return d_nm->mkNode(Kind::SET_MEMBER, args[0], args[1]);
     }
   }
-  if (id == ProofRule::FF_Z)
+  if (id == ProofRule::FF_IDEAL_ZERO)
   {
     Assert(children.empty());
     Assert(args.size() == 2);
     Assert(args[1].getKind() == Kind::FINITE_FIELD_IDEAL);
     return d_nm->mkNode(Kind::SET_MEMBER, args[0], args[1]);
   }
-  if (id == ProofRule::FF_S)
+  if (id == ProofRule::FF_IDEAL_SPOLY)
   {
     Assert(children.size() == 2);
     Assert(args.size() == 1);
@@ -131,7 +131,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     Node ideal = children[0][1];
     return d_nm->mkNode(Kind::SET_MEMBER, args[0], args[1]);
   }
-  if (id == ProofRule::FF_R_DOWN || id == ProofRule::FF_R_UP)
+  if (id == ProofRule::FF_IDEAL_REDUCE || id == ProofRule::FF_IDEAL_REDUCE_ZERO)
   {
     // The number of children are exactly the number of *unique* reductors
     Assert(children.size() <= args.size() - 1);
@@ -146,7 +146,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     }
     return d_nm->mkNode(Kind::SET_MEMBER, args[0], ideal);
   }
-  if (id == ProofRule::FF_MONIC)
+  if (id == ProofRule::FF_IDEAL_MONIC)
   {
     Assert(args.size() == 2);
     Assert(children.size() == 1);

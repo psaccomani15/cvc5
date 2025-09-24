@@ -31,9 +31,9 @@
 #include <memory>
 #include <sstream>
 
-#include "theory/ff/ideal_proof_manager.h"
 #include "smt/assertions.h"
 #include "theory/ff/cocoa_util.h"
+#include "theory/ff/ideal_proof_manager.h"
 #include "theory/ff/uni_roots.h"
 #include "theory/ff/util.h"
 #include "util/resource_manager.h"
@@ -79,7 +79,8 @@ std::string ListEnumerator::name() { return "list"; }
 bool ListEnumerator::empty() { return d_empty; }
 
 std::unique_ptr<ListEnumerator> factorEnumerator(
-    CoCoA::RingElem univariatePoly, std::shared_ptr<IdealProofManager> idealProof)
+    CoCoA::RingElem univariatePoly,
+    std::shared_ptr<IdealProofManager> idealProof)
 {
   int varIdx = CoCoA::UnivariateIndetIndex(univariatePoly);
   Assert(varIdx >= 0);
@@ -277,8 +278,10 @@ std::vector<CoCoA::RingElem> findZero(
     {
       idealsProofs.back()->setFunctionPointers();
     }
+    if(proofEnabled) idealsProofs.back()->enableProofHooks();
     // make sure we have a GBasis:
     GBasisTimeout(ideal, env.getResourceManager());
+    if (proofEnabled) idealsProofs.back()->disableProofHooks();
     Assert(CoCoA::HasGBasis(ideal));
     // If the ideal is UNSAT, drop it.
     if (isUnsat(ideal))
@@ -356,8 +359,10 @@ std::vector<CoCoA::RingElem> findZero(
       {
         bool rootBranching = branchers.back()->name() == "list";
         if (proofEnabled)
+        {
           idealsProofs.back()->finishProof(rootBranching);
-        idealsProofs.pop_back();
+          idealsProofs.pop_back();
+        }
         branchers.pop_back();
         ideals.pop_back();
       }

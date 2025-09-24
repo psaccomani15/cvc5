@@ -2485,7 +2485,7 @@ enum ENUM(ProofRule)
    * where :math:`G` is a set of polynomials.
    * \endverbatim
    */
-  EVALUE(FF_Z),
+  EVALUE(FF_IDEAL_ZERO),
  /**
    * \verbatim embed:rst:leading-asterisk
    * **Finite Fields -- Ideal Membership: Generators**
@@ -2498,7 +2498,7 @@ enum ENUM(ProofRule)
    * where :math:`G` is a set of polynomials and :math:`p \in G`
    * \endverbatim
    */
-  EVALUE(FF_G),
+  EVALUE(FF_IDEAL_GENERATOR),
 /**
    * \verbatim embed:rst:leading-asterisk
    * **Finite Fields -- Ideal Membership: Result of reduction**
@@ -2512,7 +2512,7 @@ enum ENUM(ProofRule)
    * and :math:`\mathtt{Seq}_r` is the sequence of reductors in a :math:`\mathtt{reduce}` operation.
    * \endverbatim
    */
-  EVALUE(FF_R_UP),
+  EVALUE(FF_IDEAL_REDUCE),
   /**
    * \verbatim embed:rst:leading-asterisk
    * **Finite Fields -- Ideal Membership: Membership Test**
@@ -2526,7 +2526,7 @@ enum ENUM(ProofRule)
    * and :math:`\mathtt{Seq}_r` is the sequence of reductors such that :math:`\mathtt{reduce}(p, R) = 0`.
    * \endverbatim
    */
-  EVALUE(FF_R_DOWN),
+  EVALUE(FF_IDEAL_REDUCE_ZERO),
 /**
    * \verbatim embed:rst:leading-asterisk
    * **Finite Fields -- Ideal Membership: S-Polynomials**
@@ -2539,7 +2539,7 @@ enum ENUM(ProofRule)
    * where :math:`G` is a set of polynomials.
    * \endverbatim
    */
-  EVALUE(FF_S),
+  EVALUE(FF_IDEAL_SPOLY),
 /**
    * \verbatim embed:rst:leading-asterisk
    * **Finite Fields -- Ideal Membership: Monic Polynomials**
@@ -2552,8 +2552,7 @@ enum ENUM(ProofRule)
    * where :math:`G` is a set of polynomials.
    * \endverbatim
    */
-  EVALUE(FF_MONIC),
-
+  EVALUE(FF_IDEAL_MONIC),
  /**
    * \verbatim embed:rst:leading-asterisk
    * **Finite Fields -- Branch on Roots of a univariate polynomial**

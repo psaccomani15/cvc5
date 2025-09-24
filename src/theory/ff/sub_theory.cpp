@@ -143,6 +143,7 @@ Result SubTheory::postCheck(Theory::Effort e)
         }
         const auto basis = CoCoA::GBasis(ideal);
         if (options().ff.ffTraceGb) tracer.unsetFunctionPointers();
+        if (d_env.isProofProducing()) idealProofs->disableProofHooks();
         // if it is trivial, create a conflict
         bool is_trivial = basis.size() == 1 && CoCoA::deg(basis.front()) == 0;
         if (is_trivial)

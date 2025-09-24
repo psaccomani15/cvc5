@@ -113,8 +113,10 @@ void IdealProofManager::registerBranchPolynomial(CoCoA::RingElem branchPoly)
                      << std::endl;
   // Should check if the node representation of this polynomial is cached.
   d_branchPoly = d_enc.decode(branchPoly);
+  enableProofHooks();
   d_branchPolyProof  =
       d_membershipProofs->proveIdealMembership(branchPoly, d_cocoaIdeal);
+  disableProofHooks();
   d_branchVar = d_enc.decode(CoCoA::indet(
       d_cocoaIdeal->myRing(), CoCoA::UnivariateIndetIndex(branchPoly)));
   Trace("ff::proof") << d_branchPolyProof << std::endl;
