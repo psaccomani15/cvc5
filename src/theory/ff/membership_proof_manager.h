@@ -13,7 +13,6 @@
  * Ideal Membership Proofs Engine
  */
 
-#include <CoCoA-0.99800/module.H>
 #include "cvc5_private.h"
 
 #if CVC5_USE_COCOA
