@@ -22,7 +22,6 @@
 
 // external includes
 #include <CoCoA/ring.H>
-#include <CoCoA/symbol.H>
 
 // std includes
 #include <optional>
