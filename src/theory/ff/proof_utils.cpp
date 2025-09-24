@@ -12,7 +12,7 @@
  *
  * Proof utilities
  */
-
+#ifdef CVC5_USE_COCOA
 #include "theory/ff/proof_utils.h"
 
 // std includes
@@ -68,3 +68,4 @@ ProofInfo::ProofInfo(ProofRule id,
 }  // namespace ff
 }  // namespace theory
 }  // namespace cvc5::internal
+#endif // CVC5_USE_COCOA

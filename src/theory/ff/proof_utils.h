@@ -49,4 +49,4 @@ class ProofInfo
 }  // namespace theory
 }  // namespace cvc5::internal
 
-#endif
+#endif // CVC5_USE_COCOA

@@ -1,6 +1,10 @@
+#ifdef CVC5_USE_COCOA
+
 #include "theory/ff/membership_proof_manager.h"
 
+#include <CoCoA/SparsePolyOps-ideal.H>
 #include <CoCoA/SparsePolyRing.H>
+#include <CoCoA/SparsePolyOps-RingElem.H>
 #include <CoCoA/TmpGPoly.H>
 #include <CoCoA/library.H>
 #include <CoCoA/ring.H>
@@ -274,4 +278,4 @@ void MembershipProofManager::membershipEnd()
 }  // namespace theory
 }  // namespace cvc5::internal
 
-// #endif /* CVC5_USE_COCOA */
+#endif /* CVC5_USE_COCOA */
