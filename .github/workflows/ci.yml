@@ -1,4 +1,10 @@
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Tag of the release to build (leave empty for current branch)"
 
 name: CI
 
@@ -84,18 +90,6 @@ jobs:
             exclude_regress: 3-4
             run_regression_args: --tester base --tester model --tester synth --tester abduct --tester dump
 
-          - name: ubuntu:production-arm64-libc++
-            os: ubuntu-24.04-arm
-            use-clang: true
-            use-libcxx: true
-            config: production --auto-download -DBUILD_GMP=1
-            cache-key: production-arm64-libcxx
-            strip-bin: strip
-            check-examples: true
-            package-name: cvc5-Linux-arm64-libcxx
-            exclude_regress: 3-4
-            run_regression_args: --tester base --tester model --tester synth --tester abduct --tester dump
-
           - name: ubuntu:production-arm64-cross
             os: ubuntu-latest
             config: production --auto-download --arm64
@@ -103,7 +97,7 @@ jobs:
             strip-bin: aarch64-linux-gnu-strip
 
           - name: macos:production
-            os: macos-15-intel
+            os: macos-13
             config: production --auto-download --all-bindings --editline -DBUILD_GMP=1
             cache-key: production
             strip-bin: strip
@@ -116,7 +110,7 @@ jobs:
             run_regression_args: --tester base --tester model --tester synth --tester abduct --tester dump
 
           - name: macos:production-arm64
-            os: macos-15
+            os: macos-14
             config: production --auto-download --all-bindings --editline -DBUILD_GMP=1
             cache-key: production-arm64
             strip-bin: strip
@@ -130,7 +124,7 @@ jobs:
             run_regression_args: --tester base --tester model --tester synth --tester abduct --tester dump
 
           - name: macos:production-arm64-cross
-            os: macos-15-intel
+            os: macos-13
             config: production --auto-download --all-bindings --editline --arm64
             cache-key: production-arm64-cross
             strip-bin: strip
@@ -183,7 +177,7 @@ jobs:
 
           - name: ubuntu:production-clang
             os: ubuntu-22.04
-            use-clang: true
+            env: CC=clang CXX=clang++
             config: production --auto-download --no-poly
             cache-key: productionclang
             check-examples: true
@@ -205,7 +199,7 @@ jobs:
 
           - name: ubuntu:production-dbg-clang
             os: ubuntu-22.04
-            use-clang: true
+            env: CC=clang CXX=clang++
             config: production --auto-download --assertions --tracing --cln --gpl
             cache-key: dbgclang
             exclude_regress: 3-4
@@ -229,7 +223,7 @@ jobs:
             gpl-tag: -gpl
 
           - name: macos:production-gpl
-            os: macos-15-intel
+            os: macos-13
             config: production --auto-download --editline --gpl --cln --glpk --cocoa -DBUILD_GMP=1 -DBUILD_CLN=1
             cache-key: production-gpl
             strip-bin: strip
@@ -238,7 +232,7 @@ jobs:
             gpl-tag: -gpl
 
           - name: macos:production-arm64-gpl
-            os: macos-15
+            os: macos-14
             config: production --auto-download --editline --gpl --cln --glpk --cocoa -DBUILD_GMP=1 -DBUILD_CLN=1
             cache-key: production-arm64-gpl
             strip-bin: strip
@@ -271,11 +265,14 @@ jobs:
       cancel-in-progress: ${{ github.repository != 'cvc5/cvc5' || startsWith(github.ref, 'refs/pull/') }}
 
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        ref: ${{ github.event.inputs.release_tag }}
 
     # Ensure that the Java bindings, Java API tests, and Java examples are compatible
     # with the minimum required Java version (currently Java 8).
-    - uses: actions/setup-java@v5
+    - uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: ${{ matrix.build.java-version || '8' }}
@@ -291,8 +288,6 @@ jobs:
       uses: ./.github/actions/install-dependencies
       with:
         with-documentation: ${{ matrix.build.build-documentation }}
-        use-clang: ${{ matrix.build.use-clang }}
-        use-libcxx: ${{ matrix.build.use-libcxx }}
         windows-build: ${{ matrix.build.windows-build }}
         wasm-build: ${{ matrix.build.wasm-build }}
         shell: ${{ matrix.build.shell }}
@@ -309,6 +304,7 @@ jobs:
       id: configure-and-build
       uses: ./.github/actions/configure-and-build
       with:
+        configure-env: ${{ matrix.build.env }}
         configure-config: ${{ matrix.build.config }}
         macos-target: ${{ matrix.build.macos-target }}
         build-shared: ${{ matrix.build.build-shared }}
@@ -375,7 +371,8 @@ jobs:
       if: matrix.build.java-bindings && matrix.build.package-name && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
       uses: ./.github/actions/add-jar
       with:
-        build-dir: ${{ steps.configure-and-build.outputs.static-build-dir }}
+        install-path: ${{ steps.create-static-package.outputs.install-path }}
+        jar-libs-dir: cvc5-libs
         jar-name: ${{ matrix.build.package-name }}${{ matrix.build.gpl-tag }}-java-api
         shell: ${{ matrix.build.shell }}
 
