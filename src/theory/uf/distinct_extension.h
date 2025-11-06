@@ -112,15 +112,9 @@ class DistinctExtension : protected EnvObj
   context::CDO<size_t> d_negDistinctIndex;
   /** The set of asserted positive distinct constraints */
   context::CDList<Node> d_posDistinct;
-  /**
-   * A proof generator for distinct constraints, which is used to given proofs
-   * for lemmas on demand.
-   */
+  /** A proof generator for disequal congruent terms */
   std::shared_ptr<DistinctProofGenerator> d_dproof;
-  /**
-   * Eager proof generator, which stores SAT-context dependent proof steps that
-   * conclude false based on facts in the equality engine.
-   */
+  /** Eager proof generator */
   std::shared_ptr<EagerProofGenerator> d_epg;
   /**
    * The pending conflict if one exists. These are of the form described in
