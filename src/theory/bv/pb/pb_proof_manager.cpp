@@ -31,7 +31,7 @@ PbProofManager::PbProofManager(Env& env, PbBlastProofGenerator* pbbpg)
 
 void PbProofManager::addPbProof(std::vector<std::string> proofLines)
 {
-  NodeManager* nm = NodeManager::currentNM();
+  NodeManager* nm = nodeManager();
 
   if (proofLines[0] == "pseudo-Boolean proof version 1.0" ||
       proofLines[0] == "pseudo-Boolean proof version 2.0")

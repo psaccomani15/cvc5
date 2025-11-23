@@ -108,7 +108,7 @@ Node PbProofRules::isContradiction(std::istringstream& iss)
     if (!iss.eof() || remaining != "0") Unreachable() << "\nParsing error\n";
   }
 
-  NodeManager* nm = NodeManager::currentNM();
+  NodeManager* nm = nodeManager();
   Node constraint = nm->mkBoundVar(constraint_id, nm->stringType());
   return nm->mkNode(Kind::PB_PROOF_CONTRADICTION, constraint);
 }
@@ -121,7 +121,7 @@ Node PbProofRules::loadAxiom(std::istringstream& iss)
 
   if (!iss.eof()) Unreachable() << "\nParsing error\n";
 
-  NodeManager* nm = NodeManager::currentNM();
+  NodeManager* nm = nodeManager();
   Node axiom = nm->mkBoundVar(axiom_id, nm->stringType());
   return nm->mkNode(Kind::PB_PROOF_LOAD_AXIOM, axiom);
 }
@@ -150,7 +150,7 @@ Node PbProofRules::reversePolishNotation(std::istringstream& iss)
 {
   Trace("bv-pb-proof") << "PbProofRules::reversePolishNotation\n";
   Node pol_constraint = parsePolishNotation(iss);
-  NodeManager* nm = NodeManager::currentNM();
+  NodeManager* nm = nodeManager();
   return nm->mkNode(Kind::PB_PROOF_REVERSE_POLISH_NOTATION, pol_constraint);
 }
 
@@ -158,7 +158,7 @@ Node PbProofRules::reverseUnitPropagation(std::istringstream& iss)
 {
   Trace("bv-pb-proof") << "PbProofRules::reverseUnitPropagation\n";
   Node rup_constraint = parseOpbFormat(iss);
-  NodeManager* nm = NodeManager::currentNM();
+  NodeManager* nm = nodeManager();
   return nm->mkNode(Kind::PB_PROOF_REVERSE_UNIT_PROPAGATION, rup_constraint);
 }
 
@@ -181,7 +181,7 @@ Node PbProofRules::wipeLevel(std::istringstream& iss)
 Node PbProofRules::parseOpbFormat(std::istringstream& iss)
 {
   Trace("bv-pb-proof") << "PbProofRules::parseOpbFormat\n";
-  NodeManager* nm = NodeManager::currentNM();
+  NodeManager* nm = nodeManager();
   std::vector<std::string> sum;
   std::string coefficient;
   std::string variable;
@@ -248,7 +248,7 @@ Node PbProofRules::parseOpbFormat(std::istringstream& iss)
 Node PbProofRules::parsePolishNotation(std::istringstream& iss)
 {
   Trace("bv-pb-proof") << "PbProofRules::parsePolishNotation\n";
-  NodeManager* nm = NodeManager::currentNM();
+  NodeManager* nm = nodeManager();
   std::string formula;
   std::string token;
   std::stack<Node> stack;
@@ -280,7 +280,7 @@ Node PbProofRules::parsePolishNotation(std::istringstream& iss)
 
 Node PbProofRules::polishAddition(std::pair<Node, Node> operands)
 {
-  NodeManager* nm = NodeManager::currentNM();
+  NodeManager* nm = nodeManager();
   auto [lhs, rhs] = operands;
   Node lhs_constraint = polishConstraint(lhs);
   Node rhs_constraint = polishConstraint(rhs);
@@ -289,7 +289,7 @@ Node PbProofRules::polishAddition(std::pair<Node, Node> operands)
 
 Node PbProofRules::polishDivision(std::pair<Node, Node> operands)
 {
-  NodeManager* nm = NodeManager::currentNM();
+  NodeManager* nm = nodeManager();
   auto [lhs, rhs] = operands;
   Node constraint = polishConstraint(lhs);
   if (rhs.getKind() != Kind::CONST_STRING) Unreachable();
@@ -299,7 +299,7 @@ Node PbProofRules::polishDivision(std::pair<Node, Node> operands)
 
 Node PbProofRules::polishMultiplication(std::pair<Node, Node> operands)
 {
-  NodeManager* nm = NodeManager::currentNM();
+  NodeManager* nm = nodeManager();
   auto [lhs, rhs] = operands;
   Node constraint = polishConstraint(lhs);
   if (rhs.getKind() != Kind::CONST_STRING) Unreachable();
@@ -319,7 +319,7 @@ Node PbProofRules::polishWeakening(std::pair<Node, Node> operands)
 
 Node PbProofRules::polishConstraint(Node node)
 {
-  NodeManager* nm = NodeManager::currentNM();
+  NodeManager* nm = nodeManager();
   // case 1: already processed
   if (node.getKind() != Kind::CONST_STRING) return node;
   std::string content = node.getConst<String>().toString();

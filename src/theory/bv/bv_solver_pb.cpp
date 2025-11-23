@@ -172,7 +172,7 @@ Node BVSolverPseudoBoolean::getValue(TNode node, bool initialize)
 
   if (!d_pbBlaster->hasTerm(node))
   {
-    return initialize ? utils::mkConst(utils::getSize(node), 0u) : Node();
+    return initialize ? utils::mkConst(nodeManager(), utils::getSize(node), 0u) : Node();
   }
 
   // std::vector<Node> bits;
