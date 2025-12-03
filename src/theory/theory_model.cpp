@@ -685,13 +685,21 @@ Node TheoryModel::getRepresentative(TNode a) const
   {
     Node r = d_equalityEngine->getRepresentative( a );
     std::map<Node, Node>::const_iterator itr = d_reps.find(r);
-    if (itr != d_reps.end())
+    // note that d_reps[r]=r for equivalence classes that haven't been assigned
+    if (itr != d_reps.end() && itr->second != r)
     {
       return itr->second;
     }
+    // special case: functions are constructed lazily so if we are higher-order
+    // and are looking for the representative of a function eqc, compute it now
+    if (logicInfo().isHigherOrder() && a.getType().isFunction())
+    {
+      assignFunctionDefault(r);
+      itr = d_reps.find(r);
+      Assert(itr != d_reps.end());
+      return itr->second;
+    }
     return r;
-  }else{
-    return a;
   }
   return a;
 }
