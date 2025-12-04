@@ -136,7 +136,7 @@ jobs:
       run: echo "bin=$(cygpath -m $(dirname $(which cc)))" >> $GITHUB_OUTPUT
 
     - name: Build wheels
-      uses: pypa/cibuildwheel@v3.1.4
+      uses: pypa/cibuildwheel@v3.3.0
       with:
         package-dir: ./build/src/api/python/
       env:
