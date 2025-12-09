@@ -2,9 +2,9 @@
 
 #include "theory/ff/membership_proof_manager.h"
 
+#include <CoCoA/SparsePolyOps-RingElem.H>
 #include <CoCoA/SparsePolyOps-ideal.H>
 #include <CoCoA/SparsePolyRing.H>
-#include <CoCoA/SparsePolyOps-RingElem.H>
 #include <CoCoA/TmpGPoly.H>
 #include <CoCoA/library.H>
 #include <CoCoA/ring.H>
@@ -24,12 +24,21 @@ namespace ff {
 MembershipProofManager::MembershipProofManager(Env& env,
                                                const std::vector<Node> polys,
                                                Node ideal,
+                                               CoCoA::ring ring,
                                                CocoaEncoder& enc,
                                                CDProof* proof)
-    : EnvObj(env), d_ideal(ideal), d_factToProof(), d_enc(enc), d_proof(proof)
+    : EnvObj(env),
+      d_multiplierSeq(),
+      d_ideal(ideal),
+      d_cocoaRing(ring),
+      d_factToProof(),
+      d_enc(enc),
+      d_proof(proof)
 {
+  Trace("ff::proof") << "Inputs:" << std::endl;
   for (auto polyRepr : polys)
   {
+    Trace("ff::proof") << "\t" << polyRepr << std::endl;
     storeProof(polyRepr, ProofRule::FF_IDEAL_GENERATOR, {}, {polyRepr});
   }
   storeProof(d_enc.zero(), ProofRule::FF_IDEAL_ZERO, {}, {d_enc.zero()});
@@ -60,8 +69,12 @@ void MembershipProofManager::setFunctionPointers()
   d_membershipStart =
       std::function([=](CoCoA::ConstRefRingElem p) { t->membershipStart(p); });
   d_membershipStep =
-      std::function([=](CoCoA::RingElem p) { t->membershipStep(p); });
+      std::function([=](CoCoA::ConstRefRingElem p) { t->membershipStep(p); });
   d_membershipEnd = std::function([=]() { t->membershipEnd(); });
+  d_storeMultiplier = std::function(
+      [=](CoCoA::ConstRefRingElem mul) { t->storeMultiplier(mul); });
+  d_storeMultiplierRaw = std::function(
+      [=](CoCoA::RingElemRawPtr mul) { t->storeMultiplier(mul); });
   CoCoA::sPolyProof = d_sPoly;
   CoCoA::reductionStartProof = d_reductionStart;
   CoCoA::reductionStepProof = d_reductionStep;
@@ -70,6 +83,8 @@ void MembershipProofManager::setFunctionPointers()
   CoCoA::membershipStep = d_membershipStep;
   CoCoA::membershipEnd = d_membershipEnd;
   CoCoA::monicProof = d_monicProof;
+  CoCoA::storeMultiplier = d_storeMultiplier;
+  CoCoA::storeMultiplierRaw = d_storeMultiplierRaw;
 }
 void MembershipProofManager::storeProof(Node poly,
                                         ProofRule id,
@@ -113,14 +128,26 @@ void MembershipProofManager::registerProofs()
       args.push_back(d_ideal);
     else
     {
-      std::transform(
-          children.begin(), children.end(), children.begin(), [this](Node n) {
-            return produceMembershipNode(n);
-          });
+      for (size_t childIdx = 0; childIdx < children.size(); ++childIdx)
+        children[childIdx] = produceMembershipNode(children[childIdx]);
     }
+    for (const auto& arg : args)
+      Trace("ff::proof") << "arg is: " << arg << std::endl; 
     d_proof->addStep(conclusion, id, children, args);
   }
 }
+
+void MembershipProofManager::storeMultiplier(CoCoA::ConstRefRingElem p)
+{
+  Trace("ff::proof") << "Must store reduction multiplier: " << d_enc.decode(p)
+                     << std::endl;
+  if (options().ff.ffProofOptionalArgs) d_multiplierSeq.push_back(p);
+}
+void MembershipProofManager::storeMultiplier(CoCoA::RingElemRawPtr p)
+{
+  storeMultiplier(CoCoA::RingElem(d_cocoaRing, p));
+}
+
 void MembershipProofManager::sPoly(CoCoA::ConstRefRingElem p,
                                    CoCoA::ConstRefRingElem q,
                                    CoCoA::ConstRefRingElem s)
@@ -136,20 +163,11 @@ void MembershipProofManager::sPoly(CoCoA::ConstRefRingElem p,
     std::vector<Node> args{sNode};
     if (options().ff.ffProofOptionalArgs)
     {
-      Assert(!CoCoA::owner(p)->IamFiniteField() && !CoCoA::owner(q)->IamFiniteField());
-      const CoCoA::SparsePolyRing& polyRing = CoCoA::owner(p);
-      auto mulP(CoCoA::monomial(polyRing, CoCoA::colon(CoCoA::LPP(p), CoCoA::LPP(p))));
-      args.push_back(d_enc.decode(mulP));
-      CoCoA::RingElem newP(polyRing,  mulP * p);
-      CoCoA::RingElem mulQ(polyRing);
-      Assert(!CoCoA::IsZero(newP) && !CoCoA::IsZero(q));
-      polyRing->myDivLM(CoCoA::raw(mulQ), CoCoA::raw(newP), CoCoA::raw(q));
-      polyRing->myNegate(CoCoA::raw(mulQ), CoCoA::raw(mulQ));
-      args.push_back(d_enc.decode(mulQ));
-      polyRing->myAddMulLM(CoCoA::raw(newP), CoCoA::raw(mulQ), CoCoA::raw(q));
-      Assert(newP == s);
+      Assert(d_multiplierSeq.size() == 2) << d_multiplierSeq.size();
+      for (auto& mul : d_multiplierSeq) args.push_back(d_enc.decode(mul));
+      d_multiplierSeq.clear();
     }
-    storeProof(sNode, ProofRule::FF_IDEAL_SPOLY, parents, {sNode});
+    storeProof(sNode, ProofRule::FF_IDEAL_SPOLY, parents, args);
   }
   else
   {
@@ -160,7 +178,8 @@ void MembershipProofManager::sPoly(CoCoA::ConstRefRingElem p,
 void MembershipProofManager::reductionStart(CoCoA::ConstRefRingElem p)
 {
   Assert(d_reductionSeq.empty());
-  Trace("ff::proof") << "GBreduction proof start: " << p << std::endl;
+  Trace("ff::proof") << "GBreduction proof start: " << d_enc.decode(p)
+                     << std::endl;
   d_reductionSeq.push_back(p);
 }
 
@@ -168,7 +187,8 @@ void MembershipProofManager::reductionStart(CoCoA::ConstRefRingElem p)
 void MembershipProofManager::reductionStep(CoCoA::ConstRefRingElem q)
 {
   Assert(!d_reductionSeq.empty());
-  Trace("ff::proof") << "GBreduction proof step: " << q << std::endl;
+  Trace("ff::proof") << "GBreduction proof step: " << d_enc.decode(q)
+                     << std::endl;
   d_reductionSeq.push_back(q);
 }
 
@@ -190,22 +210,12 @@ void MembershipProofManager::reductionEnd(CoCoA::ConstRefRingElem r)
       Node polyNode = d_enc.decode(reductor);
       args.push_back(polyNode);
       uniquePolys.insert(polyNode);
-      if (options().ff.ffProofOptionalArgs)
-      {
-        const CoCoA::SparsePolyRing& polyRing = CoCoA::owner(r);
-        CoCoA::RingElem mul(polyRing);
-        polyRing->myDivLM(
-            CoCoA::raw(mul), CoCoA::raw(currPoly), CoCoA::raw(reductor));
-        polyRing->myNegate(CoCoA::raw(mul), CoCoA::raw(mul));
-        polyRing->myAddMulLM(
-            CoCoA::raw(currPoly), CoCoA::raw(mul), CoCoA::raw(reductor));
-        optionalArgs.push_back(d_enc.decode(mul));
-      }
     }
     if (options().ff.ffProofOptionalArgs)
     {
-      Assert(currPoly == r);
-      args.insert(args.end(), optionalArgs.begin(), optionalArgs.end());
+      Assert(!d_multiplierSeq.empty());
+      for (auto& mul : d_multiplierSeq) args.push_back(d_enc.decode(mul));
+      d_multiplierSeq.clear();
     }
     storeProof(rTerm,
                ProofRule::FF_IDEAL_REDUCE,
@@ -244,28 +254,17 @@ void MembershipProofManager::membershipEnd()
   auto currPoly = d_reducingPoly;
   std::vector<Node> args{reducingPolyNode};
   std::unordered_set<Node> uniquePolys;
-  std::vector<Node> optionalArgs;
   for (auto& reductor : d_membershipSeq)
   {
     Node polyNode = d_enc.decode(reductor);
     args.push_back(polyNode);
     uniquePolys.insert(polyNode);
-    if (options().ff.ffProofOptionalArgs)
-    {
-      CoCoA::SparsePolyRing polyRing = CoCoA::owner(d_reducingPoly);
-      CoCoA::RingElem mul;
-      polyRing->myDivLM(
-          CoCoA::raw(mul), CoCoA::raw(currPoly), CoCoA::raw(reductor));
-      polyRing->myNegate(CoCoA::raw(mul), CoCoA::raw(mul));
-      polyRing->myAddMulLM(
-          CoCoA::raw(currPoly), CoCoA::raw(mul), CoCoA::raw(reductor));
-      optionalArgs.push_back(d_enc.decode(mul));
-    }
   }
   if (options().ff.ffProofOptionalArgs)
   {
-    Assert(CoCoA::IsZero(currPoly));
-    args.insert(args.begin(), optionalArgs.begin(), optionalArgs.end());
+    Assert(!d_membershipSeq.empty());
+    for (auto& mul : d_multiplierSeq) args.push_back(d_enc.decode(mul));
+    d_multiplierSeq.clear();
   }
   std::vector<Node> children(uniquePolys.begin(), uniquePolys.end());
   children.push_back(d_enc.zero());

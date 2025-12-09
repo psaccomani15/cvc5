@@ -50,6 +50,7 @@ class MembershipProofManager : protected EnvObj
   MembershipProofManager(Env& env,
           std::vector<Node> polys,
           Node ideal,
+          CoCoA::ring ring, 
           CocoaEncoder& enc,
           CDProof* proof);
 
@@ -101,7 +102,7 @@ class MembershipProofManager : protected EnvObj
   void sPoly(CoCoA::ConstRefRingElem p,
              CoCoA::ConstRefRingElem q,
              CoCoA::ConstRefRingElem s);
-  /**
+ /**
    * Call this when we start reducing p.
    */
   void reductionStart(CoCoA::ConstRefRingElem p);
@@ -109,6 +110,12 @@ class MembershipProofManager : protected EnvObj
    * Call this when there is a reduction on q.
    */
   void reductionStep(CoCoA::ConstRefRingElem q);
+  /**
+   * Call this to capture the multiplier used in a membership proof.
+   */
+  void storeMultiplier(CoCoA::ConstRefRingElem mul);
+
+  void storeMultiplier(CoCoA::RingElemRawPtr mul);
   /**
    * Call this when we finish reducing with r.
    */
@@ -139,6 +146,8 @@ class MembershipProofManager : protected EnvObj
    */
   std::vector<CoCoA::RingElem> d_reductionSeq{};
 
+  std::vector<CoCoA::RingElem> d_multiplierSeq{};
+
   /**
    * The sequence of polynomials in GBasis used in the reduction during
    * independent membership proof production.
@@ -150,6 +159,7 @@ class MembershipProofManager : protected EnvObj
    * Gbasis Proof Production: sPoly, reductionStart, reductionStep,
    * reductionEnd Arbitrary Poly Proof Production: membershipStart,
    * membershipStep and membershipEnd.
+   * Both: storeMultiplier
    */
 
   std::function<void(CoCoA::ConstRefRingElem,
@@ -164,13 +174,18 @@ class MembershipProofManager : protected EnvObj
   std::function<void(CoCoA::ConstRefRingElem)> d_membershipStart{};
   std::function<void(CoCoA::ConstRefRingElem)> d_membershipStep{};
   std::function<void(void)> d_membershipEnd{};
-
+  std::function<void(CoCoA::ConstRefRingElem)> d_storeMultiplier{};
+  std::function<void(CoCoA::RingElemRawPtr)> d_storeMultiplierRaw{};
   /**
    * A representation of the Ideal that we are currently proving membership
    * facts from An sExpr of bound variables that represents the initial set of
    * generators.
    */
   Node d_ideal;
+  /**
+   * The ring of polynomials in which our ideal lives. 
+   */
+  CoCoA::ring d_cocoaRing;
   /**
    * A cache of information that will be used for proof steps insertion
    */

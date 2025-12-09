@@ -87,6 +87,8 @@ class CocoaEncoder : public FieldObj
 
   /**
    * Build the term that represents p.
+   * The type of the term must implement << and
+   * CoCoA::SparsePolyIter. 
    */
   Node decode(CoCoA::ConstRefRingElem p);
 

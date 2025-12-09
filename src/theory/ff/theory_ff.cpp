@@ -55,7 +55,7 @@ TheoryFiniteFields::TheoryFiniteFields(Env& env,
                                        OutputChannel& out,
                                        Valuation valuation)
     : Theory(THEORY_FF, env, out, valuation),
-      d_proof(new CDProof(env, userContext(), "theory::ff::proof")),
+      d_proof(env, userContext(), "theory::ff::proof"),
       d_checker(nodeManager()),
       d_rewriter(nodeManager()),
       d_state(env, valuation),

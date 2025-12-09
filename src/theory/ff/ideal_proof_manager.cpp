@@ -73,7 +73,7 @@ IdealProofManager::IdealProofManager(Env& env,
     polys.push_back(polyVar);
   }
   d_ideal = nm->mkNode(Kind::FINITE_FIELD_IDEAL, polys);
-  d_membershipProofs = new MembershipProofManager(env, polys, d_ideal, enc, &d_proof);
+  d_membershipProofs = new MembershipProofManager(env, polys, d_ideal, cocoaIdeal->myRing(),  enc, &d_proof);
 }
 Node IdealProofManager::getSatFact()
 {

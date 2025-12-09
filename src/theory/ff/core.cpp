@@ -51,7 +51,7 @@ Tracer::Tracer(const std::vector<CoCoA::RingElem>& inputs)
   {
     const std::string s = ostring(inputs[i]);
     d_parents[s] = {};
-    //Trace("ff::trace") << "input: " << s << std::endl;
+    Trace("ff::trace") << "input: " << s << std::endl;
     d_inputNumbers.emplace(std::move(s), i);
   }
 };
@@ -128,16 +128,16 @@ void Tracer::sPoly(CoCoA::ConstRefRingElem p,
                               CoCoA::ConstRefRingElem s)
 {
   std::string ss = ostring(s);
-  //Trace("ff::trace") << "s: " << p << ", " << q << " -> " << s << std::endl;
+  Trace("ff::trace") << "s: " << p << ", " << q << " -> " << s << std::endl;
   if (d_parents.count(ss) == 0)
   {
-    //Trace("ff::trace") << " keep" << std::endl;
+    Trace("ff::trace") << " keep" << std::endl;
     addDep(ostring(p), ss);
     addDep(ostring(q), ss);
   }
   else
   {
-    //Trace("ff::trace") << " drop" << std::endl;
+    Trace("ff::trace") << " drop" << std::endl;
   }
 }
 
@@ -172,15 +172,15 @@ void Tracer::reductionEnd(CoCoA::ConstRefRingElem r)
   {
     if (TraceIsOn("ff::trace"))
     {
-      //Trace("ff::trace") << " drop" << std::endl;
+      Trace("ff::trace") << " drop" << std::endl;
       if (d_parents.count(rr))
       {
-        //Trace("ff::trace") << " parents:";
+        Trace("ff::trace") << " parents:";
         for (const auto& p : d_parents.at(rr))
         {
-          //Trace("ff::trace") << ", " << p;
+          Trace("ff::trace") << ", " << p;
         }
-        //Trace("ff::trace") << std::endl;
+        Trace("ff::trace") << std::endl;
       }
     }
   }
