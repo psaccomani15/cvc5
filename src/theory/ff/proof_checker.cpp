@@ -88,6 +88,8 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
       }
     }
     Assert(isNonAssigned);
+    if (isNonAssigned)
+      return Node::null();
     for (const auto& root : args[2])
     {
       Integer rootValue = root.getConst<FiniteFieldValue>().getValue();
@@ -143,6 +145,8 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     {
       Assert(child.getKind() == Kind::SET_MEMBER);
       Assert(ideal == child[1]);
+      if (ideal != child[1] || child.getKind() != Kind::SET_MEMBER)
+        return Node::null();
     }
     return d_nm->mkNode(Kind::SET_MEMBER, args[0], ideal);
   }

@@ -36,7 +36,7 @@
 #include "theory/theory_eq_notify.h"
 #include "theory/theory_inference_manager.h"
 #include "theory/theory_state.h"
-
+#include "proof/proof.h" 
 namespace cvc5::internal {
 class CDProof;
 namespace theory {
