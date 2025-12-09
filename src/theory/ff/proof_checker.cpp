@@ -179,6 +179,15 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     Node newIdeal = d_nm->mkNode(Kind::FINITE_FIELD_IDEAL, gens);
     return emptyVarPred(nodeManager(), newIdeal).negate();
   }
+  if (id == ProofRule::FF_ONE_UNSAT)
+  {
+    Assert(children.size() == 1);
+    Assert(args.empty());
+    Assert(children[0].getKind() == Kind::SET_MEMBER);
+    Assert(children[0][1].getKind() == Kind::FINITE_FIELD_VARIETY);
+    return emptyVarPred(nodeManager(), children[0][1][0]);
+    
+  }
   return Node::null();
 }
 }  // namespace ff
