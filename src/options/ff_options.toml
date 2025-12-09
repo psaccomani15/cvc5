@@ -57,14 +57,6 @@ name   = "Finite Field Theory"
   help = "use multiple groebner bases for partitions of the system"
 
 [[option]]
-  name       = "ffProof"
-  category   = "expert"
-  long       = "ff-proofs"
-  type       = "bool"
-  default    = "false"
-  help       = "enable Proof Production. WARNING: only avaliable when the ff-solver=gb."
-
-[[option]]
   name       = "ff"
   category   = "expert"
   long       = "ff"

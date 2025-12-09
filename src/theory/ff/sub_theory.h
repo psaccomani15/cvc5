@@ -129,7 +129,6 @@ class SubTheory : protected EnvObj, public FieldObj
    */
   FfStatistics* d_stats;
 };
-void produceContradiction(const NodeManager* nm, std::vector<Node> &fieldPolys, std::vector<Node> &gens, std::vector<Node> &conflict);
 }  // namespace ff
 }  // namespace theory
 }  // namespace cvc5::internal

@@ -391,9 +391,8 @@ bool Smt2Printer::toStreamBase(std::ostream& out,
       case Kind::UNINTERPRETED_SORT_VALUE:
       {
         const UninterpretedSortValue& v = n.getConst<UninterpretedSortValue>();
-        std::stringstream ss;
-        ss << "(as " << v << " " << n.getType() << ")";
-        out << ss.str();
+        out << "(as " << cvc5::internal::quoteSymbol(v.getSymbol()) << " "
+            << n.getType() << ")";
         break;
       }
       case Kind::CARDINALITY_CONSTRAINT_OP:
@@ -451,7 +450,7 @@ bool Smt2Printer::toStreamBase(std::ostream& out,
             << n.getConst<BitVectorRotateRight>().d_rotateRightAmount << ")";
         break;
       case Kind::INT_TO_BITVECTOR_OP:
-        out << "(_ int2bv " << n.getConst<IntToBitVector>().d_size << ")";
+        out << "(_ int_to_bv " << n.getConst<IntToBitVector>().d_size << ")";
         break;
       case Kind::FLOATINGPOINT_TO_FP_FROM_IEEE_BV_OP:
         out << "(_ to_fp "
@@ -1189,6 +1188,7 @@ std::string Smt2Printer::smtKindString(Kind k)
     case Kind::MULT:
     case Kind::NONLINEAR_MULT: return "*";
     case Kind::IAND: return "iand";
+    case Kind::PIAND: return "piand";
     case Kind::POW2: return "int.pow2";
     case Kind::EXPONENTIAL: return "exp";
     case Kind::SINE: return "sin";
@@ -1608,8 +1608,9 @@ void Smt2Printer::toStreamModelSort(std::ostream& out,
       }
       Assert(trn.getKind() == Kind::UNINTERPRETED_SORT_VALUE);
       // prints as raw symbol
-      const UninterpretedSortValue& av = trn.getConst<UninterpretedSortValue>();
-      out << "(" << av << ")";
+      const UninterpretedSortValue& av =
+        trn.getConst<UninterpretedSortValue>();
+      out << "(" << cvc5::internal::quoteSymbol(av.getSymbol()) << ")";
     }
     out << "))" << std::endl;
     return;
@@ -1633,7 +1634,7 @@ void Smt2Printer::toStreamModelSort(std::ostream& out,
         // prints as raw symbol
         const UninterpretedSortValue& av =
             trn.getConst<UninterpretedSortValue>();
-        out << av;
+        out << cvc5::internal::quoteSymbol(av.getSymbol());
       }
       else
       {
@@ -1924,16 +1925,20 @@ void Smt2Printer::toStreamCmdDeclareType(std::ostream& out,
 {
   if (d_variant == Variant::alf_variant)
   {
-    out << "(declare-type " << cvc5::internal::quoteSymbol(id) << " (";
-    for (size_t i = 0; i < arity; i++)
+    out << "(declare-const " << cvc5::internal::quoteSymbol(id) << " ";
+    if (arity > 0)
     {
-      if (i > 0)
+      out << "(->";
+      for (size_t i = 0; i < arity; i++)
       {
-        out << " ";
+        out << " Type";
       }
-      out << "Type";
+      out << " Type))";
     }
-    out << "))";
+    else
+    {
+      out << "Type)";
+    }
     return;
   }
   out << "(declare-sort " << cvc5::internal::quoteSymbol(id) << " " << arity
@@ -1966,6 +1971,12 @@ void Smt2Printer::toStreamCmdGetValue(std::ostream& out,
   out << "(get-value ( ";
   copy(nodes.begin(), nodes.end(), ostream_iterator<Node>(out, " "));
   out << "))";
+}
+
+void Smt2Printer::toStreamCmdGetModelDomainElements(std::ostream& out,
+                                                    TypeNode type) const
+{
+  out << "(get-model-domain-elements " << type << ")";
 }
 
 void Smt2Printer::toStreamCmdGetModel(std::ostream& out) const
@@ -2148,7 +2159,9 @@ void Smt2Printer::toStreamCmdDatatypeDeclaration(
     return;
   }
   out << "(declare-";
-  if (d0.isCodatatype())
+  // Ethos does not support codatatypes, we just print as an ordinary
+  // datatype for now
+  if (d0.isCodatatype() && d_variant != Variant::alf_variant)
   {
     out << "co";
   }
