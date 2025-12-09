@@ -30,19 +30,11 @@ runs:
         rm -rf ${{ inputs.build-dir }}/install/lib/python*
         rm -rf ${{ inputs.build-dir }}/install/lib/site-packages
 
-        if [[ "$MSYSTEM" == "MINGW64" ]]; then
+        if [[ "$MSYSTEM" == "CLANG64" ]]; then
           if [ -f ${{ inputs.build-dir }}/install/bin/libcvc5.dll ]; then
             cp /clang64/bin/libc++.dll ${{ inputs.build-dir }}/install/bin/
           else
             cp /clang64/lib/libgmp.a ${{ inputs.build-dir }}/install/lib/
-          fi
-        fi
-
-        if [[ "$MSYSTEM" == "CLANGARM64" ]]; then
-          if [ -f ${{ inputs.build-dir }}/install/bin/libcvc5.dll ]; then
-            cp /clangarm64/bin/libc++.dll ${{ inputs.build-dir }}/install/bin/
-          else
-            cp /clangarm64/lib/libgmp.a ${{ inputs.build-dir }}/install/bin/
           fi
         fi
 
