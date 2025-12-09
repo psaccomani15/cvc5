@@ -22,7 +22,7 @@
 #include <CoCoA/TmpGPoly.H>
 #include <CoCoA/ideal.H>
 #include <CoCoA/ring.H>
-
+#include <CoCoA/DistrMPolyInlPP.H>
 #include <functional>
 #include <unordered_map>
 
@@ -115,7 +115,7 @@ class MembershipProofManager : protected EnvObj
    */
   void storeMultiplier(CoCoA::ConstRefRingElem mul);
 
-  void storeMultiplier(CoCoA::RingElemRawPtr mul);
+  void storeMultiplier(CoCoA::DistrMPolyInlPP & mul);
   /**
    * Call this when we finish reducing with r.
    */
@@ -175,7 +175,7 @@ class MembershipProofManager : protected EnvObj
   std::function<void(CoCoA::ConstRefRingElem)> d_membershipStep{};
   std::function<void(void)> d_membershipEnd{};
   std::function<void(CoCoA::ConstRefRingElem)> d_storeMultiplier{};
-  std::function<void(CoCoA::RingElemRawPtr)> d_storeMultiplierRaw{};
+  std::function<void(CoCoA::DistrMPolyInlPP&)> d_storeMultiplierRaw{};
   /**
    * A representation of the Ideal that we are currently proving membership
    * facts from An sExpr of bound variables that represents the initial set of

@@ -2,6 +2,7 @@
 
 #include "theory/ff/membership_proof_manager.h"
 
+#include <CoCoA/DistrMPolyInlPP.H>
 #include <CoCoA/SparsePolyOps-RingElem.H>
 #include <CoCoA/SparsePolyOps-ideal.H>
 #include <CoCoA/SparsePolyRing.H>
@@ -74,7 +75,7 @@ void MembershipProofManager::setFunctionPointers()
   d_storeMultiplier = std::function(
       [=](CoCoA::ConstRefRingElem mul) { t->storeMultiplier(mul); });
   d_storeMultiplierRaw = std::function(
-      [=](CoCoA::RingElemRawPtr mul) { t->storeMultiplier(mul); });
+      [=](CoCoA::DistrMPolyInlPP& mul) { t->storeMultiplier(mul); });
   CoCoA::sPolyProof = d_sPoly;
   CoCoA::reductionStartProof = d_reductionStart;
   CoCoA::reductionStepProof = d_reductionStep;
@@ -132,7 +133,7 @@ void MembershipProofManager::registerProofs()
         children[childIdx] = produceMembershipNode(children[childIdx]);
     }
     for (const auto& arg : args)
-      Trace("ff::proof") << "arg is: " << arg << std::endl; 
+      Trace("ff::proof") << "arg is: " << arg << std::endl;
     d_proof->addStep(conclusion, id, children, args);
   }
 }
@@ -143,9 +144,15 @@ void MembershipProofManager::storeMultiplier(CoCoA::ConstRefRingElem p)
                      << std::endl;
   if (options().ff.ffProofOptionalArgs) d_multiplierSeq.push_back(p);
 }
-void MembershipProofManager::storeMultiplier(CoCoA::RingElemRawPtr p)
+void MembershipProofManager::storeMultiplier(CoCoA::DistrMPolyInlPP& p)
 {
-  storeMultiplier(CoCoA::RingElem(d_cocoaRing, p));
+  CoCoA::RingElem poly = CoCoA::zero(d_cocoaRing);
+  CoCoA::DistrMPolyInlPP::iter iter(p);
+  for (; CoCoA::IsEnded(iter); ++iter)
+  {
+    poly += CoCoA::monomial(d_cocoaRing, CoCoA::coeff(iter), CoCoA::PP(iter));
+  }
+  storeMultiplier(poly);
 }
 
 void MembershipProofManager::sPoly(CoCoA::ConstRefRingElem p,
@@ -213,15 +220,15 @@ void MembershipProofManager::reductionEnd(CoCoA::ConstRefRingElem r)
     }
     if (options().ff.ffProofOptionalArgs)
     {
-      Assert(!d_multiplierSeq.empty());
+      Assert( d_multiplierSeq.size() == d_reductionSeq.size() - 1) << d_reductionSeq.size();
       for (auto& mul : d_multiplierSeq) args.push_back(d_enc.decode(mul));
-      d_multiplierSeq.clear();
     }
     storeProof(rTerm,
                ProofRule::FF_IDEAL_REDUCE,
                std::vector(uniquePolys.begin(), uniquePolys.end()),
                args);
-  }
+  } 
+  d_multiplierSeq.clear();
   d_reductionSeq.clear();
 }
 

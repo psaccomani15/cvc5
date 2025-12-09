@@ -28,8 +28,11 @@ Node emptyVarPred(NodeManager* nm, Node ideal)
   return nm->mkNode(Kind::SET_IS_EMPTY, variety);
 }
 
-void produceContradiction(NodeManager *nm, CDProof *cdp, std::vector<Node>& fieldPolys,
-                                     std::vector<Node> &gens, std::vector<Node> &conflict)
+void produceContradiction(NodeManager* nm,
+                          CDProof* cdp,
+                          std::vector<Node>& fieldPolys,
+                          std::vector<Node>& gens,
+                          std::vector<Node>& conflict)
 {
   Node idealGens = nm->mkNode(Kind::FINITE_FIELD_IDEAL, gens);
   const Node unsatCore = nm->mkAnd(conflict);
@@ -37,9 +40,12 @@ void produceContradiction(NodeManager *nm, CDProof *cdp, std::vector<Node>& fiel
   Trace("ff::proof") << "Assumption: " << unsatCore << std::endl;
   Node commonRoot = emptyVarPred(nm, idealGens).negate();
   Node satIffCRoot = nm->mkNode(Kind::EQUAL, unsatCore, commonRoot);
-  cdp->addStep(satIffCRoot, ProofRule::FF_POLY_CONVERSION, {}, {});
   cdp->addStep(
-      commonRoot, ProofRule::EQ_RESOLVE, {unsatCore, satIffCRoot}, {});
+      satIffCRoot,
+      ProofRule::FF_POLY_CONVERSION,
+      {},
+      {unsatCore, commonRoot});
+  cdp->addStep(commonRoot, ProofRule::EQ_RESOLVE, {unsatCore, satIffCRoot}, {});
   if (!fieldPolys.empty())
   {
     std::vector<Node> newGens = gens;
@@ -47,15 +53,14 @@ void produceContradiction(NodeManager *nm, CDProof *cdp, std::vector<Node>& fiel
     idealGens = nm->mkNode(Kind::FINITE_FIELD_IDEAL, newGens);
     Node commonRootFieldPolys = emptyVarPred(nm, idealGens).negate();
     cdp->addStep(commonRootFieldPolys,
-                     ProofRule::FF_FIELD_POLYS,
-                     {commonRoot},
-                     {fieldPolys});
+                 ProofRule::FF_FIELD_POLYS,
+                 {commonRoot},
+                 {fieldPolys});
     commonRoot = commonRootFieldPolys;
   }
   Node falseNode = nm->mkConst<bool>(false);
   Node noCommonRoot = emptyVarPred(nm, idealGens);
-  cdp->addStep(
-      falseNode, ProofRule::CONTRA, {commonRoot, noCommonRoot}, {});
+  cdp->addStep(falseNode, ProofRule::CONTRA, {noCommonRoot, commonRoot}, {});
 }
 
 ProofInfo::ProofInfo(ProofRule id,

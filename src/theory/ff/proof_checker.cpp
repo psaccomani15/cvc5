@@ -21,6 +21,7 @@ void FfProofRuleChecker::registerTo(ProofChecker* pc)
   pc->registerChecker(ProofRule::FF_IDEAL_REDUCE, this);
   pc->registerChecker(ProofRule::FF_IDEAL_SPOLY, this);
   pc->registerChecker(ProofRule::FF_POLY_CONVERSION, this);
+  pc->registerChecker(ProofRule::FF_ONE_UNSAT, this);
 }
 
 /**TODO: Refactor. Create Proof Utils file. Put membership utility defined in
@@ -125,13 +126,13 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
   if (id == ProofRule::FF_IDEAL_SPOLY)
   {
     Assert(children.size() == 2);
-    Assert(args.size() == 1);
+    Assert(args.size() == 3);
     // Both children are proofs of membership to the *same* ideal
     Assert(children[0].getKind() == children[1].getKind()
            && children[0].getKind() == Kind::SET_MEMBER);
     Assert(children[0][1] == children[1][1]);
     Node ideal = children[0][1];
-    return d_nm->mkNode(Kind::SET_MEMBER, args[0], args[1]);
+    return d_nm->mkNode(Kind::SET_MEMBER, args[0], children[0][1]);
   }
   if (id == ProofRule::FF_IDEAL_REDUCE || id == ProofRule::FF_IDEAL_REDUCE_ZERO)
   {
@@ -162,7 +163,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
   if (id == ProofRule::FF_POLY_CONVERSION)
   {
     Assert(children.size() == 0);
-    Assert(args.size() == 2);
+    Assert(args.size() == 2) << args.size();
     return d_nm->mkNode(Kind::EQUAL, args[0], args[1]);
   }
   if (id == ProofRule::FF_FIELD_POLYS)

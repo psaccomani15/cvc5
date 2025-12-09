@@ -132,7 +132,7 @@ bool RoundRobinEnumerator::empty() { return d_empty; }
 bool isUnsat(const CoCoA::ideal& ideal)
 {
   const auto& gens = CoCoA::GBasis(ideal);
-  return !(gens.size() > 1 || CoCoA::deg(gens[0]) > 0);
+  return gens.size() == 1 && !CoCoA::IsZero(gens[0]) && CoCoA::deg(gens[0]) <= 0;
 }
 
 std::pair<size_t, CoCoA::RingElem> extractAssignment(

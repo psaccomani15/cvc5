@@ -38,6 +38,7 @@
 #include "theory/ff/split_gb.h"
 #include "theory/ff/sub_theory.h"
 #include "theory/ff/util.h"
+#include "theory/ff/cocoa_util.h"
 #include "util/cocoa_globals.h"
 #include "util/finite_field_value.h"
 #include "util/resource_manager.h"
@@ -141,7 +142,7 @@ Result SubTheory::postCheck(Theory::Effort e)
           idealProofs->setFunctionPointers();
           idealProofs->enableProofHooks();
         }
-        const auto basis = CoCoA::GBasis(ideal);
+        const auto basis = GBasisTimeout(ideal, d_env.getResourceManager());;
         if (options().ff.ffTraceGb) tracer.unsetFunctionPointers();
         if (d_env.isProofProducing()) idealProofs->disableProofHooks();
         // if it is trivial, create a conflict

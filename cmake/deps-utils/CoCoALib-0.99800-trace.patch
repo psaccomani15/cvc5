@@ -99,7 +99,7 @@ index 4c4d51e..f7f29d6 100644
 +extern std::function<void(RingElem s)> membershipStep;
 +extern std::function<void(void)> membershipEnd;
 +extern std::function<void(ConstRefRingElem p)> storeMultiplier;
-+extern std::function<void(RingElemRawPtr p)> storeMultiplierRaw;
++extern std::function<void(DistrMPolyInlPP &p)> storeMultiplierRaw;
  
  typedef std::list<GPoly> GPolyList;
  
@@ -118,13 +118,12 @@ index 5d55f94..a9b303f 100644
  
  //using std::swap;
  #include <iostream>
-@@ -463,6 +463,10 @@
+@@ -463,6 +463,9 @@
  
      DivLM(tmp_poly, *this, g);
      tmp_poly.myNegate();
 +    if (proofEnabled){
-+     std::unique_ptr<DistrMPolyInlPP> ans(&tmp_poly); 
-+     storeMultiplierRaw(RingElemRawPtr(ans.release()));
++      storeMultiplierRaw(tmp_poly);
 +}
      myDeleteLM();
      myAddMulLM(tmp_poly, g, /*SkipLMg = */ true );
@@ -274,7 +273,7 @@ index ea250d4..f3d1172 100644
 +  std::function<void(RingElem s)> membershipStep = nullptr;
 +  std::function<void(void)> membershipEnd = nullptr;
 +  std::function<void(ConstRefRingElem p)> storeMultiplier = nullptr;
-+  std::function<void(RingElemRawPtr p)> storeMultiplierRaw = nullptr;
++  std::function<void(DistrMPolyInlPP &p)> storeMultiplierRaw = nullptr;
    //---------class GPoly-------------------------------
  
    // WARNING: is not possible to build the zero GPoly here.
