@@ -22,6 +22,7 @@
 #include "theory/ff/theory_ff.h"
 
 #include <cerrno>
+#include <csignal>
 #include <fstream>
 #include <iostream>
 #include <numeric>
@@ -54,6 +55,8 @@ TheoryFiniteFields::TheoryFiniteFields(Env& env,
                                        OutputChannel& out,
                                        Valuation valuation)
     : Theory(THEORY_FF, env, out, valuation),
+      d_proof(env, userContext(), "theory::ff::proof"),
+      d_checker(nodeManager()),
       d_rewriter(nodeManager()),
       d_state(env, valuation),
       d_im(env, *this, d_state, getStatsPrefix(THEORY_FF)),
@@ -76,7 +79,7 @@ TheoryRewriter* TheoryFiniteFields::getTheoryRewriter()
   return &d_rewriter;
 }
 
-ProofRuleChecker* TheoryFiniteFields::getProofChecker() { return nullptr; }
+ProofRuleChecker* TheoryFiniteFields::getProofChecker() { return &d_checker; }
 
 bool TheoryFiniteFields::needsEqualityEngine(EeSetupInfo& esi)
 {
@@ -112,7 +115,32 @@ void TheoryFiniteFields::postCheck(Effort level)
       Assert(subTheory.second.inConflict());
       const Node conflict = nm->mkAnd(subTheory.second.conflict());
       Trace("ff::conflict") << "ff::conflict : " << conflict << std::endl;
-      d_im.conflict(conflict, InferenceId::FF_LEMMA);
+      // create a trust node to justify conflict:
+      // - retrieve proof node of false from subtheory
+      // - since that proof node must *necessarily* have as free assumptions
+      //   exactly the terms in "conflict", we will build in the cdp below a
+      //   SCOPE proof of the negation of the conjuction built out of "conflict"
+      if (d_env.isTheoryProofProducing())
+      {
+        CDProof cdp(d_env);
+        std::shared_ptr<ProofNode> conflictProof = subTheory.second.getProof();
+        Node notConflict = conflict.notNode();
+        Node falseNode = nm->mkConst<bool>(false);
+        cdp.addProof(conflictProof);
+        cdp.addStep(
+            notConflict, ProofRule::SCOPE, {falseNode}, {conflict}, true);
+        std::shared_ptr<ProofNode> pf = cdp.getProofFor(notConflict);
+        d_proof.addProof(pf);
+        std::ostringstream s;
+        pf.get()->printDebug(s, true);
+        Trace("ff::proof") << "Proof in theory_ff: " << s.str() << std::endl;
+        TrustNode tn = TrustNode::mkTrustConflict(conflict, &d_proof);
+        d_im.trustedConflict(tn, InferenceId::FF_LEMMA);
+      }
+      else
+      {
+        d_im.conflict(conflict, InferenceId::FF_LEMMA);
+      }
     }
   }
 #else  /* CVC5_USE_COCOA */
