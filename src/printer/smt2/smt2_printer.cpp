@@ -251,32 +251,32 @@ bool Smt2Printer::toStreamBase(std::ostream& out,
           out << smtKindString(atk);
         }
         break;
-    }
-    case Kind::APPLY_INDEXED_SYMBOLIC_OP:
-      out << smtKindString(n.getConst<GenericOp>().getKind());
-      break;
-    case Kind::BITVECTOR_TYPE:
-      out << "(_ BitVec " << n.getConst<BitVectorSize>().d_size << ")";
-      break;
-    case Kind::FINITE_FIELD_TYPE:
-      out << "(_ FiniteField " << n.getConst<FfSize>().d_val << ")";
-      break;
-    case Kind::FLOATINGPOINT_TYPE:
-      out << "(_ FloatingPoint "
-          << n.getConst<FloatingPointSize>().exponentWidth() << " "
-          << n.getConst<FloatingPointSize>().significandWidth() << ")";
-      break;
-    case Kind::CONST_BITVECTOR:
-    {
-      const BitVector& bv = n.getConst<BitVector>();
-      if (options::ioutils::getBvPrintConstsAsIndexedSymbols(out))
-      {
-        out << "(_ bv" << bv.getValue() << " " << bv.getSize() << ")";
       }
-      else
+      case Kind::APPLY_INDEXED_SYMBOLIC_OP:
+        out << smtKindString(n.getConst<GenericOp>().getKind());
+        break;
+      case Kind::BITVECTOR_TYPE:
+        out << "(_ BitVec " << n.getConst<BitVectorSize>().d_size << ")";
+        break;
+      case Kind::FINITE_FIELD_TYPE:
+        out << "(_ FiniteField " << n.getConst<FfSize>().d_val << ")";
+        break;
+      case Kind::FLOATINGPOINT_TYPE:
+        out << "(_ FloatingPoint "
+            << n.getConst<FloatingPointSize>().exponentWidth() << " "
+            << n.getConst<FloatingPointSize>().significandWidth() << ")";
+        break;
+      case Kind::CONST_BITVECTOR:
       {
-        out << "#b" << bv.toString();
-      }
+        const BitVector& bv = n.getConst<BitVector>();
+        if (options::ioutils::getBvPrintConstsAsIndexedSymbols(out))
+        {
+          out << "(_ bv" << bv.getValue() << " " << bv.getSize() << ")";
+        }
+        else
+        {
+          out << "#b" << bv.toString();
+        }
       break;
     }
     case Kind::CONST_FINITE_FIELD:
@@ -542,17 +542,17 @@ bool Smt2Printer::toStreamBase(std::ostream& out,
       {
         out << "(_ " << smtKindString(k);
         for (uint32_t i : indices)
-        {
-          out << " " << i;
+          {
+            out << " " << i;
+          }
+          out << ")";
         }
-        out << ")";
       }
-    }
       break;
-    default:
-      // fall back on whatever operator<< does on underlying type; we
-      // might luck out and be SMT-LIB v2 compliant
-      n.constToStream(out);
+      default:
+        // fall back on whatever operator<< does on underlying type; we
+        // might luck out and be SMT-LIB v2 compliant
+        n.constToStream(out);
     }
 
     return true;
@@ -617,8 +617,8 @@ bool Smt2Printer::toStreamBase(std::ostream& out,
           {
             // abstract value
             std::string s = n.getName();
-            out << "(as " << cvc5::internal::quoteSymbol(s) << " " << n.getType()
-                << ")";
+            out << "(as " << cvc5::internal::quoteSymbol(s) << " "
+                << n.getType() << ")";
             printed = true;
           }
         }
@@ -885,7 +885,8 @@ bool Smt2Printer::toStreamBase(std::ostream& out,
       }
     }
     // Use a fresh let binder, since using existing let symbols may violate
-    // scoping issues for let-bound variables, see explanation in let_binding.h.
+    // scoping issues for let-bound variables, see explanation in
+    // let_binding.h.
     if (needsPrintAnnot)
     {
       out << "(! ";
@@ -1152,7 +1153,8 @@ void Smt2Printer::toStream(std::ostream& out,
 
 std::string Smt2Printer::smtKindString(Kind k)
 {
-  switch(k) {
+  switch (k)
+  {
     // builtin theory
     case Kind::FUNCTION_TYPE: return "->";
     case Kind::EQUAL: return "=";
@@ -1230,6 +1232,8 @@ std::string Smt2Printer::smtKindString(Kind k)
     case Kind::FINITE_FIELD_BITSUM: return "ff.bitsum";
     case Kind::FINITE_FIELD_MULT: return "ff.mul";
     case Kind::FINITE_FIELD_NEG: return "ff.neg";
+    case Kind::FINITE_FIELD_IDEAL: return "@ff.ideal";
+    case Kind::FINITE_FIELD_VARIETY: return "@ff.variety";
 
     // bv theory
     case Kind::BITVECTOR_CONCAT: return "concat";
@@ -1554,17 +1558,17 @@ void Smt2Printer::toStream(std::ostream& out, const UnsatCore& core) const
     }
   }
   out << ")" << endl;
-}/* Smt2Printer::toStream(UnsatCore, map<Expr, string>) */
+} /* Smt2Printer::toStream(UnsatCore, map<Expr, string>) */
 
 void Smt2Printer::toStream(std::ostream& out, const smt::Model& m) const
 {
-  //print the model
+  // print the model
   out << "(" << endl;
   // don't need to print approximations since they are built into choice
   // functions in the values of variables.
   this->Printer::toStream(out, m);
   out << ")" << endl;
-  //print the heap model, if it exists
+  // print the heap model, if it exists
   Node h, neq;
   if (m.getHeapModel(h, neq))
   {
@@ -1590,14 +1594,14 @@ void Smt2Printer::toStreamModelSort(std::ostream& out,
   if (modelUninterpPrint == options::ModelUninterpPrintMode::Datatype)
   {
     out << "(declare-datatype " << tn << " (";
-    for (size_t i=0, nelements=elements.size(); i<nelements; i++)
+    for (size_t i = 0, nelements = elements.size(); i < nelements; i++)
     {
       Node trn = elements[i];
-      if (i>0)
+      if (i > 0)
       {
         out << " ";
       }
-      Assert (trn.getKind() == Kind::UNINTERPRETED_SORT_VALUE);
+      Assert(trn.getKind() == Kind::UNINTERPRETED_SORT_VALUE);
       // prints as raw symbol
       const UninterpretedSortValue& av =
           trn.getConst<UninterpretedSortValue>();
@@ -1801,10 +1805,12 @@ void Smt2Printer::toStreamCmdDeclarePool(
     TypeNode type,
     const std::vector<Node>& initValue) const
 {
-  out << "(declare-pool " << cvc5::internal::quoteSymbol(id) << ' ' << type << " (";
+  out << "(declare-pool " << cvc5::internal::quoteSymbol(id) << ' ' << type
+      << " (";
   for (size_t i = 0, n = initValue.size(); i < n; ++i)
   {
-    if (i != 0) {
+    if (i != 0)
+    {
       out << ' ';
     }
     out << initValue[i];
@@ -2270,7 +2276,8 @@ std::string Smt2Printer::sygusGrammarString(const TypeNode& t)
     {
       TypeNode curr = typesToPrint.front();
       typesToPrint.pop_front();
-      // skip builtin fields, which can originate from any-constant constructors
+      // skip builtin fields, which can originate from any-constant
+      // constructors
       if (!curr.isDatatype() || !curr.getDType().isSygus())
       {
         continue;
@@ -2310,7 +2317,7 @@ std::string Smt2Printer::sygusGrammarString(const TypeNode& t)
           Node consToPrint = nm->mkNode(Kind::APPLY_CONSTRUCTOR, cchildren);
           // now, print it using the conversion to builtin with external
           types_list << theory::datatypes::utils::sygusToBuiltin(consToPrint,
-                                                                true);
+                                                                 true);
         }
       }
       types_list << "))";
@@ -2398,7 +2405,8 @@ void Smt2Printer::toStreamCmdGetInterpol(std::ostream& out,
                                          Node conj,
                                          TypeNode sygusType) const
 {
-  out << "(get-interpolant " << cvc5::internal::quoteSymbol(name) << ' ' << conj;
+  out << "(get-interpolant " << cvc5::internal::quoteSymbol(name) << ' '
+      << conj;
   if (!sygusType.isNull())
   {
     out << ' ' << sygusGrammarString(sygusType);

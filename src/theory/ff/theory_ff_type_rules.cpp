@@ -93,6 +93,60 @@ TypeNode FiniteFieldFixedFieldTypeRule::computeType(NodeManager* nodeManager,
   return t;
 }
 
+TypeNode FiniteFieldIdeal::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
+TypeNode FiniteFieldIdeal::computeType(NodeManager* nm,
+                                       TNode n,
+                                       bool check,
+                                       std::ostream* errOut)
+{
+  TypeNode ffType = n[0].getType();
+  Assert(ffType.isFiniteField());
+  return nm->mkSetType(ffType);
+}
+
+TypeNode FiniteFieldVariety::preComputeType(NodeManager* nm, TNode n)
+{
+  return TypeNode::null();
+}
+
+TypeNode FiniteFieldVariety::computeType(NodeManager* nodeManager,
+                                         TNode n,
+                                         bool check,
+                                         std::ostream* errOut)
+{
+  // Children must be an Ideal (set type)
+  Assert(n[0].getType().isSet());
+  TypeNode ffType = n[0][0].getType();
+  Assert(ffType.isFiniteField());
+  return n[0].getType();
+}
+TypeNode FiniteFieldIdealMembership::preComputeType(NodeManager* nm, TNode n)
+{
+  return nm->booleanType();
+}
+TypeNode FiniteFieldIdealMembership::computeType(NodeManager* nm,
+                                                 TNode n,
+                                                 bool check,
+                                                 std::ostream* errOut)
+{
+  return nm->booleanType();
+}
+
+TypeNode FiniteFieldNonEmptyVar::preComputeType(NodeManager* nm, TNode n)
+{
+  return nm->booleanType();
+}
+TypeNode FiniteFieldNonEmptyVar::computeType(NodeManager* nm,
+                                             TNode n,
+                                             bool check,
+                                             std::ostream* errOut)
+{
+  return nm->booleanType();
+}
+
 }  // namespace ff
 }  // namespace theory
 }  // namespace cvc5::internal
