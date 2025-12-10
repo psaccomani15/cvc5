@@ -75,7 +75,10 @@ void MembershipProofManager::setFunctionPointers()
   d_storeMultiplier = std::function(
       [=](CoCoA::ConstRefRingElem mul) { t->storeMultiplier(mul); });
   d_storeMultiplierRaw = std::function(
-      [=](CoCoA::DistrMPolyInlPP& mul) { t->storeMultiplier(mul); });
+      [=](CoCoA::DistrMPolyInlPP& mul) { t->storeMultiplierRaw(mul); });
+ d_storeMultiplierRawFp = std::function(
+      [=](CoCoA::DistrMPolyInlFpPP& mul) { t->storeMultiplierRaw(mul); });
+  
   CoCoA::sPolyProof = d_sPoly;
   CoCoA::reductionStartProof = d_reductionStart;
   CoCoA::reductionStepProof = d_reductionStep;
@@ -86,6 +89,7 @@ void MembershipProofManager::setFunctionPointers()
   CoCoA::monicProof = d_monicProof;
   CoCoA::storeMultiplier = d_storeMultiplier;
   CoCoA::storeMultiplierRaw = d_storeMultiplierRaw;
+  CoCoA::storeMultiplierRawFp = d_storeMultiplierRawFp;
 }
 void MembershipProofManager::storeProof(Node poly,
                                         ProofRule id,
@@ -144,17 +148,19 @@ void MembershipProofManager::storeMultiplier(CoCoA::ConstRefRingElem p)
                      << std::endl;
   if (options().ff.ffProofOptionalArgs) d_multiplierSeq.push_back(p);
 }
-void MembershipProofManager::storeMultiplier(CoCoA::DistrMPolyInlPP& p)
+template <typename T> 
+void MembershipProofManager::storeMultiplierRaw(T& p)
 {
   CoCoA::RingElem poly = CoCoA::zero(d_cocoaRing);
-  CoCoA::DistrMPolyInlPP::iter iter(p);
+  typename T::iter iter(p);
   for (; CoCoA::IsEnded(iter); ++iter)
   {
     poly += CoCoA::monomial(d_cocoaRing, CoCoA::coeff(iter), CoCoA::PP(iter));
   }
   storeMultiplier(poly);
 }
-
+template void MembershipProofManager::storeMultiplierRaw<CoCoA::DistrMPolyInlPP>(CoCoA::DistrMPolyInlPP&);
+template void MembershipProofManager::storeMultiplierRaw<CoCoA::DistrMPolyInlFpPP>(CoCoA::DistrMPolyInlFpPP&);
 void MembershipProofManager::sPoly(CoCoA::ConstRefRingElem p,
                                    CoCoA::ConstRefRingElem q,
                                    CoCoA::ConstRefRingElem s)

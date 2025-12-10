@@ -19,10 +19,11 @@
 #ifndef CVC5__THEORY__GB__PROOF_H
 #define CVC5__THEORY__GB__PROOF_H
 
+#include <CoCoA/DistrMPolyInlPP.H>
 #include <CoCoA/TmpGPoly.H>
 #include <CoCoA/ideal.H>
 #include <CoCoA/ring.H>
-#include <CoCoA/DistrMPolyInlPP.H>
+
 #include <functional>
 #include <unordered_map>
 
@@ -48,11 +49,11 @@ class MembershipProofManager : protected EnvObj
 {
  public:
   MembershipProofManager(Env& env,
-          std::vector<Node> polys,
-          Node ideal,
-          CoCoA::ring ring, 
-          CocoaEncoder& enc,
-          CDProof* proof);
+                         std::vector<Node> polys,
+                         Node ideal,
+                         CoCoA::ring ring,
+                         CocoaEncoder& enc,
+                         CDProof* proof);
 
   /**
    * Hooks into CoCoA. The functions are then called by CoCoA Groebner Basis
@@ -102,7 +103,7 @@ class MembershipProofManager : protected EnvObj
   void sPoly(CoCoA::ConstRefRingElem p,
              CoCoA::ConstRefRingElem q,
              CoCoA::ConstRefRingElem s);
- /**
+  /**
    * Call this when we start reducing p.
    */
   void reductionStart(CoCoA::ConstRefRingElem p);
@@ -114,8 +115,8 @@ class MembershipProofManager : protected EnvObj
    * Call this to capture the multiplier used in a membership proof.
    */
   void storeMultiplier(CoCoA::ConstRefRingElem mul);
-
-  void storeMultiplier(CoCoA::DistrMPolyInlPP & mul);
+  template <typename T> 
+  void storeMultiplierRaw(T& mul);
   /**
    * Call this when we finish reducing with r.
    */
@@ -176,6 +177,7 @@ class MembershipProofManager : protected EnvObj
   std::function<void(void)> d_membershipEnd{};
   std::function<void(CoCoA::ConstRefRingElem)> d_storeMultiplier{};
   std::function<void(CoCoA::DistrMPolyInlPP&)> d_storeMultiplierRaw{};
+  std::function<void(CoCoA::DistrMPolyInlFpPP&)> d_storeMultiplierRawFp{};
   /**
    * A representation of the Ideal that we are currently proving membership
    * facts from An sExpr of bound variables that represents the initial set of
@@ -183,7 +185,7 @@ class MembershipProofManager : protected EnvObj
    */
   Node d_ideal;
   /**
-   * The ring of polynomials in which our ideal lives. 
+   * The ring of polynomials in which our ideal lives.
    */
   CoCoA::ring d_cocoaRing;
   /**

@@ -184,8 +184,8 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     Assert(children.size() == 1);
     Assert(args.empty());
     Assert(children[0].getKind() == Kind::SET_MEMBER);
-    Assert(children[0][1].getKind() == Kind::FINITE_FIELD_VARIETY);
-    return emptyVarPred(nodeManager(), children[0][1][0]);
+    Assert(children[0][1].getKind() == Kind::FINITE_FIELD_IDEAL) << children[0][1].getKind();
+    return emptyVarPred(nodeManager(), children[0][1]);
     
   }
   return Node::null();
