@@ -17,10 +17,8 @@
  * [OKTB23]: https://doi.org/10.1007/978-3-031-37703-7_8
  */
 
+#include "theory/shared_terms_database.h"
 #ifdef CVC5_USE_COCOA
-
-#include "theory/ff/sub_theory.h"
-
 #include <CoCoA/BigInt.H>
 #include <CoCoA/CpuTimeLimit.H>
 #include <CoCoA/QuotientRing.H>
@@ -28,20 +26,22 @@
 #include <CoCoA/SparsePolyOps-ideal.H>
 #include <CoCoA/ring.H>
 
-#include <numeric>
-
 #include "expr/node_traversal.h"
 #include "options/ff_options.h"
+#include "proof/proof_node.h"
 #include "smt/env_obj.h"
 #include "theory/ff/cocoa_encoder.h"
 #include "theory/ff/core.h"
+#include "theory/ff/ideal_proof_manager.h"
 #include "theory/ff/multi_roots.h"
+#include "theory/ff/proof_utils.h"
 #include "theory/ff/split_gb.h"
+#include "theory/ff/sub_theory.h"
 #include "theory/ff/util.h"
+#include "theory/ff/cocoa_util.h"
 #include "util/cocoa_globals.h"
 #include "util/finite_field_value.h"
 #include "util/resource_manager.h"
-
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
@@ -52,6 +52,7 @@ SubTheory::SubTheory(Env& env, FfStatistics* stats, Integer modulus)
       d_facts(context()),
       d_stats(stats)
 {
+  if (env.isProofProducing()) d_proof = new CDProof(env, context(), "GlobalFFProofs");
   AlwaysAssert(modulus.isProbablePrime()) << "non-prime fields are unsupported";
   // must be initialized before using CoCoA.
   initCocoaGlobalManager();
@@ -63,7 +64,7 @@ Result SubTheory::postCheck(Theory::Effort e)
 {
   d_conflict.clear();
   d_model.clear();
-  // on some branches, we'll overwrite this result
+  std::vector<CoCoA::RingElem> root;
   Result result = {
       Result::UNKNOWN, UnknownExplanation::UNKNOWN_REASON, "internal"};
   if (e == Theory::EFFORT_FULL)
@@ -92,7 +93,6 @@ Result SubTheory::postCheck(Theory::Effort e)
       else if (options().ff.ffSolver == options::FfSolver::GB)
       {
         CocoaEncoder enc(nodeManager(), size());
-        // collect leaves
         for (const Node& node : d_facts)
         {
           enc.addFact(node);
@@ -103,7 +103,6 @@ Result SubTheory::postCheck(Theory::Effort e)
         {
           enc.addFact(node);
         }
-
         // compute a GB
         std::vector<CoCoA::RingElem> generators;
         generators.insert(
@@ -111,28 +110,48 @@ Result SubTheory::postCheck(Theory::Effort e)
         generators.insert(generators.end(),
                           enc.bitsumPolys().begin(),
                           enc.bitsumPolys().end());
+        std::vector<Node> gens{};
+        for (auto& poly : generators)
+        {
+          gens.push_back(enc.decode(poly));
+        }
+        std::vector<Node> fieldPolys{};
         if (options().ff.ffFieldPolys)
         {
           for (const auto& var : CoCoA::indets(enc.polyRing()))
           {
             CoCoA::BigInt characteristic = CoCoA::characteristic(coeffRing());
-            const long power = CoCoA::LogCardinality(coeffRing());
+            long power = CoCoA::LogCardinality(coeffRing());
             CoCoA::BigInt size = CoCoA::power(characteristic, power);
-            generators.push_back(CoCoA::power(var, size) - var);
+            auto poly = CoCoA::power(var, size) - var;
+            Node polyTerm = enc.decode(poly);
+            fieldPolys.push_back(polyTerm);
+            generators.push_back(poly);
           }
         }
         Tracer tracer(generators);
-        if (options().ff.ffTraceGb) tracer.setFunctionPointers();
-        CoCoA::ideal ideal = CoCoA::ideal(generators);
-        const auto basis = GBasisTimeout(ideal, d_env.getResourceManager());
-        if (options().ff.ffTraceGb) tracer.unsetFunctionPointers();
 
+        if (options().ff.ffTraceGb) tracer.setFunctionPointers();
+
+        CoCoA::ideal ideal = CoCoA::ideal(generators);
+        std::shared_ptr<IdealProofManager> idealProofs = nullptr;
+        if (d_env.isProofProducing())
+        {
+          idealProofs = std::shared_ptr<IdealProofManager>(
+              new IdealProofManager(d_env, d_proof,0, generators, enc, ideal));
+          idealProofs->setFunctionPointers();
+          idealProofs->enableProofHooks();
+        }
+        const auto basis = GBasisTimeout(ideal, d_env.getResourceManager());;
+        if (options().ff.ffTraceGb) tracer.unsetFunctionPointers();
+        if (d_env.isProofProducing()) idealProofs->disableProofHooks();
         // if it is trivial, create a conflict
         bool is_trivial = basis.size() == 1 && CoCoA::deg(basis.front()) == 0;
         if (is_trivial)
         {
           Trace("ff::gb") << "Trivial GB" << std::endl;
           result = Result::UNSAT;
+          std::vector<Node> corePolys{};
           if (options().ff.ffTraceGb)
           {
             std::vector<size_t> coreIndices = tracer.trace(basis.front());
@@ -140,7 +159,10 @@ Result SubTheory::postCheck(Theory::Effort e)
             for (size_t i = 0, n = d_facts.size(); i < n; ++i)
             {
               Trace("ff::core")
-                  << "In " << i << " : " << d_facts[i] << std::endl;
+                  << "In" << i << " : " << d_facts[i] << std::endl;
+              d_conflict.push_back(enc.polyFact(generators[i]));
+              if (d_env.isTheoryProofProducing())
+                corePolys.push_back(enc.decode(generators[i]));
             }
             for (size_t i : coreIndices)
             {
@@ -157,23 +179,38 @@ Result SubTheory::postCheck(Theory::Effort e)
           {
             setTrivialConflict();
           }
+          if (d_conflict.size() != enc.polys().size())
+          {
+            std::vector<Node> coreGenerators = corePolys;
+            coreGenerators.insert(
+                coreGenerators.end(), fieldPolys.begin(), fieldPolys.end());
+            if (d_env.isTheoryProofProducing()) idealProofs->updateIdeal(coreGenerators);
+            Trace("ff::proof") << "Restriction on unsat core" << std::endl;
+          }
+          if (d_env.isTheoryProofProducing())
+          {
+            Node unsatVariety = idealProofs->oneRefutation(basis.front());
+            produceContradiction(nodeManager(), d_proof, fieldPolys, corePolys, d_conflict);
+          }
         }
         else
         {
           Trace("ff::gb") << "Non-trivial GB" << std::endl;
 
           // common root (vec of CoCoA base ring elements)
-          std::vector<CoCoA::RingElem> root = findZero(ideal, d_env);
-
+          root = findZero(ideal, d_env, idealProofs);
           if (root.empty())
           {
+            // UNSAT
             result = Result::UNSAT;
             setTrivialConflict();
+            if (d_env.isTheoryProofProducing())
+              produceContradiction(nodeManager(), d_proof, fieldPolys, gens, d_conflict);
           }
           else
           {
+            // SAT: populate d_model from the
             result = Result::SAT;
-            // populate d_model from the root
             Assert(d_model.empty());
             const auto nm = nodeManager();
             Trace("ff::model") << "Model GF(" << size() << "):" << std::endl;
@@ -194,7 +231,7 @@ Result SubTheory::postCheck(Theory::Effort e)
       {
         Unreachable() << options().ff.ffSolver << std::endl;
       }
-      AlwaysAssert(result.getStatus() != Result::UNKNOWN);
+      AlwaysAssert(result.getStatus() != Result::UNKNOWN) << root;
       return result;
     }
     catch (FfTimeoutException& exc)
@@ -209,7 +246,6 @@ void SubTheory::setTrivialConflict()
 {
   std::copy(d_facts.begin(), d_facts.end(), std::back_inserter(d_conflict));
 }
-
 bool SubTheory::inConflict() const { return !d_conflict.empty(); }
 
 const std::vector<Node>& SubTheory::conflict() const { return d_conflict; }
@@ -219,8 +255,14 @@ const std::unordered_map<Node, Node>& SubTheory::model() const
   return d_model;
 }
 
+std::shared_ptr<ProofNode> SubTheory::getProof()
+{
+  const auto nm = nodeManager();
+  Node falseNode = nm->mkConst<bool>(false);
+  Assert(d_proof->hasStep(falseNode));
+  return d_proof->getProof(falseNode);
+}
 }  // namespace ff
 }  // namespace theory
 }  // namespace cvc5::internal
-
 #endif /* CVC5_USE_COCOA */

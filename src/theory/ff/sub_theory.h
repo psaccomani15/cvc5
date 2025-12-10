@@ -32,6 +32,7 @@
 
 #include "context/cdlist_forward.h"
 #include "expr/node.h"
+#include "proof/proof.h"
 #include "smt/env_obj.h"
 #include "theory/ff/stats.h"
 #include "theory/ff/util.h"
@@ -83,6 +84,7 @@ class SubTheory : protected EnvObj, public FieldObj
    */
   bool inConflict() const;
 
+  std::shared_ptr<ProofNode> getProof();
   /**
    * What is that conflict?
    */
@@ -101,8 +103,7 @@ class SubTheory : protected EnvObj, public FieldObj
    * Set the conflict to be all facts.
    */
   void setTrivialConflict();
-
-  /**
+ /**
    * Facts, in notification order.
    *
    * Contains only the facts in *this specific field*.
@@ -110,6 +111,7 @@ class SubTheory : protected EnvObj, public FieldObj
    * Uses SAT context.
    */
   context::CDList<Node> d_facts;
+  CDProof* d_proof;
 
   /**
    * Non-empty if we're in a conflict. The vector is the conflict.
@@ -127,7 +129,6 @@ class SubTheory : protected EnvObj, public FieldObj
    */
   FfStatistics* d_stats;
 };
-
 }  // namespace ff
 }  // namespace theory
 }  // namespace cvc5::internal
