@@ -120,7 +120,7 @@ void TheoryFiniteFields::postCheck(Effort level)
       // - since that proof node must *necessarily* have as free assumptions
       //   exactly the terms in "conflict", we will build in the cdp below a
       //   SCOPE proof of the negation of the conjuction built out of "conflict"
-      if (d_env.isTheoryProofProducing())
+      if (d_env.isTheoryProofProducing() && options().ff.ffSolver == options::FfSolver::GB)
       {
         CDProof cdp(d_env);
         std::shared_ptr<ProofNode> conflictProof = subTheory.second.getProof();
