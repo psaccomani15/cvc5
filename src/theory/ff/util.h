@@ -29,6 +29,7 @@
 
 // internal includes
 #include "expr/node.h"
+#include "proof/proof.h"
 #include "util/finite_field_value.h"
 
 namespace cvc5::internal {
@@ -50,10 +51,42 @@ class FieldObj
   FieldObj(NodeManager* nm, const FfSize& size);
   /** create a sum (with as few as 0 elements); accepts Nodes or TNodes */
   template <bool ref_count>
-  Node mkAdd(const std::vector<NodeTemplate<ref_count>>& summands);
+  Node mkAdd(const std::vector<NodeTemplate<ref_count>>& summands)
+  {
+    if (summands.empty())
+    {
+      return d_zero;
+    }
+    else if (summands.size() == 1)
+    {
+      return summands[0];
+    }
+    else
+    {
+      return d_nm->mkNode(Kind::FINITE_FIELD_ADD, std::move(summands));
+    }
+  }
+
   /** create a product (with as few as 0 elements); accepts Nodes or TNodes */
   template <bool ref_count>
-  Node mkMul(const std::vector<NodeTemplate<ref_count>>& summands);
+  Node mkMul(const std::vector<NodeTemplate<ref_count>>& factors)
+  {
+    if (factors.empty())
+    {
+      return d_one;
+    }
+    else if (factors.size() == 1)
+    {
+      return factors[0];
+    }
+    else
+    {
+      return d_nm->mkNode(Kind::FINITE_FIELD_MULT, std::move(factors));
+    }
+  }
+
+  /** Creates a Node that represents a finite field value.*/
+  Node mkConst(FiniteFieldValue value);
   /** the one constant in this field */
   const Node& one() const { return d_one; }
   /** the zero constant in this field */
@@ -99,7 +132,6 @@ bool isFfLeaf(const Node& n, const FfSize& field);
 bool isFfTerm(const Node& n, const FfSize& field);
 /** Is this a (this) field fact (equality of disequality)? */
 bool isFfFact(const Node& n, const FfSize& field);
-
 }  // namespace ff
 }  // namespace theory
 }  // namespace cvc5::internal
