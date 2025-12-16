@@ -76,9 +76,9 @@ void MembershipProofManager::setFunctionPointers()
       [=](CoCoA::ConstRefRingElem mul) { t->storeMultiplier(mul); });
   d_storeMultiplierRaw = std::function(
       [=](CoCoA::DistrMPolyInlPP& mul) { t->storeMultiplierRaw(mul); });
- d_storeMultiplierRawFp = std::function(
+  d_storeMultiplierRawFp = std::function(
       [=](CoCoA::DistrMPolyInlFpPP& mul) { t->storeMultiplierRaw(mul); });
-  
+
   CoCoA::sPolyProof = d_sPoly;
   CoCoA::reductionStartProof = d_reductionStart;
   CoCoA::reductionStepProof = d_reductionStep;
@@ -146,9 +146,9 @@ void MembershipProofManager::storeMultiplier(CoCoA::ConstRefRingElem p)
 {
   Trace("ff::proof") << "Must store reduction multiplier: " << d_enc.decode(p)
                      << std::endl;
-  if (options().ff.ffProofOptionalArgs) d_multiplierSeq.push_back(p);
+  d_multiplierSeq.push_back(p);
 }
-template <typename T> 
+template <typename T>
 void MembershipProofManager::storeMultiplierRaw(T& p)
 {
   CoCoA::RingElem poly = CoCoA::zero(d_cocoaRing);
@@ -159,8 +159,10 @@ void MembershipProofManager::storeMultiplierRaw(T& p)
   }
   storeMultiplier(poly);
 }
-template void MembershipProofManager::storeMultiplierRaw<CoCoA::DistrMPolyInlPP>(CoCoA::DistrMPolyInlPP&);
-template void MembershipProofManager::storeMultiplierRaw<CoCoA::DistrMPolyInlFpPP>(CoCoA::DistrMPolyInlFpPP&);
+template void MembershipProofManager::storeMultiplierRaw<
+    CoCoA::DistrMPolyInlPP>(CoCoA::DistrMPolyInlPP&);
+template void MembershipProofManager::storeMultiplierRaw<
+    CoCoA::DistrMPolyInlFpPP>(CoCoA::DistrMPolyInlFpPP&);
 void MembershipProofManager::sPoly(CoCoA::ConstRefRingElem p,
                                    CoCoA::ConstRefRingElem q,
                                    CoCoA::ConstRefRingElem s)
@@ -174,12 +176,9 @@ void MembershipProofManager::sPoly(CoCoA::ConstRefRingElem p,
     Trace("ff::proof") << " keep" << std::endl;
     std::vector<Node> parents{pNode, qNode};
     std::vector<Node> args{sNode};
-    if (options().ff.ffProofOptionalArgs)
-    {
-      Assert(d_multiplierSeq.size() == 2) << d_multiplierSeq.size();
-      for (auto& mul : d_multiplierSeq) args.push_back(d_enc.decode(mul));
-      d_multiplierSeq.clear();
-    }
+    Assert(d_multiplierSeq.size() == 2) << d_multiplierSeq.size();
+    for (auto& mul : d_multiplierSeq) args.push_back(d_enc.decode(mul));
+    d_multiplierSeq.clear();
     storeProof(sNode, ProofRule::FF_IDEAL_SPOLY, parents, args);
   }
   else
@@ -210,7 +209,6 @@ void MembershipProofManager::reductionEnd(CoCoA::ConstRefRingElem r)
   Assert(!d_reductionSeq.empty());
   Node rTerm = d_enc.decode(r);
   std::vector<Node> args{rTerm};
-  std::vector<Node> optionalArgs;
   Trace("ff::proof") << "reduction proof end: " << std::endl;
   auto currPoly = d_reductionSeq[0];
   if (d_factToProof.count(rTerm) == 0)
@@ -224,16 +222,14 @@ void MembershipProofManager::reductionEnd(CoCoA::ConstRefRingElem r)
       args.push_back(polyNode);
       uniquePolys.insert(polyNode);
     }
-    if (options().ff.ffProofOptionalArgs)
-    {
-      Assert( d_multiplierSeq.size() == d_reductionSeq.size() - 1) << d_reductionSeq.size();
-      for (auto& mul : d_multiplierSeq) args.push_back(d_enc.decode(mul));
-    }
+    Assert(d_multiplierSeq.size() == d_reductionSeq.size() - 1)
+        << d_reductionSeq.size();
+    for (auto& mul : d_multiplierSeq) args.push_back(d_enc.decode(mul));
     storeProof(rTerm,
                ProofRule::FF_IDEAL_REDUCE,
                std::vector(uniquePolys.begin(), uniquePolys.end()),
                args);
-  } 
+  }
   d_multiplierSeq.clear();
   d_reductionSeq.clear();
 }
@@ -273,12 +269,9 @@ void MembershipProofManager::membershipEnd()
     args.push_back(polyNode);
     uniquePolys.insert(polyNode);
   }
-  if (options().ff.ffProofOptionalArgs)
-  {
-    Assert(!d_membershipSeq.empty());
-    for (auto& mul : d_multiplierSeq) args.push_back(d_enc.decode(mul));
-    d_multiplierSeq.clear();
-  }
+  Assert(!d_membershipSeq.empty());
+  for (auto& mul : d_multiplierSeq) args.push_back(d_enc.decode(mul));
+  d_multiplierSeq.clear();
   std::vector<Node> children(uniquePolys.begin(), uniquePolys.end());
   children.push_back(d_enc.zero());
   Trace("ff::proof") << "finish membership Proof for " << d_reducingPoly
