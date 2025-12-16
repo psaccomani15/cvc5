@@ -41,41 +41,7 @@ FieldObj::FieldObj(NodeManager* nm, const FfSize& size)
 #endif /* CVC5_USE_COCOA */
 {
 }
-
-template <bool ref_count>
-Node FieldObj::mkAdd(const std::vector<NodeTemplate<ref_count>>& summands)
-{
-  if (summands.empty())
-  {
-    return d_zero;
-  }
-  else if (summands.size() == 1)
-  {
-    return summands[0];
-  }
-  else
-  {
-    return d_nm->mkNode(Kind::FINITE_FIELD_ADD, std::move(summands));
-  }
-}
-
-template <bool ref_count>
-Node FieldObj::mkMul(const std::vector<NodeTemplate<ref_count>>& factors)
-{
-  if (factors.empty())
-  {
-    return d_one;
-  }
-  else if (factors.size() == 1)
-  {
-    return factors[0];
-  }
-  else
-  {
-    return d_nm->mkNode(Kind::FINITE_FIELD_MULT, std::move(factors));
-  }
-}
-
+Node FieldObj::mkConst(FiniteFieldValue value) { return d_nm->mkConst(value); }
 bool isFfLeaf(const Node& n)
 {
   return n.getType().isFiniteField() && Theory::isLeafOf(n, THEORY_FF);
@@ -116,7 +82,6 @@ bool isFfFact(const Node& n, const FfSize& field)
              && n[0][0].getType().isFiniteField()
              && n[0][0].getType().getFfSize() == field);
 }
-
 }  // namespace ff
 }  // namespace theory
 }  // namespace cvc5::internal
