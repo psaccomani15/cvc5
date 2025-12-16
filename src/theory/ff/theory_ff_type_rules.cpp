@@ -103,7 +103,7 @@ TypeNode FiniteFieldIdeal::computeType(NodeManager* nm,
                                        std::ostream* errOut)
 {
   TypeNode ffType = n[0].getType();
-  Assert(ffType.isFiniteField());
+  Assert(ffType.isFiniteField()) << ffType << "\n"<< n[0];
   return nm->mkSetType(ffType);
 }
 

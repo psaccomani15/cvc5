@@ -110,6 +110,7 @@ Result SubTheory::postCheck(Theory::Effort e)
         generators.insert(generators.end(),
                           enc.bitsumPolys().begin(),
                           enc.bitsumPolys().end());
+        if (d_env.isProofProducing()) Assert(enc.bitsumPolys().empty()) << "Currently Unsupported!" << std::endl;
         std::vector<Node> gens{};
         for (auto& poly : generators)
         {
@@ -259,7 +260,6 @@ std::shared_ptr<ProofNode> SubTheory::getProof()
 {
   const auto nm = nodeManager();
   Node falseNode = nm->mkConst<bool>(false);
-  Assert(d_proof->hasStep(falseNode));
   return d_proof->getProof(falseNode);
 }
 }  // namespace ff

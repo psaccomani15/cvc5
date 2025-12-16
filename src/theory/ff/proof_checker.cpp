@@ -79,16 +79,16 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     Integer maxValue = field.getFfSize();
     FfSize fieldCard(maxValue);
     Node branchVariable = args[1];
-    bool isNonAssigned = false;
+    bool isNonAssigned = true;
     for (const auto& nonAssigned : args[0])
     {
       if (nonAssigned == branchVariable)
       {
-        isNonAssigned = true;
+        isNonAssigned = false;
         break;
       }
     }
-    Assert(isNonAssigned);
+    Assert(!isNonAssigned);
     if (isNonAssigned)
       return Node::null();
     for (const auto& root : args[2])
@@ -172,8 +172,8 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     Assert(args.size() >= 1);
     Assert(children[0].getKind() == Kind::NOT
            && children[0][0].getKind() == Kind::SET_IS_EMPTY);
-    Assert(children[0][0][0].getKind() == Kind::FINITE_FIELD_IDEAL);
-    Node ideal = children[0][0][0];
+    Assert(children[0][0][0].getKind() == Kind::FINITE_FIELD_VARIETY);
+    Node ideal = children[0][0][0][0];
     std::vector<Node> gens(ideal.begin(), ideal.end());
     gens.insert(gens.end(), args.begin(), args.end());
     Node newIdeal = d_nm->mkNode(Kind::FINITE_FIELD_IDEAL, gens);

@@ -79,7 +79,7 @@ CoCoA::symbol cocoaSym(const std::string& varName, std::optional<size_t> index)
 }
 
 CocoaEncoder::CocoaEncoder(NodeManager* nm, const FfSize& size)
-    : FieldObj(nm, size)
+    : FieldObj(nm, size), d_nm(nm)
 {
 }
 
@@ -155,8 +155,9 @@ void CocoaEncoder::addFact(const Node& fact)
       {
         Trace("ff::cocoa") << "CoCoA != sym for " << node << std::endl;
         CoCoA::symbol sym = freshSym("diseq", d_diseqSyms.size());
+        Node newVar = d_nm->mkBoundVar(extractStr(sym), node[0][0].getType());
         d_diseqSyms.insert({node, sym});
-        d_diseqNodes.insert({extractStr(sym), node});
+        d_diseqNodes.insert({extractStr(sym), newVar});
       }
       else if (node.getKind() == Kind::FINITE_FIELD_BITSUM)
       {

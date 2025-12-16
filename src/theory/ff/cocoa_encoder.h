@@ -177,7 +177,7 @@ class CocoaEncoder : public FieldObj
 
   /** the polynomial ring */
   std::optional<CoCoA::ring> d_polyRing{};
-
+  
   // populated during Stage::Encode
 
   /** encoding cache */
@@ -188,6 +188,8 @@ class CocoaEncoder : public FieldObj
   std::vector<Poly> d_bitsumPolys{};
   /** polys to the facts that imply them */
   std::unordered_map<std::string, Node> d_polyFacts{};
+
+  NodeManager *d_nm;
 };
 
 }  // namespace ff
