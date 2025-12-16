@@ -10,14 +10,6 @@ name   = "Finite Field Theory"
   help       = "use a traced groebner basis engine"
 
 [[option]]
-  name       = "ffProofOptionalArgs"
-  category   = "expert"
-  long       = "ff-proof-optional-args"
-  type       = "bool"
-  default    = "false"
-  help       = "Omit proofs with extra arguments in membership rules"
-
-[[option]]
   name       = "ffFieldPolys"
   category   = "expert"
   long       = "ff-field-polys"
