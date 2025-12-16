@@ -133,7 +133,7 @@ std::shared_ptr<IdealProofManager> IdealProofManager::registerBranch(
     CoCoA::RingElem choicePoly, CoCoA::ideal newIdeal)
 {
   std::vector<CoCoA::RingElem> newGens{choicePoly};
-  for (auto poly : CoCoA::GBasis(d_cocoaIdeal))
+  for (auto poly : CoCoA::gens(d_cocoaIdeal))
   {
     newGens.push_back(poly);
   }
@@ -253,8 +253,10 @@ void IdealProofManager::finishProof(bool rootBranching)
   // that branched into this have an empty variety or conclude unsat
   d_emptyVarFact = emptyVarPred(nodeManager(), d_ideal);
   d_proof.addStep(
-      d_emptyVarFact, ProofRule::SCOPE, {falseNode}, {getSatFact()});
+      getSatFact().notNode(), ProofRule::SCOPE, {falseNode}, {getSatFact()});
+  d_proof.addStep(d_emptyVarFact, ProofRule::NOT_NOT_ELIM, {getSatFact().notNode()}, {});
   d_globalProof->addProof(d_proof.getProofFor(d_emptyVarFact));
+
 }
 
 void IdealProofManager::updateIdeal(std::vector<Node>& polys)

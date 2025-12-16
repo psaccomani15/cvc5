@@ -343,6 +343,10 @@ std::vector<CoCoA::RingElem> findZero(
             << ", brancher: " << branchers.back()->name()
             << ", branch: " << choicePoly.value() << std::endl;
         std::vector<CoCoA::RingElem> newGens = CoCoA::GBasis(ideal);
+        if (proofEnabled)
+        {
+          newGens = CoCoA::gens(ideal);
+        }
         Assert(CoCoA::HasGBasis(ideal));
         newGens.push_back(choicePoly.value());
         CoCoA::ideal newIdeal = CoCoA::ideal(newGens);
