@@ -328,7 +328,7 @@ index b0d4ea5..b9a83a4 100644
  
  #include <iostream>
  using std::ostream;
-@@ -421,6 +422,7 @@ namespace CoCoA
+@@ -421,6 +421,7 @@
  
      P->myDivLM(raw(tmp_poly), raw(poly(gbk.myBuckets[0])), raw(g));
      P->myNegate(raw(tmp_poly), raw(tmp_poly));

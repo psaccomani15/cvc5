@@ -222,6 +222,7 @@ std::unique_ptr<AssignmentEnumerator> applyRule(
         toGuess.push_back(var);
       }
     }
+    if (idealProof) idealProof->registerNonAssignedVars(toGuess);
     return std::make_unique<RoundRobinEnumerator>(toGuess,
                                                   polyRing->myBaseRing());
   }

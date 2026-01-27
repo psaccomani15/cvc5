@@ -55,7 +55,7 @@ void produceContradiction(NodeManager* nm,
     cdp->addStep(commonRootFieldPolys,
                  ProofRule::FF_FIELD_POLYS,
                  {commonRoot},
-                 {fieldPolys});
+                 fieldPolys);
     commonRoot = commonRootFieldPolys;
   }
   Node falseNode = nm->mkConst<bool>(false);

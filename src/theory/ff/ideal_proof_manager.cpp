@@ -145,8 +145,16 @@ std::shared_ptr<IdealProofManager> IdealProofManager::registerBranch(
   return childrenProof;
 }
 
+void IdealProofManager::registerNonAssignedVars(
+    std::vector<CoCoA::RingElem>& toGuess)
+{
+  for (auto var : toGuess)
+    d_toGuess.push_back(d_enc.decode(var));
+}
 std::vector<Node> IdealProofManager::nonAssignedVars()
 {
+  if (!d_toGuess.empty()) return d_toGuess;
+    
   std::vector<CoCoA::RingElem> allIndets =
       CoCoA::indets(d_cocoaIdeal->myRing());
   std::vector<Node> varsNodes;

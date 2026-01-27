@@ -755,6 +755,10 @@ libcvc5_add_sources(
   theory/ff/membership_proof_manager.h
   theory/ff/multi_roots.cpp
   theory/ff/multi_roots.h
+  theory/ff/pacheck_converter.cpp
+  theory/ff/pacheck_converter.h
+  theory/ff/pacheck_rules.cpp
+  theory/ff/pacheck_rules.h
   theory/ff/parse.cpp
   theory/ff/parse.h
   theory/ff/proof_checker.cpp

@@ -206,7 +206,11 @@ Result SubTheory::postCheck(Theory::Effort e)
             result = Result::UNSAT;
             setTrivialConflict();
             if (d_env.isTheoryProofProducing())
-              produceContradiction(nodeManager(), d_proof, fieldPolys, gens, d_conflict);
+            {
+              produceContradiction(
+                  nodeManager(), d_proof, fieldPolys, gens, d_conflict);
+            }
+            
           }
           else
           {

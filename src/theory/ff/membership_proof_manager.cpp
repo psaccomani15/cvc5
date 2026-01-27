@@ -216,15 +216,20 @@ void MembershipProofManager::reductionEnd(CoCoA::ConstRefRingElem r)
     std::unordered_set<Node> uniquePolys;
     Trace("ff::proof") << " keep" << std::endl;
     // TODO: Use indices of the premises list as argument.
+
+    std::vector<Node> reductors{};
     for (auto& reductor : d_reductionSeq)
     {
       Node polyNode = d_enc.decode(reductor);
-      args.push_back(polyNode);
+      reductors.push_back(polyNode);
       uniquePolys.insert(polyNode);
     }
-    Assert(d_multiplierSeq.size() == d_reductionSeq.size() - 1)
-        << d_reductionSeq.size();
-    for (auto& mul : d_multiplierSeq) args.push_back(d_enc.decode(mul));
+    args.push_back(nodeManager()->mkNode(Kind::SEXPR, reductors));
+    // Assert(d_multiplierSeq.size() == d_reductionSeq.size() - 1)
+     //  << d_reductionSeq.size();
+    std::vector<Node> multipliers{};
+    for (auto& mul : d_multiplierSeq) multipliers.push_back(d_enc.decode(mul));
+    args.push_back(nodeManager()->mkNode(Kind::SEXPR, multipliers));
     storeProof(rTerm,
                ProofRule::FF_IDEAL_REDUCE,
                std::vector(uniquePolys.begin(), uniquePolys.end()),

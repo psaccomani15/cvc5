@@ -32,6 +32,7 @@
 #include "expr/node_traversal.h"
 #include "options/ff_options.h"
 #include "theory/ff/util.h"
+#include "theory/ff/pacheck_converter.h"
 #include "theory/theory_model.h"
 #include "theory/trust_substitutions.h"
 #include "util/result.h"
@@ -134,6 +135,9 @@ void TheoryFiniteFields::postCheck(Effort level)
         std::ostringstream s;
         pf.get()->printDebug(s, true);
         Trace("ff::proof") << "Proof in theory_ff: " << s.str() << std::endl;
+        PacheckProofPrinter converter(d_env, subTheory.second.size(), d_proof);
+        converter.print(Trace("ff::pacheck"), pf);
+        Trace("ff::pacheck") << std::endl;
         TrustNode tn = TrustNode::mkTrustConflict(conflict, &d_proof);
         d_im.trustedConflict(tn, InferenceId::FF_LEMMA);
       }
