@@ -4,12 +4,13 @@
 #ifndef CVC5__THEORY__FF__PACHECK_CONVERTER_H
 #define CVC5__THEORY__FF__PACHECK_CONVERTER_H
 
-#include "theory/ff/pacheck_rules.h"
-#include "theory/theory.h"
-#include "theory/ff/cocoa_util.h"
+#include <string>
+
 #include "proof/proof_node.h"
 #include "smt/env_obj.h"
-#include <string>
+#include "theory/ff/cocoa_util.h"
+#include "theory/ff/pacheck_rules.h"
+#include "theory/theory.h"
 namespace cvc5::internal {
 
 namespace theory {
@@ -18,13 +19,15 @@ namespace ff {
 class PacheckPolynomial
 {
  public:
-  PacheckPolynomial(std::string poly, size_t id);
-  std::string getRepr() {return d_polyRepr;}
-  size_t getId() {return d_id;}
+  PacheckPolynomial(std::string poly, size_t id, size_t branch);
+  std::string getRepr() { return d_polyRepr; }
+  size_t getId() { return d_id; }
+  size_t getBranch() { return d_branch; }
+
  private:
   std::string d_polyRepr;
   size_t d_id;
-  
+  size_t d_branch;
 };
 class PacheckProofPrinter : protected EnvObj
 {
@@ -34,10 +37,12 @@ class PacheckProofPrinter : protected EnvObj
   void print(std::ostream& out, std::shared_ptr<ProofNode> pfn);
 
  private:
-  PacheckPolynomial nodeToPoly(Node poly);
+  PacheckPolynomial nodeToPoly(Node poly, size_t branch);
   std::string convertPP(Node pp);
   std::string convertVar(Node var);
-  void printInternal(std::ostream& out, std::shared_ptr<ProofNode> pfn, size_t branchSize);
+  void printInternal(std::ostream& out,
+                     std::shared_ptr<ProofNode> pfn,
+                     size_t branchSize);
   const FfSize& d_size;
   size_t d_maxId;
   CDProof* d_proof;
