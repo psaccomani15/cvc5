@@ -77,7 +77,7 @@ jobs:
             os: ubuntu-24.04
             use-clang: true
             use-libcxx: true
-            config: production --auto-download -DBUILD_GMP=1
+            config: production --auto-download -DBUILD_GMP=1 --cocoa
             cache-key: production-libcxx
             strip-bin: strip
             check-examples: true
@@ -87,7 +87,7 @@ jobs:
 
           - name: ubuntu:production-arm64
             os: ubuntu-22.04-arm
-            config: production --auto-download --all-bindings --editline -DBUILD_GMP=1
+            config: production --auto-download --all-bindings --editline -DBUILD_GMP=1 --cocoa
             cache-key: production-arm64
             strip-bin: strip
             python-bindings: true
@@ -101,7 +101,7 @@ jobs:
             os: ubuntu-24.04-arm
             use-clang: true
             use-libcxx: true
-            config: production --auto-download -DBUILD_GMP=1
+            config: production --auto-download -DBUILD_GMP=1 --cocoa
             cache-key: production-arm64-libcxx
             strip-bin: strip
             check-examples: true
@@ -111,7 +111,7 @@ jobs:
 
           - name: macos:production
             os: macos-15-intel
-            config: production --auto-download --all-bindings --editline -DBUILD_GMP=1
+            config: production --auto-download --all-bindings --editline -DBUILD_GMP=1 --cocoa
             cache-key: production
             strip-bin: strip
             python-bindings: true
@@ -124,7 +124,7 @@ jobs:
 
           - name: macos:production-arm64
             os: macos-15
-            config: production --auto-download --all-bindings --editline -DBUILD_GMP=1
+            config: production --auto-download --all-bindings --editline -DBUILD_GMP=1 --cocoa
             cache-key: production-arm64
             strip-bin: strip
             python-bindings: true
@@ -138,7 +138,7 @@ jobs:
 
           - name: win64:production
             os: windows-latest
-            config: production --auto-download --all-bindings
+            config: production --auto-download --all-bindings --cocoa
             cache-key: production-win64-native
             strip-bin: strip
             python-bindings: true
@@ -152,7 +152,7 @@ jobs:
 
           - name: win64:production-arm64
             os: windows-11-arm
-            config: production --auto-download --all-bindings
+            config: production --auto-download --all-bindings --cocoa
             cache-key: production-win64-native-arm64
             strip-bin: strip
             python-bindings: true
