@@ -221,7 +221,7 @@ index b5b8b43..aac92dc 100644
      ReductionCog F = ChooseReductionCogPoly(myGRingInfo());
      F->myAssignReset(myPolyValue, f.myNumTerms);
      F->myReduce(poly(g), NumTerms(g));
-@@ -269,6 +274,8 @@ degree HereForProfilingOnlyWDeg(ConstRefPPMonoidElem cofactor1)
+@@ -269,6 +269,8 @@
    void GPoly::myReduce(const Reductors& theReductors)
    {
      if ( IsZero(*this) ) return;
@@ -230,12 +230,19 @@ index b5b8b43..aac92dc 100644
      ReductionCog F = ChooseReductionCogGeobucket(myGRingInfo());
      F->myAssignReset(myPolyValue, myNumTerms); // myPolyValue gets 0
      reduce(F, mySugar, theReductors); // mySugar updated
-@@ -278,6 +285,8 @@ degree HereForProfilingOnlyWDeg(ConstRefPPMonoidElem cofactor1)
+@@ -275,9 +275,15 @@
+ 
+ 
+ 
++    if ( proofEnabled ) reductionEndProof(myPoly());
      if ( !IsZero(*this) && !IsOne(myLCValue) ) // makes myPolyValue monic
        if ( myGRingInfo().myCoeffRingType()==CoeffEncoding::Field )
++      {
++        RingElem myPolyOld(myPoly());
          myGRingInfo().myNewSPR()->myDivByCoeff(raw(myPolyValue), raw(myLCValue));
++        if (proofEnabled) monicProof(myPolyOld, myPoly());
++       }
 +    if ( handlersEnabled ) reductionEndHandler(myPoly());
-+    if ( proofEnabled ) reductionEndProof(myPoly());
      // if CoeffEncoding::Field myRelease does NOT make poly monic
      // if CoeffEncoding::FrFldOfGCDDomain myRelease makes poly content free
    }

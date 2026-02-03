@@ -151,10 +151,12 @@ void MembershipProofManager::storeMultiplier(CoCoA::ConstRefRingElem p)
 template <typename T>
 void MembershipProofManager::storeMultiplierRaw(T& p)
 {
+  Trace("ff::mul") << "storeRaw" << std::endl;
   CoCoA::RingElem poly = CoCoA::zero(d_cocoaRing);
   typename T::iter iter(p);
-  for (; CoCoA::IsEnded(iter); ++iter)
+  for (; !CoCoA::IsEnded(iter); ++iter)
   {
+    Trace("ff::mul") << "should add" << CoCoA::monomial(d_cocoaRing, CoCoA::coeff(iter), CoCoA::PP(iter)) << std::endl;
     poly += CoCoA::monomial(d_cocoaRing, CoCoA::coeff(iter), CoCoA::PP(iter));
   }
   storeMultiplier(poly);
@@ -240,6 +242,7 @@ void MembershipProofManager::monicProof(CoCoA::ConstRefRingElem poly,
   Node polyTerm = d_enc.decode(poly);
   Node monicTerm = d_enc.decode(monic);
   std::vector<Node> args = {monicTerm};
+  Trace("ff::monic") << "Orig: " << poly << " New: " << monic;
   Assert(d_factToProof.count(polyTerm));
   storeProof(monicTerm, ProofRule::FF_IDEAL_MONIC, {polyTerm}, {monicTerm});
 }
