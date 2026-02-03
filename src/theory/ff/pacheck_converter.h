@@ -45,6 +45,7 @@ class PacheckProofPrinter : protected EnvObj
                      size_t branchSize);
   const FfSize& d_size;
   size_t d_maxId;
+  size_t d_varId;
   CDProof* d_proof;
   std::unordered_map<Node, PacheckPolynomial> d_nodeToPacheckPoly;
   std::unordered_map<Node, std::string> d_varToPacheckVar;

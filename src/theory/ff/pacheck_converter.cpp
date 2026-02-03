@@ -20,7 +20,7 @@ PacheckPolynomial::PacheckPolynomial(std::string poly, size_t id, size_t branch)
 PacheckProofPrinter::PacheckProofPrinter(Env& env,
                                          const FfSize& size,
                                          CDProof& cdp)
-    : EnvObj(env), d_size(size), d_maxId(1), d_proof(&cdp)
+    : EnvObj(env), d_size(size), d_maxId(1), d_varId(1) d_proof(&cdp)
 {
 }
 
@@ -32,9 +32,10 @@ std::string convertConst(Node ffConst)
 std::string PacheckProofPrinter::convertVar(Node var)
 {
   if (d_varToPacheckVar.count(var)) return d_varToPacheckVar.at(var);
-  std::string varName = var.getName();
-  d_varToPacheckVar[var] = varName;
-  return varName;
+  std::stringstream varName;
+  varName << "v" << d_varId++;
+  d_varToPacheckVar[var] = varName.str();
+  return varName.str();
 }
 
 std::string PacheckProofPrinter::convertPP(Node pp)
@@ -66,6 +67,7 @@ std::string PacheckProofPrinter::convertPP(Node pp)
   if (pp.getKind() == Kind::CONST_FINITE_FIELD) return convertConst(pp);
   return convertVar(pp);
 }
+
 PacheckPolynomial PacheckProofPrinter::nodeToPoly(Node poly, size_t branch)
 {
   Node flattened = expr::algorithm::flatten(nodeManager(), poly, Kind::FINITE_FIELD_ADD);
