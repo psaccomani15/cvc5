@@ -114,7 +114,7 @@ Node MembershipProofManager::proveIdealMembership(CoCoA::RingElem poly,
   if (d_factToProof.count(polyRepr)) return membershipRepr;
   Assert(CoCoA::HasGBasis(ideal));
   bool hasElem = CoCoA::IsElem(poly, ideal);
-  Assert(hasElem);
+  AlwaysAssert(hasElem);
   Trace("ff::proof") << "Ideal has element " << poly
                      << "with membership representation" << membershipRepr
                      << std::endl;
