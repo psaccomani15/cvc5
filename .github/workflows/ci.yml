@@ -77,7 +77,7 @@ jobs:
             os: ubuntu-24.04
             use-clang: true
             use-libcxx: true
-            config: production --auto-download -DBUILD_GMP=1 --cocoa --gpl
+            config: production --auto-download -DBUILD_GMP=1 
             cache-key: production-libcxx
             strip-bin: strip
             check-examples: true
@@ -87,7 +87,7 @@ jobs:
 
           - name: ubuntu:production-arm64
             os: ubuntu-22.04-arm
-            config: production --auto-download --all-bindings --editline -DBUILD_GMP=1 --cocoa --gpl
+            config: production --auto-download --all-bindings --editline -DBUILD_GMP=1
             cache-key: production-arm64
             strip-bin: strip
             python-bindings: true
@@ -101,7 +101,7 @@ jobs:
             os: ubuntu-24.04-arm
             use-clang: true
             use-libcxx: true
-            config: production --auto-download -DBUILD_GMP=1 --cocoa --gpl
+            config: production --auto-download -DBUILD_GMP=1 
             cache-key: production-arm64-libcxx
             strip-bin: strip
             check-examples: true
@@ -111,7 +111,7 @@ jobs:
 
           - name: macos:production
             os: macos-15-intel
-            config: production --auto-download --all-bindings --editline -DBUILD_GMP=1 --cocoa --gpl
+            config: production --auto-download --all-bindings --editline -DBUILD_GMP=1 
             cache-key: production
             strip-bin: strip
             python-bindings: true
@@ -124,7 +124,7 @@ jobs:
 
           - name: macos:production-arm64
             os: macos-15
-            config: production --auto-download --all-bindings --editline -DBUILD_GMP=1 --cocoa --gpl
+            config: production --auto-download --all-bindings --editline -DBUILD_GMP=1 
             cache-key: production-arm64
             strip-bin: strip
             python-bindings: true
@@ -232,19 +232,19 @@ jobs:
             macos-target: 11.0
             gpl-tag: -gpl
 
-        exclude:
-          - has-tag: false
-            build:
-              name: ubuntu:production-gpl
-          - has-tag: false
-            build:
-              name: ubuntu:production-arm64-gpl
-          - has-tag: false
-            build:
-              name: macos:production-gpl
-          - has-tag: false
-            build:
-              name: macos:production-arm64-gpl
+       # exclude:
+       #   - has-tag: false
+       #     build:
+       #       name: ubuntu:production-gpl
+       #   - has-tag: false
+       #     build:
+       #       name: ubuntu:production-arm64-gpl
+       #   - has-tag: false
+       #     build:
+       #       name: macos:production-gpl
+       #   - has-tag: false
+       #     build:
+       #       name: macos:production-arm64-gpl
 
 
     name: ${{ matrix.build.name }}
