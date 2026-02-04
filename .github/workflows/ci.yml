@@ -111,7 +111,7 @@ jobs:
 
           - name: macos:production
             os: macos-15-intel
-            config: production --auto-download --all-bindings --editline -DBUILD_GMP=1 --cocoa
+            config: production --auto-download --all-bindings --editline -DBUILD_GMP=1 --cocoa --gpl
             cache-key: production
             strip-bin: strip
             python-bindings: true
