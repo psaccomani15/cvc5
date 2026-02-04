@@ -20,7 +20,7 @@ PacheckPolynomial::PacheckPolynomial(std::string poly, size_t id, size_t branch)
 PacheckProofPrinter::PacheckProofPrinter(Env& env,
                                          const FfSize& size,
                                          CDProof& cdp)
-    : EnvObj(env), d_size(size), d_maxId(1), d_varId(1) d_proof(&cdp)
+    : EnvObj(env), d_size(size), d_maxId(1), d_varId(1), d_proof(&cdp)
 {
 }
 
