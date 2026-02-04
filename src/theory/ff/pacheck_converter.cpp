@@ -4,8 +4,12 @@
 #include <string>
 
 #include "cvc5_private.h"
+
 #include "expr/algorithm/flatten.h"
 #include "theory/ff/pacheck_rules.h"
+#include "util/finite_field_value.h"
+#include "util/integer.h"
+
 namespace cvc5::internal {
 
 namespace theory {

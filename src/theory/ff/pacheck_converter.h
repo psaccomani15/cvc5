@@ -7,12 +7,14 @@
 #include <string>
 
 #include "proof/proof_node.h"
+#include "proof/proof.h"
 #include "smt/env_obj.h"
 #include "theory/ff/cocoa_util.h"
 #include "theory/ff/pacheck_rules.h"
 #include "theory/theory.h"
-namespace cvc5::internal {
 
+namespace cvc5::internal {
+class CDProof;
 namespace theory {
 
 namespace ff {
