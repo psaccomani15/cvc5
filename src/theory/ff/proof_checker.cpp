@@ -157,7 +157,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     Assert(children[0].getKind() == Kind::SET_MEMBER);
     Node ideal = children[0][1];
     Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
-    return d_nm->mkNode(Kind::SET_MEMBER, args[1], ideal);
+    return d_nm->mkNode(Kind::SET_MEMBER, args[0], ideal);
   }
   if (id == ProofRule::FF_POLY_CONVERSION)
   {
