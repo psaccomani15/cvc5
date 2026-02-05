@@ -18,6 +18,7 @@ std::string pacheckRuleToString(PacheckRule id)
     case PacheckRule::LinComp: return "%";
     case PacheckRule::Modulus: return "m";
     case PacheckRule::Root: return "r";
+    default: return "";
   }
 }
 
