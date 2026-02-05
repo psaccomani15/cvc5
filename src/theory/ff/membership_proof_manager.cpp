@@ -246,7 +246,6 @@ void MembershipProofManager::monicProof(CoCoA::ConstRefRingElem poly,
 {
   Node polyTerm = d_enc.decode(poly);
   Node monicTerm = d_enc.decode(monic);
-  std::vector<Node> args = {monicTerm};
   Trace("ff::monic") << "Orig: " << poly << " New: " << monic;
   Assert(d_factToProof.count(polyTerm));
   storeProof(monicTerm, ProofRule::FF_IDEAL_MONIC, {polyTerm}, {monicTerm});

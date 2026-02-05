@@ -152,7 +152,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
   }
   if (id == ProofRule::FF_IDEAL_MONIC)
   {
-    Assert(args.size() == 2);
+    Assert(args.size() == 1);
     Assert(children.size() == 1);
     Assert(children[0].getKind() == Kind::SET_MEMBER);
     Node ideal = children[0][1];
