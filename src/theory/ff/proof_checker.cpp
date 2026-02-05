@@ -136,8 +136,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
   }
   if (id == ProofRule::FF_IDEAL_REDUCE || id == ProofRule::FF_IDEAL_REDUCE_ZERO)
   {
-    // The number of children are exactly the number of *unique* reductors
-    Assert(children.size() <= args.size() - 1);
+    Assert(args.size() == 3);
     Assert(children[0].getKind() == Kind::SET_MEMBER);
     Node ideal = children[0][1];
     // All children must be proofs of membership for the *same* ideal
