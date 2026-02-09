@@ -1,6 +1,5 @@
-
 #include "theory/ff/pacheck_rules.h"
-
+#include <string>
 #include "cvc5_private.h"
 
 namespace cvc5::internal {
@@ -18,6 +17,7 @@ std::string pacheckRuleToString(PacheckRule id)
     case PacheckRule::LinComp: return "%";
     case PacheckRule::Modulus: return "m";
     case PacheckRule::Root: return "r";
+    case PacheckRule::Exhaust: return "e";
     default: return "";
   }
 }

@@ -9,13 +9,14 @@ namespace theory {
 
 namespace ff {
 
-enum class PacheckRule : uint32_t 
+enum class PacheckRule : uint32_t
 {
   Axiom,
   Modulus,
   LinComp,
   Branch,
-  Root
+  Root,
+  Exhaust
 };
 
 std::string pacheckRuleToString(PacheckRule id);

@@ -145,12 +145,19 @@ void PacheckProofPrinter::printInternal(std::ostream& out,
       }
       return;
     }
+    AlwaysAssert (branchStep->getRule() == ProofRule::FF_EXHAUST_BRANCH);
+    out << PacheckRule::Exhaust << convertVar(args[0][0]);
+    for (size_t it = 1; it < args[0].getNumChildren(); ++ it)
+    {
+      out << ", " << convertVar(args[it]); 
+    }
+    out << std::endl;
     size_t branchIt = 1;
     for (Integer val = 0; val < d_size.d_val; val += 1)
     {
       for (const auto var : args[0])
       {
-        out << PacheckRule::Branch << " " << var << " " << val << std::endl;
+        out << PacheckRule::Branch << " " << convertVar(var) << " " << val << std::endl;
         printInternal(out, children[branchIt], branchId + branchIt);
         branchIt += 1;
       }
