@@ -38,7 +38,7 @@
 #include "theory/theory.h"
 #include "util/integer.h"
 #include "util/result.h"
-
+#include "proof/proof_checker.h"
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
@@ -126,6 +126,7 @@ class SubTheory : protected EnvObj, public FieldObj
    * Statistics shared among all finite-field sub-theories.
    */
   FfStatistics* d_stats;
+
 };
 
 }  // namespace ff

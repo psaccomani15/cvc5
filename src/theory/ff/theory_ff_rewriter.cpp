@@ -248,7 +248,7 @@ RewriteResponse TheoryFiniteFieldsRewriter::postRewrite(TNode t)
     {
       Node nt = arith::PolyNorm::getPolyNorm(t);
       Trace("ff::polynorm") << "Rewriting Mult " << t<< " to " << nt << std::endl;
-      return RewriteResponse(REWRITE_DONE, nt);
+      return RewriteResponse(nt == t ? REWRITE_DONE : REWRITE_AGAIN, nt);
     }
     case Kind::FINITE_FIELD_BITSUM:
       return RewriteResponse(REWRITE_DONE, postRewriteFfBitsum(t));

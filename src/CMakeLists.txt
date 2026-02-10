@@ -765,6 +765,8 @@ libcvc5_add_sources(
   theory/ff/theory_ff_rewriter.h
   theory/ff/theory_ff_type_rules.cpp
   theory/ff/theory_ff_type_rules.h
+  theory/ff/proof_checker.cpp
+  theory/ff/proof_checker.h
   theory/ff/uni_roots.cpp
   theory/ff/uni_roots.h
   theory/ff/util.cpp

@@ -35,8 +35,12 @@
 #include "theory/theory_eq_notify.h"
 #include "theory/theory_inference_manager.h"
 #include "theory/theory_state.h"
+#include "proof/proof_checker.h"
+#include "theory/ff/proof_checker.h"
 
 namespace cvc5::internal {
+class ProofRuleChecker;
+
 namespace theory {
 namespace ff {
 
@@ -106,6 +110,8 @@ class TheoryFiniteFields : public Theory
 #endif /* CVC5_USE_COCOA */
 
   std::unique_ptr<FfStatistics> d_stats;
+  FfProofRuleChecker d_checker;
+
 }; /* class TheoryFiniteFields */
 
 }  // namespace ff

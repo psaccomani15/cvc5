@@ -2481,6 +2481,10 @@ enum ENUM(ProofRule)
     *
     */
   EVALUE(FF_POLY_NORM),
+ /**
+   *  Arith PolynormRel for finite fields
+   */
+  EVALUE(FF_POLY_NORM_EQ),
   /**
    * \verbatim embed:rst:leading-asterisk
    * **External -- LFSC**

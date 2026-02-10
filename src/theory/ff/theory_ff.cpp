@@ -59,7 +59,8 @@ TheoryFiniteFields::TheoryFiniteFields(Env& env,
       d_im(env, *this, d_state, getStatsPrefix(THEORY_FF)),
       d_eqNotify(d_im),
       d_stats(
-          std::make_unique<FfStatistics>(statisticsRegistry(), "theory::ff::"))
+          std::make_unique<FfStatistics>(statisticsRegistry(), "theory::ff::")),
+      d_checker(nodeManager())
 {
   d_theoryState = &d_state;
   d_inferManager = &d_im;
@@ -76,7 +77,7 @@ TheoryRewriter* TheoryFiniteFields::getTheoryRewriter()
   return &d_rewriter;
 }
 
-ProofRuleChecker* TheoryFiniteFields::getProofChecker() { return nullptr; }
+ProofRuleChecker* TheoryFiniteFields::getProofChecker() { return &d_checker; }
 
 bool TheoryFiniteFields::needsEqualityEngine(EeSetupInfo& esi)
 {

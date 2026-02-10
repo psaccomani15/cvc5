@@ -315,7 +315,7 @@ Node PolyNorm::toNode(const TypeNode& tn) const
     else
     {
       Assert(isFf);
-      return ff::FieldObj(tn.getNodeManager(), tn.getFfSize()).one(); 
+      return ff::FieldObj(tn.getNodeManager(), tn.getFfSize()).zero(); 
     }
   }
   // must sort to ensure this method is idempotent
@@ -407,7 +407,7 @@ PolyNorm PolyNorm::mkPolyNorm(TNode n)
                || k == Kind::TO_REAL || k == Kind::BITVECTOR_ADD
                || k == Kind::BITVECTOR_SUB || k == Kind::BITVECTOR_NEG
                || k == Kind::BITVECTOR_MULT || k == Kind::FINITE_FIELD_NEG 
-               || k == Kind::FINITE_FIELD_ADD || k == Kind::FINITE_FIELD_ADD)
+               || k == Kind::FINITE_FIELD_ADD || k == Kind::FINITE_FIELD_MULT)
       {
         visited[cur] = PolyNorm();
         for (const Node& cn : cur)
@@ -510,7 +510,10 @@ bool PolyNorm::isArithPolyNorm(TNode a, TNode b)
   // We impose no type requirements here.
   PolyNorm pa = PolyNorm::mkPolyNorm(a);
   PolyNorm pb = PolyNorm::mkPolyNorm(b);
-  return areEqualPolyNormTyped(at, pa, pb);
+  auto aux = areEqualPolyNormTyped(at, pa, pb);
+  Trace("ff::polynorm2") << "a and b: " << a << b << std::endl;
+  Trace("ff::polynorm2") << "pa and pb: " << pa.toNode(at) << " " << pb.toNode(at) << std::endl;
+  return aux;
 }
 
 bool PolyNorm::areEqualPolyNormTyped(const TypeNode& t,
@@ -734,6 +737,10 @@ Node PolyNorm::getPolyNorm(Node a)
   if (an.isNull())
   {
     PolyNorm pa = arith::PolyNorm::mkPolyNorm(a);
+    if (a.getType().isFiniteField())
+    {
+      pa.modCoeffs(a.getType().getFfSize()); 
+    }
     an = pa.toNode(a.getType());
     if (an.isNull())
     {
