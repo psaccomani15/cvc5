@@ -1,4 +1,4 @@
 (define-cond-rule ff-neg-elim ((x ?FiniteField) (n Int))
-  (= n (@ff.sisze x))
+  (= n (@ff.size x))
   (ff.neg x)
   (ff.mul (- n 1) x))
