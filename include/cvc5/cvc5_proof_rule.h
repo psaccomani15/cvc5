@@ -2477,9 +2477,9 @@ enum ENUM(ProofRule)
    */
   EVALUE(ARITH_TRANS_SINE_APPROX_BELOW_POS),
   /**
-    * Arith Polynorm in finite fields.
-    *
-    */
+   * Arith Polynorm in finite fields.
+   *
+   */
   EVALUE(FF_POLY_NORM),
   /**
    *  Arith PolynormRel for finite fields
