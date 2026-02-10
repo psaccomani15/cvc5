@@ -1334,8 +1334,9 @@ bool RewriteDbProofCons::ensureProofInternal(CDProof* cdp, const Node& eqi)
         TypeNode tn =
             pcur.d_vars.empty() ? cur[0].getType() : cur[0][0].getType();
         bool isBitVec = (tn.isBitVector());
+        bool isFf = (tn.isFiniteField());
         ProofRule pr =
-            isBitVec ? ProofRule::BV_POLY_NORM : ProofRule::ARITH_POLY_NORM;
+            isBitVec ? ProofRule::BV_POLY_NORM : isFf ? ProofRule::FF_POLY_NORM : ProofRule::ARITH_POLY_NORM;
         if (pcur.d_vars.empty())
         {
           cdp->addStep(cur, pr, {}, {cur});

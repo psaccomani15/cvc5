@@ -2477,6 +2477,11 @@ enum ENUM(ProofRule)
    */
   EVALUE(ARITH_TRANS_SINE_APPROX_BELOW_POS),
   /**
+    * Arith Polynorm in finite fields.
+    *
+    */
+  EVALUE(FF_POLY_NORM),
+  /**
    * \verbatim embed:rst:leading-asterisk
    * **External -- LFSC**
    *
@@ -4685,8 +4690,7 @@ enum ENUM(ProofRewriteRule)
   /** Auto-generated from RARE rule re-opt-elim */
   EVALUE(RE_OPT_ELIM),
   /** Auto-generated from RARE rule re-diff-elim */
-  EVALUE(RE_DIFF_ELIM),
-  /** Auto-generated from RARE rule re-plus-elim */
+  EVALUE(RE_DIFF_ELIM), /** Auto-generated from RARE rule re-plus-elim */
   EVALUE(RE_PLUS_ELIM),
   /** Auto-generated from RARE rule re-repeat-elim */
   EVALUE(RE_REPEAT_ELIM),

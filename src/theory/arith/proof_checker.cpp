@@ -399,7 +399,7 @@ Node ArithProofRuleChecker::checkInternal(ProofRule id,
       Assert(children.empty());
       Assert(args.size() == 1);
       if (args[0].getKind() != Kind::EQUAL
-          || !args[0][0].getType().isRealOrInt())
+          || (!args[0][0].getType().isRealOrInt() && !args[0][0].getType().isFiniteField()))
       {
         return Node::null();
       }

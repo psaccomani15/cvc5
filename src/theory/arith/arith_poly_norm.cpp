@@ -566,7 +566,7 @@ bool PolyNorm::isArithPolyNormRel(TNode a, TNode b, Rational& ca, Rational& cb)
     {
       eqtn = eqtn.leastUpperBound(eqtn2);
       // could happen if we are comparing equalities of different types
-      if ((eqtn2.isBitVector() && !eqtn.isBitVector()) || (eqtn2.isFiniteField() && !eqtn.isFiniteField()) || (!eqtn.isBitVector() && !eqtn.isFiniteField()))
+      if (!eqtn.isBitVector() && !eqtn.isFiniteField())
       {
         return false;
       }

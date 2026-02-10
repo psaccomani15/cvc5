@@ -203,6 +203,10 @@ const char* toString(ProofRule rule)
       return "ARITH_TRANS_SINE_APPROX_BELOW_NEG";
     case ProofRule::ARITH_TRANS_SINE_APPROX_BELOW_POS:
       return "ARITH_TRANS_SINE_APPROX_BELOW_POS";
+    
+    //================================================= Finite Field rules:
+    case ProofRule::FF_POLY_NORM:
+      return "FF_POLY_NORM";
     //================================================= External rules
     case ProofRule::LFSC_RULE: return "LFSC_RULE";
     case ProofRule::ALETHE_RULE: return "ALETHE_RULE";

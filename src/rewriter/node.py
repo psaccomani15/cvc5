@@ -230,6 +230,13 @@ class Op(Enum):
     SET_IS_SINGLETON = ('set.is_singleton', 'SET_IS_SINGLETON')
     SET_EMPTY_OF_TYPE = ('@set.empty_of_type', 'SET_EMPTY_OF_TYPE')
 
+    ###########################################################################
+    # Finite Fields
+    ###########################################################################
+    FINITE_FIELD_NEG = ('ff.neg', 'FINITE_FIELD_NEG')
+    FINITE_FIELD_ADD = ('ff.add', 'FINITE_FIELD_ADD')
+    FINITE_FIELD_MULT = ('ff.mul', 'FINITE_FIELD_MUL')
+    FINITE_FIELD_SIZE = ('@ff.size', 'FINITE_FIELD_SIZE')
 
 class BaseSort(Enum):
     Bool = auto()
@@ -238,12 +245,13 @@ class BaseSort(Enum):
     Real = auto()
     String = auto()
     RegLan = auto()
+    FiniteField = auto()
     AbsArray = auto()
     AbsBitVec = auto()
     AbsSeq = auto()
     AbsSet = auto()
+    AbsFiniteField = auto()
     AbsAbs = auto()
-
 
 class Node:
     def __init__(self, children, sort=None):
