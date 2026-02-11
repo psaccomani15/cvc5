@@ -4694,7 +4694,8 @@ enum ENUM(ProofRewriteRule)
   /** Auto-generated from RARE rule re-opt-elim */
   EVALUE(RE_OPT_ELIM),
   /** Auto-generated from RARE rule re-diff-elim */
-  EVALUE(RE_DIFF_ELIM), /** Auto-generated from RARE rule re-plus-elim */
+  EVALUE(RE_DIFF_ELIM),
+  /** Auto-generated from RARE rule re-plus-elim */
   EVALUE(RE_PLUS_ELIM),
   /** Auto-generated from RARE rule re-repeat-elim */
   EVALUE(RE_REPEAT_ELIM),

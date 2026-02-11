@@ -243,7 +243,12 @@ RewriteResponse TheoryFiniteFieldsRewriter::postRewrite(TNode t)
       Node nt = arith::PolyNorm::getPolyNorm(t);
       Trace("ff::polynorm") << "Rewriting Add " << t<< " to " << nt << std::endl;
       nt = expr::algorithm::flatten(d_nm, nt);
-      nt = expr::algorithm::flatten(d_nm, nt, Kind::FINITE_FIELD_MULT);
+      std::vector<Node> children;
+      for (const auto &child : t)
+      {
+        children.push_back(expr::algorithm::flatten(d_nm, child, Kind::FINITE_FIELD_MULT));
+      }
+      nt = d_nm->mkNode(Kind::FINITE_FIELD_ADD, children);
       Trace("ff::polynorm") << "after flatten" << nt << std::endl;
       return RewriteResponse(nt == t ? REWRITE_DONE : REWRITE_AGAIN, nt);
     }
