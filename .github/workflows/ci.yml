@@ -77,7 +77,7 @@ jobs:
             os: ubuntu-24.04
             use-clang: true
             use-libcxx: true
-            config: production --auto-download -DBUILD_GMP=1 --cocoa --gpl
+            config: production --auto-download --cocoa --gpl
             cache-key: production-libcxx
             strip-bin: strip
             check-examples: true
@@ -101,7 +101,7 @@ jobs:
             os: ubuntu-24.04-arm
             use-clang: true
             use-libcxx: true
-            config: production --auto-download -DBUILD_GMP=1 --cocoa --gpl
+            config: production --auto-download -DBUILD_GMP=1 
             cache-key: production-arm64-libcxx
             strip-bin: strip
             check-examples: true
@@ -111,7 +111,7 @@ jobs:
 
           - name: macos:production
             os: macos-15-intel
-            config: production --auto-download --all-bindings --editline -DBUILD_GMP=1 --cocoa --gpl
+            config: production --auto-download --all-bindings --editline --cocoa --gpl
             cache-key: production
             strip-bin: strip
             python-bindings: true
