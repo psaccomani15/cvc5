@@ -115,7 +115,6 @@ class TheoryFiniteFields : public Theory
 #endif /* CVC5_USE_COCOA */
 
   std::unique_ptr<FfStatistics> d_stats;
-  FfProofRuleChecker d_checker;
 
 }; /* class TheoryFiniteFields */
 

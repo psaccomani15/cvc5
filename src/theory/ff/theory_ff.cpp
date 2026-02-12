@@ -62,8 +62,7 @@ TheoryFiniteFields::TheoryFiniteFields(Env& env,
       d_im(env, *this, d_state, getStatsPrefix(THEORY_FF)),
       d_eqNotify(d_im),
       d_stats(
-          std::make_unique<FfStatistics>(statisticsRegistry(), "theory::ff::")),
-      d_checker(nodeManager())
+          std::make_unique<FfStatistics>(statisticsRegistry(), "theory::ff::"))
 {
   d_theoryState = &d_state;
   d_inferManager = &d_im;
