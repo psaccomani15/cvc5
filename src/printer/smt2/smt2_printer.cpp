@@ -1234,6 +1234,7 @@ std::string Smt2Printer::smtKindString(Kind k)
     case Kind::FINITE_FIELD_NEG: return "ff.neg";
     case Kind::FINITE_FIELD_IDEAL: return "@ff.ideal";
     case Kind::FINITE_FIELD_VARIETY: return "@ff.variety";
+    case Kind::FINITE_FIELD_SIZE: return "@ff.size";
 
     // bv theory
     case Kind::BITVECTOR_CONCAT: return "concat";

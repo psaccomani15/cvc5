@@ -18,7 +18,9 @@
 #include "expr/attribute.h"
 #include "theory/bv/theory_bv_utils.h"
 #include "util/bitvector.h"
-
+#include "util/finite_field_value.h"
+#include "theory/ff/util.h"
+#include "theory/arith/arith_poly_norm.h"
 using namespace cvc5::internal::kind;
 
 namespace cvc5::internal {
@@ -230,6 +232,7 @@ Node PolyNorm::toNode(const TypeNode& tn) const
   NodeManager* nm = tn.getNodeManager();
   bool isArith = (tn.isInteger() || tn.isReal());
   bool isBv = tn.isBitVector();
+  bool isFf = tn.isFiniteField();
   Kind multKind;
   Kind addKind;
   Node one;
@@ -245,6 +248,12 @@ Node PolyNorm::toNode(const TypeNode& tn) const
     addKind = Kind::BITVECTOR_ADD;
     one = bv::utils::mkOne(nm, tn.getBitVectorSize());
   }
+  else if(isFf)
+  {
+    multKind = Kind::FINITE_FIELD_MULT;
+    addKind = Kind::FINITE_FIELD_ADD;
+    one = ff::FieldObj(tn.getNodeManager(), tn.getFfSize()).one(); 
+  }
   else
   {
     return Node::null();
@@ -256,11 +265,17 @@ Node PolyNorm::toNode(const TypeNode& tn) const
     {
       coeff = nm->mkConstRealOrInt(tn, m.second);
     }
-    else
+    else if (isBv)
     {
       Assert(isBv);
       coeff = nm->mkConst(
           BitVector(tn.getBitVectorSize(), m.second.getNumerator()));
+    }
+    else
+    {
+      Assert(isFf);
+      coeff = nm->mkConst(
+          FiniteFieldValue(m.second.getNumerator(), tn.getFfSize())); 
     }
     if (m.first.isNull())
     {
@@ -293,10 +308,14 @@ Node PolyNorm::toNode(const TypeNode& tn) const
     {
       return nm->mkConstRealOrInt(tn, Rational(0));
     }
+    else if (isBv)
+    {
+      return bv::utils::mkZero(nm, tn.getBitVectorSize());
+    }
     else
     {
-      Assert(isBv);
-      return bv::utils::mkZero(nm, tn.getBitVectorSize());
+      Assert(isFf);
+      return ff::FieldObj(tn.getNodeManager(), tn.getFfSize()).zero(); 
     }
   }
   // must sort to ensure this method is idempotent
@@ -376,11 +395,19 @@ PolyNorm PolyNorm::mkPolyNorm(TNode n)
         visit.pop_back();
         continue;
       }
+      else if (k == Kind::CONST_FINITE_FIELD)
+      {
+        FiniteFieldValue ffv = cur.getConst<FiniteFieldValue>();
+        visited[cur].addMonomial(null, Rational(ffv.getValue()));
+        visit.pop_back();
+        continue; 
+      }
       else if (k == Kind::ADD || k == Kind::SUB || k == Kind::NEG
                || k == Kind::MULT || k == Kind::NONLINEAR_MULT
                || k == Kind::TO_REAL || k == Kind::BITVECTOR_ADD
                || k == Kind::BITVECTOR_SUB || k == Kind::BITVECTOR_NEG
-               || k == Kind::BITVECTOR_MULT)
+               || k == Kind::BITVECTOR_MULT || k == Kind::FINITE_FIELD_NEG 
+               || k == Kind::FINITE_FIELD_ADD || k == Kind::FINITE_FIELD_MULT)
       {
         visited[cur] = PolyNorm();
         for (const Node& cn : cur)
@@ -420,18 +447,21 @@ PolyNorm PolyNorm::mkPolyNorm(TNode n)
         case Kind::BITVECTOR_SUB:
         case Kind::BITVECTOR_NEG:
         case Kind::BITVECTOR_MULT:
+        case Kind::FINITE_FIELD_NEG:
+        case Kind::FINITE_FIELD_MULT:
+        case Kind::FINITE_FIELD_ADD:
           for (size_t i = 0, nchild = cur.getNumChildren(); i < nchild; i++)
           {
             it = visited.find(cur[i]);
             Assert(it != visited.end());
             if (((k == Kind::SUB || k == Kind::BITVECTOR_SUB) && i == 1) || k == Kind::NEG
-                || k == Kind::BITVECTOR_NEG)
+                || k == Kind::BITVECTOR_NEG || k == Kind::FINITE_FIELD_NEG)
             {
               ret.subtract(it->second);
             }
             else if (i > 0
                      && (k == Kind::MULT || k == Kind::NONLINEAR_MULT
-                         || k == Kind::BITVECTOR_MULT))
+                         || k == Kind::BITVECTOR_MULT || k == Kind::FINITE_FIELD_MULT))
             {
               ret.multiply(it->second);
             }
@@ -456,6 +486,7 @@ PolyNorm PolyNorm::mkPolyNorm(TNode n)
         case Kind::CONST_RATIONAL:
         case Kind::CONST_INTEGER:
         case Kind::CONST_BITVECTOR:
+        case Kind::CONST_FINITE_FIELD:
           // ignore, this is the case of a repeated zero, since we check for
           // empty of the polynomial above.
           break;
@@ -479,7 +510,10 @@ bool PolyNorm::isArithPolyNorm(TNode a, TNode b)
   // We impose no type requirements here.
   PolyNorm pa = PolyNorm::mkPolyNorm(a);
   PolyNorm pb = PolyNorm::mkPolyNorm(b);
-  return areEqualPolyNormTyped(at, pa, pb);
+  auto aux = areEqualPolyNormTyped(at, pa, pb);
+  Trace("ff::polynorm2") << "a and b: " << a << b << std::endl;
+  Trace("ff::polynorm2") << "pa and pb: " << pa.toNode(at) << " " << pb.toNode(at) << std::endl;
+  return aux;
 }
 
 bool PolyNorm::areEqualPolyNormTyped(const TypeNode& t,
@@ -492,6 +526,12 @@ bool PolyNorm::areEqualPolyNormTyped(const TypeNode& t,
     Rational w = Rational(Integer(2).pow(t.getBitVectorSize()));
     pa.modCoeffs(w);
     pb.modCoeffs(w);
+  }
+  else if (t.isFiniteField())
+  {
+    Rational p = Rational(Integer(t.getFfSize()));
+    pa.modCoeffs(p);
+    pb.modCoeffs(p); 
   }
   return pa.isEqual(pb);
 }
@@ -525,11 +565,11 @@ bool PolyNorm::isArithPolyNormRel(TNode a, TNode b, Rational& ca, Rational& cb)
         return false;
       }
     }
-    else
+    else 
     {
       eqtn = eqtn.leastUpperBound(eqtn2);
       // could happen if we are comparing equalities of different types
-      if (!eqtn.isBitVector())
+      if (!eqtn.isBitVector() && !eqtn.isFiniteField())
       {
         return false;
       }
@@ -548,7 +588,7 @@ bool PolyNorm::isArithPolyNormRel(TNode a, TNode b, Rational& ca, Rational& cb)
   PolyNorm pa = PolyNorm::mkDiff(a[0], a[1]);
   PolyNorm pb = PolyNorm::mkDiff(b[0], b[1]);
   // if a non-arithmetic equality
-  if (k == Kind::EQUAL && !eqtn.isRealOrInt())
+  if (k == Kind::EQUAL && !eqtn.isRealOrInt() && !eqtn.isFiniteField())
   {
     Assert(eqtn.isBitVector());
     ca = Rational(1);
@@ -600,6 +640,10 @@ bool PolyNorm::isArithPolyNormRel(TNode a, TNode b, Rational& ca, Rational& cb)
   cb = pa.d_polyNorm.empty() ? Rational(1) : pa.d_polyNorm.cbegin()->second;
   pa.mulCoeffs(ca);
   pb.mulCoeffs(cb);
+  if (eqtn.isFiniteField() && !areEqualPolyNormTyped(eqtn, pa, pb))
+  {
+    return false; 
+  }
   if (!pa.isEqual(pb))
   {
     return false;
@@ -627,6 +671,19 @@ Node PolyNorm::getArithPolyNormRelPremise(TNode a,
     Node y = nm->mkNode(Kind::BITVECTOR_SUB, b[0], b[1]);
     lhs = nm->mkNode(Kind::BITVECTOR_MULT, cx, x);
     rhs = nm->mkNode(Kind::BITVECTOR_MULT, cy, y);
+  }
+  else if (a[0].getType().isFiniteField())
+  {
+    Integer o = a[0].getType().getFfSize();
+    Assert(o == b[0].getType().getFfSize());
+    Node cx = nm->mkConst(FiniteFieldValue(rx.getNumerator(), o));
+    Node cy = nm->mkConst(FiniteFieldValue(ry.getNumerator(), o));
+    Node x = nm->mkNode(
+        Kind::FINITE_FIELD_ADD, a[0], nm->mkNode(Kind::FINITE_FIELD_NEG, a[1]));
+    Node y = nm->mkNode(
+        Kind::FINITE_FIELD_ADD, b[0], nm->mkNode(Kind::FINITE_FIELD_NEG, b[1])); 
+    lhs = nm->mkNode(Kind::FINITE_FIELD_MULT, cx, x);
+    rhs = nm->mkNode(Kind::FINITE_FIELD_MULT, cy, y);
   }
   else
   {
@@ -680,6 +737,10 @@ Node PolyNorm::getPolyNorm(Node a)
   if (an.isNull())
   {
     PolyNorm pa = arith::PolyNorm::mkPolyNorm(a);
+    if (a.getType().isFiniteField())
+    {
+      pa.modCoeffs(a.getType().getFfSize()); 
+    }
     an = pa.toNode(a.getType());
     if (an.isNull())
     {

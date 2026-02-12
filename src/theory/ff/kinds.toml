@@ -87,3 +87,11 @@ name     = "FINITE_FIELD_VARIETY"
 children = "1"
 comment  = "The variety of an ideal"
 typerule = "::cvc5::internal::theory::ff::FiniteFieldVariety"
+## size
+[[kinds]]
+type     = "operator"
+name     = "FINITE_FIELD_SIZE"
+children = "1:"
+comment  = "Size of a finite field term"
+typerule = "::cvc5::internal::theory::ff::FiniteFieldSizeTypeRule"
+

@@ -146,6 +146,28 @@ TypeNode FiniteFieldNonEmptyVar::computeType(NodeManager* nm,
 {
   return nm->booleanType();
 }
+TypeNode FiniteFieldSizeTypeRule::preComputeType(NodeManager* nm, TNode n)
+{
+  return nm->integerType();
+}
+
+TypeNode FiniteFieldSizeTypeRule::computeType(NodeManager* nodeManager,
+                                            TNode n,
+                                            bool check,
+                                            std::ostream* errOut)
+{
+  TypeNode t = n[0].getTypeOrNull(check);
+  if (!t.isMaybeKind(Kind::BITVECTOR_TYPE))
+  {
+    if (errOut)
+    {
+      (*errOut) << "expecting a finite field term";
+    }
+    return TypeNode::null();
+  }
+  return nodeManager->integerType();
+}
+
 
 }  // namespace ff
 }  // namespace theory
