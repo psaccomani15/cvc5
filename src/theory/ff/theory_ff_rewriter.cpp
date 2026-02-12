@@ -18,8 +18,8 @@
 #include "expr/algorithm/flatten.h"
 #include "expr/attribute.h"
 #include "expr/node_manager.h"
-#include "util/finite_field_value.h"
 #include "theory/arith/arith_poly_norm.h"
+#include "util/finite_field_value.h"
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
@@ -130,8 +130,8 @@ Node TheoryFiniteFieldsRewriter::postRewriteFfAdd(TNode t)
     else
     {
       Node c = nm->mkConst(summand.second);
-      summands.push_back(expr::algorithm::flatten(nm,
-          nm->mkNode(Kind::FINITE_FIELD_MULT, c, summand.first)));
+      summands.push_back(expr::algorithm::flatten(
+          nm, nm->mkNode(Kind::FINITE_FIELD_MULT, c, summand.first)));
     }
   }
   if (summands.size() == 0)
@@ -241,27 +241,31 @@ RewriteResponse TheoryFiniteFieldsRewriter::postRewrite(TNode t)
     case Kind::FINITE_FIELD_ADD:
     {
       Node nt = arith::PolyNorm::getPolyNorm(t);
-      Trace("ff::polynorm") << "Rewriting Add " << t<< " to " << nt << std::endl;
+      Trace("ff::polynorm")
+          << "Rewriting Add " << t << " to " << nt << std::endl;
       nt = expr::algorithm::flatten(d_nm, nt);
       std::vector<Node> children;
-      for (const auto &child : t)
+      if (nt.getNumChildren() > 1)
       {
-        children.push_back(expr::algorithm::flatten(d_nm, child, Kind::FINITE_FIELD_MULT));
+        for (const auto& child : nt)
+        {
+          children.push_back(
+              expr::algorithm::flatten(d_nm, child, Kind::FINITE_FIELD_MULT));
+        }
+        nt = d_nm->mkNode(Kind::FINITE_FIELD_ADD, children);
+        Trace("ff::polynorm") << "after flatten" << nt << std::endl;
       }
-      nt = d_nm->mkNode(Kind::FINITE_FIELD_ADD, children);
-      Trace("ff::polynorm") << "after flatten" << nt << std::endl;
-      return RewriteResponse(nt == t ? REWRITE_DONE : REWRITE_AGAIN, nt);
+      return RewriteResponse(REWRITE_DONE, nt);
     }
     case Kind::FINITE_FIELD_MULT:
     {
       Node nt = arith::PolyNorm::getPolyNorm(t);
-      Trace("ff::polynorm") << "Rewriting Mult " << t<< " to " << nt << std::endl;
+      Trace("ff::polynorm")
+          << "Rewriting Mult " << t << " to " << nt << std::endl;
       nt = expr::algorithm::flatten(d_nm, nt);
-      nt = expr::algorithm::flatten(d_nm,
-                                    nt,
-                                    Kind::FINITE_FIELD_ADD);
+      nt = expr::algorithm::flatten(d_nm, nt, Kind::FINITE_FIELD_ADD);
       Trace("ff::polynorm") << "after flatten" << nt << std::endl;
-      return RewriteResponse(nt == t ? REWRITE_DONE : REWRITE_AGAIN, nt);
+      return RewriteResponse(REWRITE_DONE, nt);
     }
     case Kind::FINITE_FIELD_BITSUM:
       return RewriteResponse(REWRITE_DONE, postRewriteFfBitsum(t));
