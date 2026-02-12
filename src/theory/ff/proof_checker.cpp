@@ -136,8 +136,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
   }
   if (id == ProofRule::FF_IDEAL_REDUCE || id == ProofRule::FF_IDEAL_REDUCE_ZERO)
   {
-    // The number of children are exactly the number of *unique* reductors
-    Assert(children.size() <= args.size() - 1);
+    Assert(args.size() == 3);
     Assert(children[0].getKind() == Kind::SET_MEMBER);
     Node ideal = children[0][1];
     // All children must be proofs of membership for the *same* ideal
@@ -153,12 +152,12 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
   }
   if (id == ProofRule::FF_IDEAL_MONIC)
   {
-    Assert(args.size() == 2);
+    Assert(args.size() == 1);
     Assert(children.size() == 1);
     Assert(children[0].getKind() == Kind::SET_MEMBER);
     Node ideal = children[0][1];
     Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
-    return d_nm->mkNode(Kind::SET_MEMBER, args[1], ideal);
+    return d_nm->mkNode(Kind::SET_MEMBER, args[0], ideal);
   }
   if (id == ProofRule::FF_POLY_CONVERSION)
   {
