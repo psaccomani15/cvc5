@@ -129,8 +129,7 @@ bool AlfPrinter::isHandled(const Options& opts, const ProofNode* pfn)
     case ProofRule::CNF_ITE_NEG1:
     case ProofRule::CNF_ITE_NEG2:
     case ProofRule::CNF_ITE_NEG3:
-    case ProofRule::CNF_AND_POS:
-    case ProofRule::FACTORING:
+    case ProofRule::CNF_AND_POS: case ProofRule::FACTORING:
     case ProofRule::REORDERING:
     case ProofRule::RESOLUTION:
     case ProofRule::CHAIN_RESOLUTION:
@@ -154,6 +153,17 @@ bool AlfPrinter::isHandled(const Options& opts, const ProofNode* pfn)
     case ProofRule::ARITH_TRANS_SINE_SYMMETRY:
     case ProofRule::ARITH_TRANS_SINE_TANGENT_ZERO:
     case ProofRule::ARITH_TRANS_SINE_TANGENT_PI:
+    case ProofRule::FF_POLY_CONVERSION:
+    case ProofRule::FF_FIELD_POLYS:
+    case ProofRule::FF_IDEAL_SPOLY:
+    case ProofRule::FF_IDEAL_GENERATOR:
+    case ProofRule::FF_IDEAL_REDUCE:
+    case ProofRule::FF_IDEAL_REDUCE_ZERO:
+    case ProofRule::FF_IDEAL_MONIC:
+    case ProofRule::FF_IDEAL_ZERO:
+    case ProofRule::FF_ONE_UNSAT:
+    case ProofRule::FF_ROOT_BRANCH:
+    case ProofRule::FF_EXHAUST_BRANCH: 
     case ProofRule::INT_TIGHT_LB:
     case ProofRule::INT_TIGHT_UB:
     case ProofRule::SKOLEM_INTRO:
@@ -193,6 +203,8 @@ bool AlfPrinter::isHandled(const Options& opts, const ProofNode* pfn)
     case ProofRule::ARITH_POLY_NORM_REL:
     case ProofRule::BV_POLY_NORM:
     case ProofRule::BV_POLY_NORM_EQ:
+    case ProofRule::FF_POLY_NORM:
+    case ProofRule::FF_POLY_NORM_EQ:
     case ProofRule::EXISTS_STRING_LENGTH:
     case ProofRule::DSL_REWRITE: return true;
     case ProofRule::BV_BITBLAST_STEP:
