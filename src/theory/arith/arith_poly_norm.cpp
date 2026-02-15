@@ -267,7 +267,6 @@ Node PolyNorm::toNode(const TypeNode& tn) const
     }
     else if (isBv)
     {
-      Assert(isBv);
       coeff = nm->mkConst(
           BitVector(tn.getBitVectorSize(), m.second.getNumerator()));
     }

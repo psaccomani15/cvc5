@@ -129,7 +129,8 @@ bool AlfPrinter::isHandled(const Options& opts, const ProofNode* pfn)
     case ProofRule::CNF_ITE_NEG1:
     case ProofRule::CNF_ITE_NEG2:
     case ProofRule::CNF_ITE_NEG3:
-    case ProofRule::CNF_AND_POS: case ProofRule::FACTORING:
+    case ProofRule::CNF_AND_POS:
+    case ProofRule::FACTORING:
     case ProofRule::REORDERING:
     case ProofRule::RESOLUTION:
     case ProofRule::CHAIN_RESOLUTION:

@@ -200,7 +200,6 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     }
     if (!arith::PolyNorm::isArithPolyNorm(args[0][0], args[0][1]))
     {
-      Assert(false) << "args do not normalize to the same term";
       return Node::null();
     }
     return args[0];

@@ -75,71 +75,21 @@ Node TheoryFiniteFieldsRewriter::preRewriteFfAdd(TNode t)
 
 Node TheoryFiniteFieldsRewriter::postRewriteFfAdd(TNode t)
 {
-  const TypeNode field = t.getType();
-  Assert(field.isFiniteField());
-
-  FiniteFieldValue one = FiniteFieldValue::mkOne(field.getFfSize());
-
-  FiniteFieldValue constantTerm = FiniteFieldValue::mkZero(field.getFfSize());
-  std::map<Node, FiniteFieldValue> scalarTerms;
-
-  std::vector<TNode> children;
-  expr::algorithm::flatten(t, children);
-
-  for (const auto& child : children)
+  Node nt = arith::PolyNorm::getPolyNorm(t);
+  Trace("ff::polynorm") << "Rewriting Add " << t << " to " << nt << std::endl;
+  nt = expr::algorithm::flatten(d_nm, nt);
+  if (nt.getKind() == Kind::FINITE_FIELD_ADD)
   {
-    if (child.isConst())
+    std::vector<Node> children;
+    for (const auto& child : nt)
     {
-      constantTerm = constantTerm + child.getConst<FiniteFieldValue>();
+      children.push_back(
+          expr::algorithm::flatten(d_nm, child, Kind::FINITE_FIELD_MULT));
     }
-    else
-    {
-      std::pair<Node, FiniteFieldValue> pair = parseScalar(child);
-      auto entry = scalarTerms.find(pair.first);
-      if (entry == scalarTerms.end())
-      {
-        entry = scalarTerms.insert(entry, pair);
-      }
-      else
-      {
-        entry->second = entry->second + pair.second;
-      }
-    }
+    nt = d_nm->mkNode(Kind::FINITE_FIELD_ADD, children);
+    Trace("ff::polynorm") << "after flatten " << nt << std::endl;
   }
-  NodeManager* const nm = nodeManager();
-  std::vector<Node> summands;
-  if (scalarTerms.empty() || !constantTerm.getValue().isZero())
-  {
-    summands.push_back(nm->mkConst(constantTerm));
-  }
-  for (const auto& summand : scalarTerms)
-  {
-    if (summand.second.getValue().isZero())
-    {
-      // drop this term
-      //
-      // While (* x 0) will never be found as an original summand,
-      // x might get mapped to zero through cancellation.
-      //
-      // consider: (+ (+ x y) (+ (* -1 x) z)).
-    }
-    else if (summand.second.getValue().isOne())
-    {
-      summands.push_back(summand.first);
-    }
-    else
-    {
-      Node c = nm->mkConst(summand.second);
-      summands.push_back(expr::algorithm::flatten(
-          nm, nm->mkNode(Kind::FINITE_FIELD_MULT, c, summand.first)));
-    }
-  }
-  if (summands.size() == 0)
-  {
-    // again, this is possible through cancellation.
-    return nm->mkConst(FiniteFieldValue::mkZero(field.getFfSize()));
-  }
-  return mkNary(Kind::FINITE_FIELD_ADD, std::move(summands));
+  return nt;
 }
 
 Node TheoryFiniteFieldsRewriter::preRewriteFfMult(TNode t)
@@ -150,38 +100,21 @@ Node TheoryFiniteFieldsRewriter::preRewriteFfMult(TNode t)
 
 Node TheoryFiniteFieldsRewriter::postRewriteFfMult(TNode t)
 {
-  const TypeNode field = t.getType();
-  Assert(field.isFiniteField());
-
-  FiniteFieldValue one = FiniteFieldValue::mkOne(field.getFfSize());
-
-  FiniteFieldValue constantTerm = FiniteFieldValue::mkOne(field.getFfSize());
-  std::vector<Node> factors;
-
-  std::vector<TNode> children;
-  expr::algorithm::flatten(t, children);
-
-  for (const auto& child : children)
+  Node nt = arith::PolyNorm::getPolyNorm(t);
+  Trace("ff::polynorm") << "Rewriting Mult " << t << " to " << nt << std::endl;
+  nt = expr::algorithm::flatten(d_nm, nt);
+  if (nt.getKind() == Kind::FINITE_FIELD_ADD)
   {
-    if (child.isConst())
+    std::vector<Node> children;
+    for (const auto& child : nt)
     {
-      constantTerm = constantTerm * child.getConst<FiniteFieldValue>();
+      children.push_back(
+          expr::algorithm::flatten(d_nm, child, Kind::FINITE_FIELD_MULT));
     }
-    else
-    {
-      factors.push_back(child);
-    }
+    nt = d_nm->mkNode(Kind::FINITE_FIELD_ADD, children);
   }
-  NodeManager* const nm = nodeManager();
-  if (constantTerm.getValue().isZero())
-  {
-    factors.clear();
-  }
-  if (!constantTerm.getValue().isOne() || factors.empty())
-  {
-    factors.insert(factors.begin(), nm->mkConst(constantTerm));
-  }
-  return mkNary(Kind::FINITE_FIELD_MULT, std::move(factors));
+  Trace("ff::polynorm") << "after flatten " << nt << std::endl;
+  return nt;
 }
 
 Node TheoryFiniteFieldsRewriter::postRewriteFfBitsum(TNode t)
@@ -240,43 +173,11 @@ RewriteResponse TheoryFiniteFieldsRewriter::postRewrite(TNode t)
     case Kind::FINITE_FIELD_NEG: return RewriteResponse(REWRITE_DONE, t);
     case Kind::FINITE_FIELD_ADD:
     {
-      Node nt = arith::PolyNorm::getPolyNorm(t);
-      Trace("ff::polynorm")
-          << "Rewriting Add " << t << " to " << nt << std::endl;
-      nt = expr::algorithm::flatten(d_nm, nt);
-      std::vector<Node> children;
-      if (nt.getKind() == Kind::FINITE_FIELD_ADD)
-      {
-        for (const auto& child : nt)
-        {
-          children.push_back(
-              expr::algorithm::flatten(d_nm, child, Kind::FINITE_FIELD_MULT));
-        }
-        nt = d_nm->mkNode(Kind::FINITE_FIELD_ADD, children);
-        Trace("ff::polynorm") << "after flatten" << nt << std::endl;
-
-      }
-      return RewriteResponse(nt == t ? REWRITE_DONE : REWRITE_AGAIN, nt);
+      return RewriteResponse(REWRITE_DONE, postRewriteFfAdd(t));
     }
     case Kind::FINITE_FIELD_MULT:
     {
-      Node nt = arith::PolyNorm::getPolyNorm(t);
-      Trace("ff::polynorm")
-          << "Rewriting Mult " << t << " to " << nt << std::endl;
-      nt = expr::algorithm::flatten(d_nm, nt);
-      std::vector<Node> children;
-      if (nt.getKind() == Kind::FINITE_FIELD_ADD)
-      {
-        for (const auto& child : nt)
-        {
-          children.push_back(
-              expr::algorithm::flatten(d_nm, child, Kind::FINITE_FIELD_MULT));
-        }
-        nt = d_nm->mkNode(Kind::FINITE_FIELD_ADD, children);
-        Trace("ff::polynorm") << "after flatten" << nt << std::endl;
-      }
-      Trace("ff::polynorm") << "after flatten" << nt << std::endl;
-      return RewriteResponse(nt == t ? REWRITE_DONE : REWRITE_AGAIN, nt);
+      return RewriteResponse(REWRITE_DONE, postRewriteFfMult(t));
     }
     case Kind::FINITE_FIELD_BITSUM:
       return RewriteResponse(REWRITE_DONE, postRewriteFfBitsum(t));
