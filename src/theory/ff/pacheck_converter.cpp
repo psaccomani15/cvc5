@@ -4,7 +4,6 @@
 #include <string>
 
 #include "cvc5_private.h"
-
 #include "expr/algorithm/flatten.h"
 #include "theory/ff/pacheck_rules.h"
 #include "util/finite_field_value.h"
@@ -74,7 +73,8 @@ std::string PacheckProofPrinter::convertPP(Node pp)
 
 PacheckPolynomial PacheckProofPrinter::nodeToPoly(Node poly, size_t branch)
 {
-  Node flattened = expr::algorithm::flatten(nodeManager(), poly, Kind::FINITE_FIELD_ADD);
+  Node flattened =
+      expr::algorithm::flatten(nodeManager(), poly, Kind::FINITE_FIELD_ADD);
   if (d_nodeToPacheckPoly.count(flattened))
   {
     auto res = d_nodeToPacheckPoly.at(flattened);
@@ -123,41 +123,42 @@ void PacheckProofPrinter::printInternal(std::ostream& out,
       if (!d_nodeToPacheckPoly.count(branchPoly))
         printInternal(
             out, branchStepChildren[branchStepChildren.size() - 1], branchId);
-      
+
       Node branchVar = branchStep->getArguments()[1];
       Node roots = branchStep->getArguments()[2];
       Node branchingPoly = branchStep->getArguments()[3];
-      out << nodeToPoly(branchingPoly, branchId).getId() << " " << PacheckRule::Root
-          << " " << convertVar(branchVar);
+      out << PacheckRule::Root << " "
+          << nodeToPoly(branchingPoly, branchId).getId() << " "
+          << convertVar(branchVar);
       for (const auto& root : roots)
       {
         out << " " << convertConst(root);
       }
-      out << ";";
-      out << std::endl;
+      out << ";" << std::endl; 
       size_t branchIt = 1;
       for (int it = roots.getNumChildren() - 1; it >= 0; --it)
       {
         out << PacheckRule::Branch << " " << branchVar << " "
-            << convertConst(roots[it]) << std::endl;
+            << convertConst(roots[it]) << ";" << std::endl;
         printInternal(out, children[branchIt], branchId + branchIt);
         branchIt += 1;
       }
       return;
     }
-    AlwaysAssert (branchStep->getRule() == ProofRule::FF_EXHAUST_BRANCH);
+    AlwaysAssert(branchStep->getRule() == ProofRule::FF_EXHAUST_BRANCH);
     out << PacheckRule::Exhaust << convertVar(args[0][0]);
-    for (size_t it = 1; it < args[0].getNumChildren(); ++ it)
+    for (size_t it = 1; it < args[0].getNumChildren(); ++it)
     {
-      out << ", " << convertVar(args[it]); 
+      out << ", " << convertVar(args[it]);
     }
-    out << std::endl;
+    out << ";" << std::endl;
     size_t branchIt = 1;
     for (Integer val = 0; val < d_size.d_val; val += 1)
     {
       for (const auto var : args[0])
       {
-        out << PacheckRule::Branch << " " << convertVar(var) << " " << val << std::endl;
+        out << PacheckRule::Branch << " " << convertVar(var) << " " << val
+            << ";" << std::endl;
         printInternal(out, children[branchIt], branchId + branchIt);
         branchIt += 1;
       }
@@ -184,8 +185,8 @@ void PacheckProofPrinter::printInternal(std::ostream& out,
       for (const auto& poly : ideal)
       {
         PacheckPolynomial pacheckPoly = nodeToPoly(poly, branchId);
-        out << pacheckPoly.getId() << " " << PacheckRule::Axiom << " "
-            << pacheckPoly.getRepr() << std::endl;
+        out << PacheckRule::Axiom << " " << pacheckPoly.getId() << " "
+            << pacheckPoly.getRepr() << ";" << std::endl;
       }
       break;
     }
@@ -194,8 +195,8 @@ void PacheckProofPrinter::printInternal(std::ostream& out,
       for (const auto& poly : args)
       {
         PacheckPolynomial pacheckPoly = nodeToPoly(poly, branchId);
-        out << pacheckPoly.getId() << " " << PacheckRule::Axiom << " "
-            << pacheckPoly.getRepr() << std::endl;
+        out << PacheckRule::Axiom << " " << pacheckPoly.getId() << " "
+            << pacheckPoly.getRepr() << ";" << std::endl;
       }
       break;
     }
@@ -206,7 +207,7 @@ void PacheckProofPrinter::printInternal(std::ostream& out,
       size_t mulIdx = 0;
       auto initial = nodeToPoly(reductors[0], branchId);
       auto result = nodeToPoly(pfn.get()->getResult()[0], branchId);
-      out << result.getId() << " " << PacheckRule::LinComp << " "
+      out << PacheckRule::LinComp << " " << result.getId() << " "
           << initial.getId() << "* (1)";
       for (size_t it = 1; it < reductors.getNumChildren(); ++it)
       {
@@ -216,7 +217,7 @@ void PacheckProofPrinter::printInternal(std::ostream& out,
             << ")";
         mulIdx += 1;
       }
-      out << ", " << result.getRepr() << std::endl;
+      out << ", " << result.getRepr() << ";" << std::endl;
       break;
     }
     case ProofRule::FF_IDEAL_SPOLY:
@@ -226,9 +227,9 @@ void PacheckProofPrinter::printInternal(std::ostream& out,
       auto q = nodeToPoly(children[1].get()->getResult()[0], branchId);
       auto pMul = nodeToPoly(args[1], branchId);
       auto qMul = nodeToPoly(args[2], branchId);
-      out << result.getId() << " " << PacheckRule::LinComp << " " << p.getId()
+      out << PacheckRule::LinComp << " " << result.getId() << " " << p.getId()
           << " * (" << pMul.getRepr() << ") +" << q.getId() << "* ("
-          << qMul.getRepr() << "), " << result.getRepr() << std::endl;
+          << qMul.getRepr() << "), " << result.getRepr() << ";" << std::endl;
       break;
     }
     case ProofRule::FF_IDEAL_MONIC:
@@ -241,26 +242,25 @@ void PacheckProofPrinter::printInternal(std::ostream& out,
         pLeadingCoeff = pLeadingCoeff[0][0];
       else if (pLeadingCoeff.getKind() == Kind::FINITE_FIELD_MULT)
         pLeadingCoeff = pLeadingCoeff[0];
-      Assert(pLeadingCoeff.getKind() == Kind::CONST_FINITE_FIELD) << pLeadingCoeff;
-      auto inverse = pLeadingCoeff.getConst<FiniteFieldValue>().recip().getValue();
-      out << result.getId() << " " << PacheckRule::LinComp << " " << p.getId()
-          << " * (" << inverse << "), " << result.getRepr() << std::endl;
-      break;  
+      Assert(pLeadingCoeff.getKind() == Kind::CONST_FINITE_FIELD)
+          << pLeadingCoeff;
+      auto inverse =
+          pLeadingCoeff.getConst<FiniteFieldValue>().recip().getValue();
+      out << PacheckRule::LinComp << " " << result.getId() << " " << p.getId()
+          << " * (" << inverse << "), " << result.getRepr() << ";" << std::endl;
+      break;
     }
     case ProofRule::FF_ROOT_BRANCH:
     {
-      auto branchPoly = children[children.size() - 1]
-                            .get()
-                            ->getResult()[0];
+      auto branchPoly = children[children.size() - 1].get()->getResult()[0];
       if (!d_nodeToPacheckPoly.count(branchPoly))
-        printInternal(out,
-                      children[children.size() - 1],
-                      branchId);
+        printInternal(out, children[children.size() - 1], branchId);
       Node branchVar = args[1];
       Node roots = args[2];
       Node branchingPoly = args[3];
-      out << nodeToPoly(branchingPoly, branchId).getId() << " " << PacheckRule::Root
-          << " " << convertVar(branchVar) << std::endl;
+      out << PacheckRule::Root << " "
+          << nodeToPoly(branchingPoly, branchId).getId() << " "
+          << convertVar(branchVar) << ";" << std::endl;
       break;
     }
     default: return;
