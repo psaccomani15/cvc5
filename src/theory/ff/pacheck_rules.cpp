@@ -14,7 +14,7 @@ std::string pacheckRuleToString(PacheckRule id)
   {
     case PacheckRule::Axiom: return "a";
     case PacheckRule::Branch: return "b";
-    case PacheckRule::LinComp: return "%";
+    case PacheckRule::LinComp: return "l";
     case PacheckRule::Modulus: return "m";
     case PacheckRule::Root: return "r";
     case PacheckRule::Exhaust: return "e";
