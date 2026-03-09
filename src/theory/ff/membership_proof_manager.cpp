@@ -180,13 +180,13 @@ void MembershipProofManager::sPoly(CoCoA::ConstRefRingElem p,
     std::vector<Node> args{sNode};
     Assert(d_multiplierSeq.size() == 2) << d_multiplierSeq.size();
     for (auto& mul : d_multiplierSeq) args.push_back(d_enc.decode(mul));
-    d_multiplierSeq.clear();
     storeProof(sNode, ProofRule::FF_IDEAL_SPOLY, parents, args);
   }
   else
   {
     Trace("ff::proof") << " drop" << std::endl;
   }
+    d_multiplierSeq.clear();
 }
 
 void MembershipProofManager::reductionStart(CoCoA::ConstRefRingElem p)
