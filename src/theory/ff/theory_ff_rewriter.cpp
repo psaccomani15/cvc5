@@ -240,43 +240,13 @@ RewriteResponse TheoryFiniteFieldsRewriter::postRewrite(TNode t)
     case Kind::FINITE_FIELD_NEG: return RewriteResponse(REWRITE_DONE, t);
     case Kind::FINITE_FIELD_ADD:
     {
-      Node nt = arith::PolyNorm::getPolyNorm(t);
-      Trace("ff::polynorm")
-          << "Rewriting Add " << t << " to " << nt << std::endl;
-      nt = expr::algorithm::flatten(d_nm, nt);
-      std::vector<Node> children;
-      if (nt.getKind() == Kind::FINITE_FIELD_ADD)
-      {
-        for (const auto& child : nt)
-        {
-          children.push_back(
-              expr::algorithm::flatten(d_nm, child, Kind::FINITE_FIELD_MULT));
-        }
-        nt = d_nm->mkNode(Kind::FINITE_FIELD_ADD, children);
-        Trace("ff::polynorm") << "after flatten" << nt << std::endl;
-
-      }
-      return RewriteResponse(nt == t ? REWRITE_DONE : REWRITE_AGAIN, nt);
+     Node nt = postRewriteFfAdd(t);
+     return RewriteResponse(nt == t ? REWRITE_DONE : REWRITE_AGAIN, nt);
     }
     case Kind::FINITE_FIELD_MULT:
     {
-      Node nt = arith::PolyNorm::getPolyNorm(t);
-      Trace("ff::polynorm")
-          << "Rewriting Mult " << t << " to " << nt << std::endl;
-      nt = expr::algorithm::flatten(d_nm, nt);
-      std::vector<Node> children;
-      if (nt.getKind() == Kind::FINITE_FIELD_ADD)
-      {
-        for (const auto& child : nt)
-        {
-          children.push_back(
-              expr::algorithm::flatten(d_nm, child, Kind::FINITE_FIELD_MULT));
-        }
-        nt = d_nm->mkNode(Kind::FINITE_FIELD_ADD, children);
-        Trace("ff::polynorm") << "after flatten" << nt << std::endl;
-      }
-      Trace("ff::polynorm") << "after flatten" << nt << std::endl;
-      return RewriteResponse(nt == t ? REWRITE_DONE : REWRITE_AGAIN, nt);
+      Node nt = postRewriteFfMult(t);
+      return RewriteResponse(REWRITE_DONE, nt);
     }
     case Kind::FINITE_FIELD_BITSUM:
       return RewriteResponse(REWRITE_DONE, postRewriteFfBitsum(t));
