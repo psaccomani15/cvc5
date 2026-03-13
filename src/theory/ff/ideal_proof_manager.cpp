@@ -226,7 +226,6 @@ void IdealProofManager::finishProof(bool rootBranching)
   }
   Node conclusion = proveBrancher(childrenSatFact, rootBranching);
   Node falseNode;
-  Assert(conclusion == nodeManager()->mkConst<bool>(false));
   // This happens when the Branching Polynomial have no roots. In this
   // case, the conclusion is the disjunction of empty nodes, i.e false.
   if (!d_childrenUnsat.size())
