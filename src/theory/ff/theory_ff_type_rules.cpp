@@ -79,7 +79,7 @@ TypeNode FiniteFieldFixedFieldTypeRule::computeType(NodeManager* nodeManager,
     {
       if (errOut)
       {
-        (*errOut) << "expecting comparable finite-field terms";
+        (*errOut) << "expecting comparable finite-field terms " << n;
       }
       return TypeNode::null();
     }
