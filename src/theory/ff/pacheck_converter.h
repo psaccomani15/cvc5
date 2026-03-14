@@ -22,9 +22,9 @@ class PacheckPolynomial
 {
  public:
   PacheckPolynomial(std::string poly, size_t id, size_t branch);
-  std::string getRepr() { return d_polyRepr; }
-  size_t getId() { return d_id; }
-  size_t getBranch() { return d_branch; }
+  std::string getRepr() const { return d_polyRepr; }
+  size_t getId() const { return d_id; }
+  size_t getBranch() const { return d_branch; }
 
  private:
   std::string d_polyRepr;
@@ -41,10 +41,11 @@ class PacheckProofPrinter : protected EnvObj
  private:
   PacheckPolynomial nodeToPoly(Node poly, size_t branch);
   std::string convertPP(Node pp);
-  std::string convertVar(Node var);
+  std::string convertVar(TNode var);
   void printInternal(std::ostream& out,
                      std::shared_ptr<ProofNode> pfn,
                      size_t branchSize);
+  bool containsProof(Node poly, size_t branch);
   const FfSize& d_size;
   size_t d_maxId;
   size_t d_varId;

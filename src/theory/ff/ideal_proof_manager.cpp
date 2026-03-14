@@ -194,7 +194,7 @@ Node IdealProofManager::proveBrancher(std::vector<Node>& childrenSatFact,
   {
     premises.push_back(d_membershipProofs->getMembershipFact(poly));
   }
-  // Here comes the main difference: Exhaust_branch do not contain facts about
+  // Here comes the main difference: Exhaust branch do not contain facts about
   // a branch polynomial.
   if (!rootBranching)
   {
