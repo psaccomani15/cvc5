@@ -80,7 +80,7 @@ index 4c4d51e..e531e36 100644
  #include<list>
  // using std::list; // for GPolyList; GPolyPtrList;
  #include<vector>
-@@ -46,6 +46,24 @@
+@@ -46,6 +46,25 @@
  
  class GPoly;
  
@@ -91,6 +91,7 @@ index 4c4d51e..e531e36 100644
 +extern std::function<void(ConstRefRingElem r)> reductionEndHandler;
 +
 +extern bool proofEnabled;
++extern bool membershipTest;
 +extern std::function<void(ConstRefRingElem p, ConstRefRingElem q, ConstRefRingElem s)> sPolyProof;
 +extern std::function<void(ConstRefRingElem p)> reductionStartProof;
 +extern std::function<void(ConstRefRingElem q)> reductionStepProof;
@@ -285,7 +286,7 @@ diff --git a/src/AlgebraicCore/TmpGPoly.C b/src/AlgebraicCore/TmpGPoly.C
 index ea250d4..34c02f4 100644
 --- a/src/AlgebraicCore/TmpGPoly.C
 +++ b/src/AlgebraicCore/TmpGPoly.C
-@@ -47,7 +47,23 @@
+@@ -47,7 +47,24 @@
  namespace CoCoA
  {  
  
@@ -296,6 +297,7 @@ index ea250d4..34c02f4 100644
 +  std::function<void(ConstRefRingElem q)> reductionStepHandler = nullptr;
 +  std::function<void(ConstRefRingElem r)> reductionEndHandler = nullptr;
 +  bool proofEnabled = false;
++  bool membershipTest = false;
 +  std::function<void(ConstRefRingElem p, ConstRefRingElem q, ConstRefRingElem s)> sPolyProof = nullptr;
 +  std::function<void(ConstRefRingElem p)> reductionStartProof = nullptr;
 +  std::function<void(ConstRefRingElem q)> reductionStepProof = nullptr;
@@ -335,11 +337,13 @@ index b0d4ea5..b9a83a4 100644
  
  #include <iostream>
  using std::ostream;
-@@ -421,6 +421,7 @@
+@@ -420,7 +420,9 @@
+ 
  
      P->myDivLM(raw(tmp_poly), raw(poly(gbk.myBuckets[0])), raw(g));
++    if (proofEnabled & membershipTest) storeMultiplier(tmp_poly);
      P->myNegate(raw(tmp_poly), raw(tmp_poly));
-+    if (proofEnabled) storeMultiplier(tmp_poly);
++    if (proofEnabled & !membershipTest) storeMultiplier(tmp_poly);
      gbk.myDeleteLM();
      gbk.myAddMulLM(tmp_poly, g, RedLen, SparsePolyRingBase::SkipLMg);
    }

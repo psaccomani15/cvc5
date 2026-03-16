@@ -186,7 +186,7 @@ void MembershipProofManager::sPoly(CoCoA::ConstRefRingElem p,
   {
     Trace("ff::proof") << " drop" << std::endl;
   }
-  d_multiplierSeq.clear();
+    d_multiplierSeq.clear();
 }
 
 void MembershipProofManager::reductionStart(CoCoA::ConstRefRingElem p)
@@ -246,14 +246,17 @@ void MembershipProofManager::monicProof(CoCoA::ConstRefRingElem poly,
 {
   Node polyTerm = d_enc.decode(poly);
   Node monicTerm = d_enc.decode(monic);
+  CoCoA::RingElem lcInv = CoCoA::one(d_cocoaRing) / CoCoA::LC(poly);
+  Node lcInvNode = d_enc.decode(lcInv);
   Trace("ff::monic") << "Orig: " << poly << " New: " << monic;
   Assert(d_factToProof.count(polyTerm));
-  storeProof(monicTerm, ProofRule::FF_IDEAL_MONIC, {polyTerm}, {monicTerm});
+  storeProof(monicTerm, ProofRule::FF_IDEAL_MONIC, {polyTerm}, {monicTerm, lcInvNode});
 }
 void MembershipProofManager::membershipStart(CoCoA::ConstRefRingElem p)
 {
   Assert(d_membershipSeq.empty());
   d_reducingPoly = p;
+  CoCoA::membershipTest = true;
   Trace("ff::proof") << "Starting membership proof with: " << p << std::endl;
 }
 
@@ -266,18 +269,24 @@ void MembershipProofManager::membershipStep(CoCoA::RingElem red)
 // TODO:: Refactor this section to reuse code from reduction.
 void MembershipProofManager::membershipEnd()
 {
+
+  CoCoA::membershipTest = false;
   Node reducingPolyNode = d_enc.decode(d_reducingPoly);
   auto currPoly = d_reducingPoly;
   std::vector<Node> args{reducingPolyNode};
   std::unordered_set<Node> uniquePolys;
+  std::vector<Node> reductors{};
   for (auto& reductor : d_membershipSeq)
   {
     Node polyNode = d_enc.decode(reductor);
-    args.push_back(polyNode);
+    reductors.push_back(polyNode);
     uniquePolys.insert(polyNode);
   }
+  args.push_back(nodeManager()->mkNode(Kind::SEXPR, reductors));
   Assert(!d_membershipSeq.empty());
-  for (auto& mul : d_multiplierSeq) args.push_back(d_enc.decode(mul));
+  std::vector<Node> multipliers{};
+  for (auto& mul : d_multiplierSeq) multipliers.push_back(d_enc.decode(mul));
+  args.push_back(nodeManager()->mkNode(Kind::SEXPR, multipliers));
   d_multiplierSeq.clear();
   std::vector<Node> children(uniquePolys.begin(), uniquePolys.end());
   children.push_back(d_enc.zero());

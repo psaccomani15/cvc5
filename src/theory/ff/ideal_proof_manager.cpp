@@ -132,11 +132,12 @@ void IdealProofManager::registerRoots(std::vector<CoCoA::RingElem> roots)
 std::shared_ptr<IdealProofManager> IdealProofManager::registerBranch(
     CoCoA::RingElem choicePoly, CoCoA::ideal newIdeal)
 {
-  std::vector<CoCoA::RingElem> newGens{choicePoly};
+  std::vector<CoCoA::RingElem> newGens;
   for (auto poly : CoCoA::gens(d_cocoaIdeal))
   {
     newGens.push_back(poly);
   }
+  newGens.push_back(choicePoly);
   std::shared_ptr<IdealProofManager> childrenProof(
       new IdealProofManager(d_env, d_globalProof, d_id + 1, newGens, d_enc, newIdeal));
   // This happens when we are branching.
@@ -182,7 +183,7 @@ Node IdealProofManager::proveBrancher(std::vector<Node>& childrenSatFact,
   std::vector<Node> arguments = {
       nodeManager()->mkNode(Kind::SEXPR, nonAssignedVars())};
   d_membershipProofs->registerProofs();
-  for (auto poly : CoCoA::GBasis(d_cocoaIdeal))
+  for (auto poly : CoCoA::gens(d_cocoaIdeal))
   {
     premises.push_back(d_membershipProofs->getMembershipFact(poly));
   }
@@ -217,19 +218,13 @@ void IdealProofManager::finishProof(bool rootBranching)
     childrenUnsatFact.push_back(childUnsat);
   }
   Node conclusion = proveBrancher(childrenSatFact, rootBranching);
-  Node falseNode;
+  Node falseNode = nodeManager()->mkConst<bool>(false);
   // This happens when the Branching Polynomial have no roots. In this
   // case, the conclusion is the disjunction of empty nodes, i.e false.
-  if (d_childrenUnsat.empty())
-  {
-    falseNode = conclusion;
-  }
-  else
+  if (!d_childrenUnsat.empty())
   {
     // Produce a proof for false by CHAIN_RESOLUTION on the conclusion of a
     // branching step with the refutation of each literal.
-    falseNode = nodeManager()->mkConst<bool>(false);
-    Node trueNode = nodeManager()->mkConst<bool>(true);
     std::vector<Node> polarity;
     std::vector<Node> pivot;
     std::vector<Node> resolutionPremises{conclusion};
@@ -239,8 +234,8 @@ void IdealProofManager::finishProof(bool rootBranching)
       resolutionPremises.push_back(unsatFacts);
     }
     for (size_t it = 0; it < childrenSatFact.size(); ++it)
-      polarity.push_back(trueNode);
-    for (const auto& satFact : childrenSatFact) pivot.push_back(satFact);
+      polarity.push_back(falseNode);
+    for (const auto& unsatFact : childrenUnsatFact) pivot.push_back(unsatFact);
     d_proof.addStep(falseNode,
                     ProofRule::CHAIN_RESOLUTION,
                     resolutionPremises,

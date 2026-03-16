@@ -76,10 +76,6 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
       generators.push_back(children[it][0]);
     }
     std::vector<Node> disjuncts;
-    TypeNode field = generators[0].getType();
-    Assert(field.isFiniteField());
-    Integer maxValue = field.getFfSize();
-    FfSize fieldCard(maxValue);
     Node branchVariable = args[1];
     bool isNonAssigned = true;
     for (const auto& nonAssigned : args[0])
@@ -94,9 +90,8 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     if (isNonAssigned) return Node::null();
     for (const auto& root : args[2])
     {
-      Integer rootValue = root.getConst<FiniteFieldValue>().getValue();
-      Node branchValue = nodeManager()->mkConst(
-          FiniteFieldValue(maxValue - rootValue, fieldCard));
+      const FiniteFieldValue rootValue = root.getConst<FiniteFieldValue>();
+      Node branchValue = nodeManager()->mkConst(-rootValue);
       generators.push_back(nodeManager()->mkNode(
           Kind::FINITE_FIELD_ADD, branchVariable, branchValue));
       Node newIdeal =
@@ -148,12 +143,32 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
       Assert(ideal == child[1]);
       if (ideal != child[1] || child.getKind() != Kind::SET_MEMBER)
         return Node::null();
+    } 
+    if (id == ProofRule::FF_IDEAL_REDUCE_ZERO)
+    {
+      const auto reductors = args[1];
+      const auto multiplier = args[2];
+      Assert(reductors.getNumChildren() == multiplier.getNumChildren());
+      Node computed = nodeManager()->mkNode(Kind::FINITE_FIELD_MULT,
+                                            reductors[0], multiplier[0]);
+      for (size_t it = 1; it < reductors.getNumChildren(); ++it)
+      {
+        const auto term = nodeManager()->mkNode(Kind::FINITE_FIELD_MULT, reductors[it], multiplier[it]);
+        computed = nodeManager()->mkNode(Kind::FINITE_FIELD_ADD, computed, term);
+      }
+      arith::PolyNorm expected = arith::PolyNorm::mkPolyNorm(args[0]);
+      arith::PolyNorm computedNormed = arith::PolyNorm::mkPolyNorm(computed);
+      Assert(expected.isEqual(computedNormed))
+          << "Expected: " << expected.toNode(args[0].getType()) << std::endl
+          << "Computed: " << computedNormed.toNode(computed.getType())
+          << std::endl;
+
     }
     return d_nm->mkNode(Kind::SET_MEMBER, args[0], ideal);
   }
   if (id == ProofRule::FF_IDEAL_MONIC)
   {
-    Assert(args.size() == 1);
+    Assert(args.size() == 2);
     Assert(children.size() == 1);
     Assert(children[0].getKind() == Kind::SET_MEMBER);
     Node ideal = children[0][1];

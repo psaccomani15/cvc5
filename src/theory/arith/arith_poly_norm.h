@@ -38,18 +38,18 @@ class PolyNorm
    * Add the monomial x*c to this polynomial.
    * If x is null, then x*c is treated as c.
    */
-  void addMonomial(TNode x, const Rational& c, bool isNeg = false);
+  void addMonomial(TNode x, const Rational& c, const Integer& modBy = 0, bool isNeg = false);
   /**
    * Multiply this polynomial by the monomial x*c, where c is a constant.
    * If x is null, then x*c is treated as c.
    */
-  void multiplyMonomial(TNode x, const Rational& c);
+  void multiplyMonomial(TNode x, const Rational& c, const Integer& modBy = 0);
   /** Add polynomial p to this one. */
-  void add(const PolyNorm& p);
+  void add(const PolyNorm& p, const Integer& modBy = 0);
   /** Subtract polynomial p from this one. */
-  void subtract(const PolyNorm& p);
+  void subtract(const PolyNorm& p, const Integer& modBy = 0);
   /** Multiply this polynomial by p */
-  void multiply(const PolyNorm& p);
+  void multiply(const PolyNorm& p, const Integer& modBy = 0);
   /** Multiply the coefficients of this polynomial by constant c */
   void mulCoeffs(const Rational& c);
   /**
@@ -92,7 +92,7 @@ class PolyNorm
    * normalization of ca(a1-a2) is equivalent to the normalization of cb(b1-b2).
    *
    * This method can return true if a/b are Int/Real and ~ is in {=,>=,>,<=,<}
-   * or if a/b are bitvector and ~ is in {=}.
+   * or if a/b are bitvector or finite field terms and ~ is in {=}.
    */
   static bool isArithPolyNormRel(TNode a, TNode b, Rational& ca, Rational& cb);
   /**
