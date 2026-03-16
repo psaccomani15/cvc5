@@ -210,7 +210,7 @@ void PacheckProofPrinter::printInternal(std::ostream& out,
           assignmentPoly = nodeManager()->mkNode(
               Kind::FINITE_FIELD_ADD, branchVar, nodeManager()->mkConst(-root));
         const auto assignmentPacheckPoly = nodeToPoly(assignmentPoly, branchId);
-        out << PacheckRule::Branch << " " << assignmentPacheckPoly.getRepr()
+        out << PacheckRule::Branch << " " << assignmentPacheckPoly.getId()
             << " " << convertVar(branchVar) << " " << convertConst(roots[it])
             << ";" << std::endl;
         printInternal(out, children[branchIt], branchId + branchIt);
