@@ -256,6 +256,7 @@ void MembershipProofManager::membershipStart(CoCoA::ConstRefRingElem p)
 {
   Assert(d_membershipSeq.empty());
   d_reducingPoly = p;
+  CoCoA::membershipTest = true;
   Trace("ff::proof") << "Starting membership proof with: " << p << std::endl;
 }
 
@@ -268,6 +269,8 @@ void MembershipProofManager::membershipStep(CoCoA::RingElem red)
 // TODO:: Refactor this section to reuse code from reduction.
 void MembershipProofManager::membershipEnd()
 {
+
+  CoCoA::membershipTest = false;
   Node reducingPolyNode = d_enc.decode(d_reducingPoly);
   auto currPoly = d_reducingPoly;
   std::vector<Node> args{reducingPolyNode};

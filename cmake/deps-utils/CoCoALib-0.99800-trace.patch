@@ -2,7 +2,7 @@ diff --git a/configuration/cxx14.sh b/configuration/cxx14.sh
 index a5472cd..2a3e608 100755
 --- a/configuration/cxx14.sh
 +++ b/configuration/cxx14.sh
-@@ -51,7 +51,7 @@ int main() {
+@@ -51,7 +51,7 @@
  EOF
  
  # First try with no compiler flag...
@@ -11,7 +11,7 @@ index a5472cd..2a3e608 100755
  if [ $? -ne 0 ]
  then
      echo "ERROR: compilation unexpectedly failed; is $CXX a c++ compiler?   $SCRIPT_NAME" > /dev/stderr
-@@ -74,7 +74,7 @@ fi
+@@ -74,7 +74,7 @@
  # Compilation without flag is not C++14 standard; try with -std=c++14
  
  CXX14="-std=c++14"
@@ -24,7 +24,7 @@ diff --git a/configuration/gmp-version.sh b/configuration/gmp-version.sh
 index ebd85c7..5693280 100755
 --- a/configuration/gmp-version.sh
 +++ b/configuration/gmp-version.sh
-@@ -73,7 +73,7 @@ int main()
+@@ -73,7 +73,7 @@
  EOF
  
  # Use c++ compiler specified in CXX; no need to specify libgmp as all info is in header file!!
@@ -37,7 +37,7 @@ diff --git a/configuration/shell-fns.sh b/configuration/shell-fns.sh
 index 190dbb4..c8d281f 100755
 --- a/configuration/shell-fns.sh
 +++ b/configuration/shell-fns.sh
-@@ -11,7 +11,7 @@ mktempdir()
+@@ -11,7 +11,7 @@
  {
      TODAY=`date "+%Y%m%d"`
      TIME=`date "+%H%M%S"`
@@ -50,7 +50,7 @@ diff --git a/configuration/verify-compiler.sh b/configuration/verify-compiler.sh
 index 7a70933..c752e34 100755
 --- a/configuration/verify-compiler.sh
 +++ b/configuration/verify-compiler.sh
-@@ -55,15 +55,6 @@ int main()
+@@ -55,15 +55,6 @@
  }
  EOF
  
@@ -80,7 +80,7 @@ index 4c4d51e..e531e36 100644
  #include<list>
  // using std::list; // for GPolyList; GPolyPtrList;
  #include<vector>
-@@ -46,6 +49,24 @@ enum ClearMarker {clear};
+@@ -46,6 +46,25 @@
  
  class GPoly;
  
@@ -91,6 +91,7 @@ index 4c4d51e..e531e36 100644
 +extern std::function<void(ConstRefRingElem r)> reductionEndHandler;
 +
 +extern bool proofEnabled;
++extern bool membershipTest;
 +extern std::function<void(ConstRefRingElem p, ConstRefRingElem q, ConstRefRingElem s)> sPolyProof;
 +extern std::function<void(ConstRefRingElem p)> reductionStartProof;
 +extern std::function<void(ConstRefRingElem q)> reductionStepProof;
@@ -118,7 +119,7 @@ index b1b4eec..6f7a750 100644
  #include "CoCoA/DistrMPolyInlFpPP.H"
  
  #include "CoCoA/BigIntOps.H"
-@@ -413,6 +413,9 @@ namespace CoCoA
+@@ -413,6 +413,9 @@
  
      DivLM(tmp_poly, *this, g);
      tmp_poly.myNegate();
@@ -143,7 +144,7 @@ index 5d55f94..78a3052 100644
  
  //using std::swap;
  #include <iostream>
-@@ -463,6 +465,9 @@ namespace CoCoA
+@@ -463,6 +463,9 @@
  
      DivLM(tmp_poly, *this, g);
      tmp_poly.myNegate();
@@ -166,7 +167,7 @@ index c5d0a0a..e219d04 100644
  
  #include <vector>
  // using std::vector;
-@@ -128,7 +128,10 @@ namespace CoCoA
+@@ -128,7 +128,10 @@
    {
      const PolyRing Rx = owner(f);
      RingElem ans(Rx);
@@ -201,7 +202,7 @@ index b5b8b43..aac92dc 100644
  
  #include "CoCoA/BigIntOps.H"
  #include "CoCoA/ReductionCog.H"
-@@ -134,6 +135,8 @@ degree HereForProfilingOnlyWDeg(ConstRefPPMonoidElem cofactor1)
+@@ -134,6 +134,8 @@
        v.myGRingInfo().myCheckForTimeout("ReduceActiveLM");
        s->myUpdate(F, *g);
        F->myReduce(poly(*g), NumTerms(*g));
@@ -210,7 +211,7 @@ index b5b8b43..aac92dc 100644
      }//while
    }//ReduceActiveLM
  
-@@ -231,7 +234,9 @@ degree HereForProfilingOnlyWDeg(ConstRefPPMonoidElem cofactor1)
+@@ -231,7 +231,9 @@
    void GPoly::myPolySetSPoly(const GPoly& f, const GPoly& g)
    {
      myPolyValue = poly(f);
@@ -259,7 +260,7 @@ index 2d5fe05..97e025d 100644
  //#include <vector>
  using std::vector;
  
-@@ -146,6 +146,7 @@ namespace CoCoA
+@@ -146,6 +146,7 @@
      int i;
      while ( (i = FindReducerIndex(F, v) ) != -1)
      {
@@ -267,7 +268,7 @@ index 2d5fe05..97e025d 100644
        CheckForInterrupt("ReduceActiveLM");
        F->myReduce(v[i]);
      }
-@@ -173,11 +174,13 @@ namespace CoCoA
+@@ -173,11 +173,13 @@
        CoCoA_THROW_ERROR(ERR::MixedRings, FnName);
      if ( IsZero(f) ) return f;
      if ( v.empty() ) return f;
@@ -285,7 +286,7 @@ diff --git a/src/AlgebraicCore/TmpGPoly.C b/src/AlgebraicCore/TmpGPoly.C
 index ea250d4..34c02f4 100644
 --- a/src/AlgebraicCore/TmpGPoly.C
 +++ b/src/AlgebraicCore/TmpGPoly.C
-@@ -47,7 +47,23 @@ using std::vector;
+@@ -47,7 +47,24 @@
  namespace CoCoA
  {  
  
@@ -296,6 +297,7 @@ index ea250d4..34c02f4 100644
 +  std::function<void(ConstRefRingElem q)> reductionStepHandler = nullptr;
 +  std::function<void(ConstRefRingElem r)> reductionEndHandler = nullptr;
 +  bool proofEnabled = false;
++  bool membershipTest = false;
 +  std::function<void(ConstRefRingElem p, ConstRefRingElem q, ConstRefRingElem s)> sPolyProof = nullptr;
 +  std::function<void(ConstRefRingElem p)> reductionStartProof = nullptr;
 +  std::function<void(ConstRefRingElem q)> reductionStepProof = nullptr;
@@ -310,7 +312,7 @@ index ea250d4..34c02f4 100644
    //---------class GPoly-------------------------------
  
    // WARNING: is not possible to build the zero GPoly here.
-@@ -300,8 +316,11 @@ void GPoly::myUpdateLenLPPLCDegComp()
+@@ -300,8 +300,11 @@
      myMinimalGenLevel = -1;
      if (the_gp.IsInputPoly())
        myPolyValue = poly(the_gp.myFirstGPoly());
@@ -335,11 +337,46 @@ index b0d4ea5..b9a83a4 100644
  
  #include <iostream>
  using std::ostream;
-@@ -421,6 +421,7 @@
+@@ -420,7 +420,9 @@
+ 
  
      P->myDivLM(raw(tmp_poly), raw(poly(gbk.myBuckets[0])), raw(g));
++    if (proofEnabled & membershipTest) storeMultiplier(tmp_poly);
      P->myNegate(raw(tmp_poly), raw(tmp_poly));
-+    if (proofEnabled) storeMultiplier(tmp_poly);
++    if (proofEnabled & !membershipTest) storeMultiplier(tmp_poly);
      gbk.myDeleteLM();
      gbk.myAddMulLM(tmp_poly, g, RedLen, SparsePolyRingBase::SkipLMg);
    }
+diff --git a/configuration/gmp-check-cxxflags.sh b/configuration/gmp-check-cxxflags.sh
+index f34c10d..6c167a3 100755
+--- a/configuration/gmp-check-cxxflags.sh
++++ b/configuration/gmp-check-cxxflags.sh
+@@ -59,7 +59,7 @@
+ 
+ 
+ GMP_LDLIB=-lgmp
+-if [ -f "$COCOA_EXTLIB_DIR"/lib/libgmp-symlink.a ]
++if [ -f "$COCOA_EXTLIB_DIR"/lib/libgmp-symlink."$GMP_LIB_EXTN" ]
+ then
+   GMP_LDLIB=-lgmp-symlink
+ fi
+diff --git a/configure b/configure
+index 769750d..5ac5e90 100755
+--- a/configure
++++ b/configure
+@@ -336,6 +336,7 @@
+ # Next two lines required by the scripts which check GMP (see below).
+ export CXX
+ export CXXFLAGS
++export GMP_LIB_EXTN
+ 
+ # Check compiler and flags are sane.
+ # If all is well, result is either "gnu" or "not gnu" & return code is 0.
+@@ -467,6 +467,7 @@
+       # gmp-find.sh script worked, so message is full path of GMP library
+       /bin/ln -s "$GMP_MESG" $EXTLIBS/lib/libgmp-symlink.a
+       GMP_LIB="$GMP_MESG"
++      GMP_LIB_EXTN="a"
+     fi
+   fi
+ fi

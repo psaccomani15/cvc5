@@ -128,6 +128,7 @@ class IdealProofManager : protected EnvObj
    * @param newGens: The new generators.
    */
   void updateIdeal(std::vector<Node>& newGens);
+
   /**
    * Determines the non-assigned variables in the current branch. Used for
    * producing branch proof arguments.
@@ -210,7 +211,6 @@ class IdealProofManager : protected EnvObj
   std::unordered_map<std::string, Node> d_polyToNode;
 
   std::vector<Node> d_toGuess;
-
   /**
    * The CDProof to record the derivation for this branch.
    */

@@ -1,5 +1,6 @@
 #include "theory/ff/proof_checker.h"
 
+#include "theory/arith/arith_poly_norm.h"
 #include "theory/arith/theory_arith.h"
 #include "theory/ff/proof_utils.h"
 namespace cvc5::internal {
@@ -24,8 +25,6 @@ void FfProofRuleChecker::registerTo(ProofChecker* pc)
   pc->registerChecker(ProofRule::FF_ONE_UNSAT, this);
 }
 
-/**TODO: Refactor. Create Proof Utils file. Put membership utility defined in
- * membership_proofs there and use here*/
 Node FfProofRuleChecker::checkInternal(ProofRule id,
                                        const std::vector<Node>& children,
                                        const std::vector<Node>& args)
@@ -51,10 +50,11 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
       {
         Node assignmentPoly = var;
         if (it > 0)
-          assignmentPoly = nodeManager()->mkNode(
-              Kind::FINITE_FIELD_ADD,
-              var,
-              nodeManager()->mkConst(FiniteFieldValue(maxValue - it, fieldCard)));
+          assignmentPoly =
+              nodeManager()->mkNode(Kind::FINITE_FIELD_ADD,
+                                    var,
+                                    nodeManager()->mkConst(FiniteFieldValue(
+                                        maxValue - it, fieldCard)));
         generators.push_back(assignmentPoly);
         Node newIdeal =
             nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, generators);
@@ -74,10 +74,6 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
       generators.push_back(children[it][0]);
     }
     std::vector<Node> disjuncts;
-    TypeNode field = generators[0].getType();
-    Assert(field.isFiniteField());
-    Integer maxValue = field.getFfSize();
-    FfSize fieldCard(maxValue);
     Node branchVariable = args[1];
     bool isNonAssigned = true;
     for (const auto& nonAssigned : args[0])
@@ -89,13 +85,11 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
       }
     }
     Assert(!isNonAssigned);
-    if (isNonAssigned)
-      return Node::null();
+    if (isNonAssigned) return Node::null();
     for (const auto& root : args[2])
     {
-      Integer rootValue = root.getConst<FiniteFieldValue>().getValue();
-      Node branchValue = nodeManager()->mkConst(
-          FiniteFieldValue(maxValue - rootValue, fieldCard));
+      const FiniteFieldValue rootValue = root.getConst<FiniteFieldValue>();
+      Node branchValue = nodeManager()->mkConst(-rootValue);
       generators.push_back(nodeManager()->mkNode(
           Kind::FINITE_FIELD_ADD, branchVariable, branchValue));
       Node newIdeal =
@@ -105,7 +99,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     }
     return nodeManager()->mkOr(disjuncts);
   }
-    if (id == ProofRule::FF_IDEAL_GENERATOR)
+  if (id == ProofRule::FF_IDEAL_GENERATOR)
   {
     Assert(children.empty());
     Assert(args.size() == 2);
@@ -147,12 +141,12 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
       Assert(ideal == child[1]);
       if (ideal != child[1] || child.getKind() != Kind::SET_MEMBER)
         return Node::null();
-    }
+    } 
     return d_nm->mkNode(Kind::SET_MEMBER, args[0], ideal);
   }
   if (id == ProofRule::FF_IDEAL_MONIC)
   {
-    Assert(args.size() == 1);
+    Assert(args.size() == 2);
     Assert(children.size() == 1);
     Assert(children[0].getKind() == Kind::SET_MEMBER);
     Node ideal = children[0][1];
@@ -183,9 +177,9 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     Assert(children.size() == 1);
     Assert(args.empty());
     Assert(children[0].getKind() == Kind::SET_MEMBER);
-    Assert(children[0][1].getKind() == Kind::FINITE_FIELD_IDEAL) << children[0][1].getKind();
+    Assert(children[0][1].getKind() == Kind::FINITE_FIELD_IDEAL)
+        << children[0][1].getKind();
     return emptyVarPred(nodeManager(), children[0][1]);
-    
   }
   return Node::null();
 }
