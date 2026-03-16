@@ -19,7 +19,9 @@
 #include "expr/attribute.h"
 #include "expr/node_manager.h"
 #include "theory/arith/arith_poly_norm.h"
+#include "theory/ff/cocoa_encoder.h"
 #include "util/finite_field_value.h"
+#include "CoCoA/SparsePolyRing.H"
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
@@ -209,26 +211,52 @@ Node TheoryFiniteFieldsRewriter::postRewriteFfBitsum(TNode t)
   return nodeManager()->mkConst(acc);
 }
 
-Node TheoryFiniteFieldsRewriter::postRewriteFfEq(TNode t)
+Node normalize(CocoaEncoder& enc, TNode t, NodeManager* nm)
 {
-  Assert(t.getKind() == Kind::EQUAL);
-  if (t[0].isConst() && t[1].isConst())
+  Node nt = enc.decode(enc.getTermEncoding(t));
+  //  Node nt = arith::PolyNorm::getPolyNorm(t);
+  Trace("ff::polynorm") << "Rewriting term " << t << " to " << nt << std::endl;
+  nt = expr::algorithm::flatten(nm, nt);
+  std::vector<Node> children;
+  if (nt.getKind() == Kind::FINITE_FIELD_ADD)
   {
-    FiniteFieldValue l = t[0].getConst<FiniteFieldValue>();
-    FiniteFieldValue r = t[1].getConst<FiniteFieldValue>();
+    for (const auto& child : nt)
+    {
+      children.push_back(
+          expr::algorithm::flatten(nm, child, Kind::FINITE_FIELD_MULT));
+    }
+    nt = nm->mkNode(Kind::FINITE_FIELD_ADD, children);
+    // Trace("ff::polynorm") << "after flatten" << nt << std::endl;
+  }
+  return nt;
+}
+Node TheoryFiniteFieldsRewriter::postRewriteFfEq(TNode t)
+
+{
+  CocoaEncoder enc(nodeManager(), t[0].getType().getFfSize());
+  enc.addFact(t);
+  enc.endScan();
+  enc.addFact(t);
+  Assert(t.getKind() == Kind::EQUAL);
+  Node ntz = normalize(enc, t[0], d_nm);
+  Node nto = normalize(enc, t[1], d_nm);
+  if (ntz.isConst() && nto.isConst())
+  {
+    FiniteFieldValue l = ntz.getConst<FiniteFieldValue>();
+    FiniteFieldValue r = nto.getConst<FiniteFieldValue>();
     return nodeManager()->mkConst<bool>(l == r);
   }
-  else if (t[0] == t[1])
+  else if (ntz == nto)
   {
     return nodeManager()->mkConst<bool>(true);
   }
-  else if (t[0] > t[1])
+  if (t[0] > t[1])
   {
-    return nodeManager()->mkNode(Kind::EQUAL, t[1], t[0]);
+    return nodeManager()->mkNode(Kind::EQUAL, nto, ntz);
   }
   else
   {
-    return t;
+    return nodeManager()->mkNode(Kind::EQUAL, ntz, nto);
   }
 }
 

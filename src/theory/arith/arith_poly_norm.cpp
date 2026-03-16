@@ -27,7 +27,7 @@ namespace cvc5::internal {
 namespace theory {
 namespace arith {
 
-void PolyNorm::addMonomial(TNode x, const Rational& c, bool isNeg)
+void PolyNorm::addMonomial(TNode x, const Rational& c, const Integer& modBy, bool isNeg)
 {
   // if zero, ignore since adding zero is a no-op.
   if (c.sgn() == 0)
@@ -41,6 +41,11 @@ void PolyNorm::addMonomial(TNode x, const Rational& c, bool isNeg)
     return;
   }
   Rational res(it->second + (isNeg ? -c : c));
+  if (modBy != 0)
+  {  
+    res = Rational(res.getNumerator().euclidianDivideRemainder(modBy)); 
+  }
+
   if (res.sgn() == 0)
   {
     // cancels
@@ -52,7 +57,7 @@ void PolyNorm::addMonomial(TNode x, const Rational& c, bool isNeg)
   }
 }
 
-void PolyNorm::multiplyMonomial(TNode x, const Rational& c)
+void PolyNorm::multiplyMonomial(TNode x, const Rational& c, const Integer& modBy)
 {
   Assert(c.sgn() != 0);
   if (x.isNull())
@@ -62,6 +67,8 @@ void PolyNorm::multiplyMonomial(TNode x, const Rational& c)
     {
       // c1*x*c2 = (c1*c2)*x
       m.second *= c;
+      if (modBy != 0)
+        m.second = Rational(m.second.getNumerator().euclidianDivideRemainder(modBy)); 
     }
   }
   else
@@ -72,7 +79,12 @@ void PolyNorm::multiplyMonomial(TNode x, const Rational& c)
     {
       // c1*x1*c2*x2 = (c1*c2)*(x1*x2)
       Node newM = multMonoVar(m.first, x);
-      d_polyNorm[newM] = m.second * c;
+      auto res = m.second * c;
+      if (modBy != 0)
+        d_polyNorm[newM] =
+            Rational(res.getNumerator().euclidianDivideRemainder(modBy));
+      else
+        d_polyNorm[newM] = res;
     }
   }
 }
@@ -113,29 +125,29 @@ void PolyNorm::modCoeffs(const Rational& c)
   }
 }
 
-void PolyNorm::add(const PolyNorm& p)
+void PolyNorm::add(const PolyNorm& p, const Integer& modBy)
 {
   for (const std::pair<const Node, Rational>& m : p.d_polyNorm)
   {
-    addMonomial(m.first, m.second);
+    addMonomial(m.first, m.second, modBy);
   }
 }
 
-void PolyNorm::subtract(const PolyNorm& p)
+void PolyNorm::subtract(const PolyNorm& p, const Integer& modBy)
 {
   for (const std::pair<const Node, Rational>& m : p.d_polyNorm)
   {
-    addMonomial(m.first, m.second, true);
+    addMonomial(m.first, m.second, modBy, true);
   }
 }
 
-void PolyNorm::multiply(const PolyNorm& p)
+void PolyNorm::multiply(const PolyNorm& p, const Integer& modBy)
 {
   if (p.d_polyNorm.size() == 1)
   {
     for (const std::pair<const Node, Rational>& m : p.d_polyNorm)
     {
-      multiplyMonomial(m.first, m.second);
+      multiplyMonomial(m.first, m.second, modBy);
     }
   }
   else
@@ -148,9 +160,9 @@ void PolyNorm::multiply(const PolyNorm& p)
     {
       PolyNorm pbase;
       pbase.d_polyNorm = ptmp;
-      pbase.multiplyMonomial(m.first, m.second);
+      pbase.multiplyMonomial(m.first, m.second, modBy);
       // add this to current
-      add(pbase);
+      add(pbase, modBy);
     }
   }
 }
@@ -398,7 +410,7 @@ PolyNorm PolyNorm::mkPolyNorm(TNode n)
       else if (k == Kind::CONST_FINITE_FIELD)
       {
         FiniteFieldValue ffv = cur.getConst<FiniteFieldValue>();
-        visited[cur].addMonomial(null, Rational(ffv.getValue()));
+        visited[cur].addMonomial(null, Rational(ffv.getValue()), ffv.getFieldSize());
         visit.pop_back();
         continue; 
       }
@@ -435,6 +447,7 @@ PolyNorm PolyNorm::mkPolyNorm(TNode n)
     if (it->second.empty())
     {
       PolyNorm& ret = visited[cur];
+      const Integer modBy = cur.getType().isFiniteField() ? cur.getType().getFfSize() : 0;
       switch (k)
       {
         case Kind::ADD:
@@ -463,11 +476,11 @@ PolyNorm PolyNorm::mkPolyNorm(TNode n)
                      && (k == Kind::MULT || k == Kind::NONLINEAR_MULT
                          || k == Kind::BITVECTOR_MULT || k == Kind::FINITE_FIELD_MULT))
             {
-              ret.multiply(it->second);
+              ret.multiply(it->second, modBy);
             }
             else
             {
-              ret.add(it->second);
+              ret.add(it->second, modBy);
             }
           }
           break;
@@ -737,10 +750,10 @@ Node PolyNorm::getPolyNorm(Node a)
   if (an.isNull())
   {
     PolyNorm pa = arith::PolyNorm::mkPolyNorm(a);
-    if (a.getType().isFiniteField())
-    {
-      pa.modCoeffs(a.getType().getFfSize()); 
-    }
+    // if (a.getType().isFiniteField())
+    // {
+    //   pa.modCoeffs(a.getType().getFfSize()); 
+    // }
     an = pa.toNode(a.getType());
     if (an.isNull())
     {

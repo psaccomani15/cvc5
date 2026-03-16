@@ -22,7 +22,6 @@
 
 // external includes
 #include <CoCoA/ring.H>
-#include <CoCoA/symbol.H>
 
 // std includes
 #include <optional>
@@ -85,6 +84,14 @@ class CocoaEncoder : public FieldObj
    * Available in Stage::Encode.
    */
   const Poly& getTermEncoding(const Node& t) const { return d_cache.at(t); }
+
+  /**
+   * Build the term that represents p.
+   * The type of the term must implement << and
+   * CoCoA::SparsePolyIter. 
+   */
+  Node decode(CoCoA::ConstRefRingElem p);
+
   /**
    * Get the bitsum terms (for the bitsumPolys).
    * Available in Stage::Encode.
@@ -120,11 +127,12 @@ class CocoaEncoder : public FieldObj
    */
   CoCoA::symbol freshSym(const std::string& varName,
                          std::optional<size_t> index = {});
-  /** a bitsum or a var */
-  const Node& symNode(CoCoA::symbol s) const;
   /** have we assigned this symbol to some Node? */
   bool hasNode(CoCoA::symbol s) const;
   /** get the poly for this symbol */
+  /** a bitsum or a var */
+  const Node& symNode(CoCoA::symbol s) const;
+
   const Poly& symPoly(CoCoA::symbol s) const;
   /** encode this term as a poly (caching) */
   void encodeTerm(const Node& t);
@@ -163,12 +171,13 @@ class CocoaEncoder : public FieldObj
   std::unordered_map<std::string, Poly> d_symPolys{};
   /** map: symbol name to term */
   std::unordered_map<std::string, Node> d_symNodes{};
-
+  /** map: diseq symbol name to term */
+  std::unordered_map<std::string, Node> d_diseqNodes{};
   // populated at the end of Stage::Scan
 
   /** the polynomial ring */
   std::optional<CoCoA::ring> d_polyRing{};
-
+  
   // populated during Stage::Encode
 
   /** encoding cache */
@@ -179,6 +188,8 @@ class CocoaEncoder : public FieldObj
   std::vector<Poly> d_bitsumPolys{};
   /** polys to the facts that imply them */
   std::unordered_map<std::string, Node> d_polyFacts{};
+
+  NodeManager *d_nm;
 };
 
 }  // namespace ff

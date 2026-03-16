@@ -13,6 +13,7 @@
  * encoding Nodes as cocoa ring elements.
  */
 
+#include "theory/shared_terms_database.h"
 #ifdef CVC5_USE_COCOA
 
 #include "theory/ff/cocoa_encoder.h"
@@ -29,6 +30,7 @@
 
 // internal includes
 #include "expr/node_traversal.h"
+#include "expr/node.h"
 #include "theory/ff/cocoa_util.h"
 #include "theory/theory.h"
 
@@ -77,7 +79,7 @@ CoCoA::symbol cocoaSym(const std::string& varName, std::optional<size_t> index)
 }
 
 CocoaEncoder::CocoaEncoder(NodeManager* nm, const FfSize& size)
-    : FieldObj(nm, size)
+    : FieldObj(nm, size), d_nm(nm)
 {
 }
 
@@ -119,6 +121,12 @@ void CocoaEncoder::endScan()
 {
   Assert(d_stage == Stage::Scan);
   d_stage = Stage::Encode;
+  std::sort(d_syms.begin(), d_syms.end());
+  Trace("ff::polyring") << "Created polyring with variable ordering: " << std::endl;
+  // for (const auto &var: d_syms){
+  //  Trace("ff::polyring") << var << " ";
+ //  }
+  Trace("ff::polyring") << std::endl;
   d_polyRing = CoCoA::NewPolyRing(coeffRing(), d_syms);
   for (size_t i = 0, n = d_syms.size(); i < n; ++i)
   {
@@ -153,7 +161,9 @@ void CocoaEncoder::addFact(const Node& fact)
       {
         Trace("ff::cocoa") << "CoCoA != sym for " << node << std::endl;
         CoCoA::symbol sym = freshSym("diseq", d_diseqSyms.size());
+        Node newVar = d_nm->mkBoundVar(extractStr(sym), node[0][0].getType());
         d_diseqSyms.insert({node, sym});
+        d_diseqNodes.insert({extractStr(sym), newVar});
       }
       else if (node.getKind() == Kind::FINITE_FIELD_BITSUM)
       {
@@ -332,8 +342,54 @@ void CocoaEncoder::encodeFact(const Node& f)
   d_polyFacts.insert({extractStr(p), f});
 }
 
+Node CocoaEncoder::decode(CoCoA::ConstRefRingElem p)
+{
+  std::string strRep = extractStr(p);
+  // If the term is already registered, we just return it.
+  Trace("ff::cocoa::decode") << "Decoding " << strRep << std::endl;
+  if (d_symNodes.count(strRep)) return d_symNodes.at(strRep);
+  auto baseRing = CoCoA::owner(p);
+  if (CoCoA::IsFiniteField(baseRing))
+      return FieldObj::mkConst(cocoaFfToFfVal(p));
+  std::vector<Node> monomials;
+  std::vector<CoCoA::RingElem> indets = CoCoA::indets(CoCoA::owner(p));
+  size_t indetsNum = indets.size();
+  for (CoCoA::SparsePolyIter it = CoCoA::BeginIter(p); !CoCoA::IsEnded(it);
+       ++it)
+  {
+    auto pp = CoCoA::PP(it);
+    std::vector<Node> terms{};
+    terms.push_back(FieldObj::mkConst(cocoaFfToFfVal(CoCoA::coeff(it))));
+    // Start by representing the coefficient as a constant term.
+    // Find all indets in this pp and their exponent.
+    for (size_t idx = 0; idx < indetsNum; ++idx)
+    {
+      auto exponent = CoCoA::exponent(pp, idx);
+      if (exponent != 0)
+      {
+        Node indetSymbol;
+        if (d_symNodes.count(extractStr(indets[idx])))
+          indetSymbol = d_symNodes.at(extractStr(indets[idx]));
+        else
+        {
+          Assert(d_diseqNodes.count(extractStr(indets[idx])));
+          indetSymbol = d_diseqNodes.at(extractStr(indets[idx]));
+        }
+        terms.insert(terms.end(), exponent, indetSymbol);
+      }
+    }
+    Node ppRepr;
+    if (terms[0] == FieldObj::one() && terms.size() > 1)
+      ppRepr = mkMul(std::vector<Node>(terms.begin() + 1, terms.end()));
+    else
+      ppRepr = mkMul(terms);
+    monomials.push_back(ppRepr);
+  }
+  Node result = mkAdd(monomials);
+  Trace("ff::cocoa::decode") << "\tResult: " << "p" << std::endl;
+  return mkAdd(monomials);
+}
 }  // namespace ff
 }  // namespace theory
 }  // namespace cvc5::internal
-
 #endif /* CVC5_USE_COCOA */
