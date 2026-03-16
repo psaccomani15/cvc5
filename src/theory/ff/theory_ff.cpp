@@ -136,8 +136,9 @@ void TheoryFiniteFields::postCheck(Effort level)
         pf.get()->printDebug(s, true);
         Trace("ff::proof") << "Proof in theory_ff: " << s.str() << std::endl;
         PacheckProofPrinter converter(d_env, subTheory.second.size(), d_proof);
-        converter.print(Trace("ff::pacheck"), pf);
-        Trace("ff::pacheck") << std::endl;
+        std::ostringstream pacheckBuf;
+        converter.print(pacheckBuf, pf);
+        Trace("ff::pacheck") << pacheckBuf.str() << std::endl;
         TrustNode tn = TrustNode::mkTrustConflict(conflict, &d_proof);
         d_im.trustedConflict(tn, InferenceId::FF_LEMMA);
       }

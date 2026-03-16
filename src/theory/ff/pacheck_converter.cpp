@@ -41,9 +41,18 @@ std::string PacheckProofPrinter::convertVar(TNode var)
   return varName.str();
 }
 
+Node PacheckProofPrinter::cachedFlatten(Node poly, Kind kind)
+{
+  auto it = d_flattenCache.find(poly);
+  if (it != d_flattenCache.end()) return it->second;
+  Node flattened = expr::algorithm::flatten(nodeManager(), poly, kind);
+  d_flattenCache.emplace(poly, flattened);
+  return flattened;
+}
+
 std::string PacheckProofPrinter::convertPP(Node pp)
 {
-  pp = expr::algorithm::flatten(nodeManager(), pp, Kind::FINITE_FIELD_MULT);
+  pp = cachedFlatten(pp, Kind::FINITE_FIELD_MULT);
   if (pp.getKind() == Kind::FINITE_FIELD_MULT)
   {
     std::stringstream ss;
@@ -71,10 +80,59 @@ std::string PacheckProofPrinter::convertPP(Node pp)
   return convertVar(pp);
 }
 
+void PacheckProofPrinter::writePP(std::ostream& out, Node pp)
+{
+  pp = cachedFlatten(pp, Kind::FINITE_FIELD_MULT);
+  if (pp.getKind() == Kind::FINITE_FIELD_MULT)
+  {
+    for (size_t it = 0; it < pp.getNumChildren(); ++it)
+    {
+      if (it > 0) out << " * ";
+      if (pp[it].getKind() == Kind::CONST_FINITE_FIELD)
+      {
+        out << convertConst(pp[it]);
+        continue;
+      }
+      Node currVar = pp[it];
+      size_t exp = 1;
+      while (it + 1 < pp.getNumChildren() && pp[it + 1] == currVar)
+      {
+        exp += 1;
+        it += 1;
+      }
+      out << convertVar(currVar);
+      if (exp > 1) out << "^" << exp;
+    }
+    return;
+  }
+  if (pp.getKind() == Kind::CONST_FINITE_FIELD)
+  {
+    out << convertConst(pp);
+    return;
+  }
+  out << convertVar(pp);
+}
+
+void PacheckProofPrinter::writePolyRepr(std::ostream& out, Node poly)
+{
+  Node flattened = cachedFlatten(poly, Kind::FINITE_FIELD_ADD);
+  if (flattened.getKind() == Kind::FINITE_FIELD_ADD)
+  {
+    size_t count = 0;
+    for (const auto& child : flattened)
+    {
+      writePP(out, child);
+      count += 1;
+      if (count < flattened.getNumChildren()) out << " + ";
+    }
+    return;
+  }
+  writePP(out, flattened);
+}
+
 PacheckPolynomial PacheckProofPrinter::nodeToPoly(Node poly, size_t branch)
 {
-  Node flattened =
-      expr::algorithm::flatten(nodeManager(), poly, Kind::FINITE_FIELD_ADD);
+  Node flattened = cachedFlatten(poly, Kind::FINITE_FIELD_ADD);
   if (d_nodeToPacheckPoly.count(flattened))
   {
     auto res = d_nodeToPacheckPoly.at(flattened);
@@ -104,8 +162,7 @@ PacheckPolynomial PacheckProofPrinter::nodeToPoly(Node poly, size_t branch)
 
 bool PacheckProofPrinter::containsProof(Node poly, size_t branch)
 {
-  Node flattened =
-      expr::algorithm::flatten(nodeManager(), poly, Kind::FINITE_FIELD_ADD);
+  Node flattened = cachedFlatten(poly, Kind::FINITE_FIELD_ADD);
   if (!d_nodeToPacheckPoly.count(flattened)) return false;
   auto res = d_nodeToPacheckPoly.at(flattened);
   return res.getBranch() == 1 || res.getBranch() == branch;
@@ -114,8 +171,7 @@ void PacheckProofPrinter::printInternal(std::ostream& out,
                                         std::shared_ptr<ProofNode> pfn,
                                         size_t branchId)
 {
-  // out << "Proving " << pfn->getResult() << std::endl;
-  // out << "By rule " << pfn->getRule() << std::endl;
+  if (!d_visited.insert(pfn.get()).second) return;
   auto children = pfn.get()->getChildren();
   auto rule = pfn.get()->getRule();
   auto args = pfn.get()->getArguments();
@@ -242,10 +298,31 @@ void PacheckProofPrinter::printInternal(std::ostream& out,
       for (size_t it = 1; it < reductors.getNumChildren(); ++it)
       {
         auto reductor = nodeToPoly(reductors[it], branchId);
-        auto multiplier = nodeToPoly(multipliers[mulIdx], branchId);
-        out << " + " << reductor.getId() << " * (" << multiplier.getRepr()
-            << ")";
+        out << " + " << reductor.getId() << " * (";
+        writePolyRepr(out, multipliers[mulIdx]);
+        out << ")";
         mulIdx += 1;
+      }
+      out << ", " << result.getRepr() << ";" << std::endl;
+      break;
+    }
+    case ProofRule::FF_IDEAL_REDUCE_ZERO:
+    {
+      if (containsProof(pfn.get()->getResult()[0], branchId)) break;
+      auto reductors = args[1];
+      auto multipliers = args[2];
+      auto result = nodeToPoly(pfn.get()->getResult()[0], branchId);
+      auto firstReductor = nodeToPoly(reductors[0], branchId);
+      out << PacheckRule::LinComp << " " << result.getId() << " "
+          << firstReductor.getId() << " * (";
+      writePolyRepr(out, multipliers[0]);
+      out << ")";
+      for (size_t it = 1; it < reductors.getNumChildren(); ++it)
+      {
+        auto reductor = nodeToPoly(reductors[it], branchId);
+        out << " + " << reductor.getId() << " * (";
+        writePolyRepr(out, multipliers[it]);
+        out << ")";
       }
       out << ", " << result.getRepr() << ";" << std::endl;
       break;
@@ -256,30 +333,23 @@ void PacheckProofPrinter::printInternal(std::ostream& out,
       auto result = nodeToPoly(args[0], branchId);
       auto p = nodeToPoly(children[0].get()->getResult()[0], branchId);
       auto q = nodeToPoly(children[1].get()->getResult()[0], branchId);
-      auto pMul = nodeToPoly(args[1], branchId);
-      auto qMul = nodeToPoly(args[2], branchId);
       out << PacheckRule::LinComp << " " << result.getId() << " " << p.getId()
-          << " * (" << pMul.getRepr() << ") +" << q.getId() << "* ("
-          << qMul.getRepr() << "), " << result.getRepr() << ";" << std::endl;
+          << " * (";
+      writePolyRepr(out, args[1]);
+      out << ") +" << q.getId() << "* (";
+      writePolyRepr(out, args[2]);
+      out << "), " << result.getRepr() << ";" << std::endl;
       break;
     }
     case ProofRule::FF_IDEAL_MONIC:
     {
       if (containsProof(args[0], branchId)) break;
       auto result = nodeToPoly(args[0], branchId);
-      auto pNode = children[0].get()->getResult()[0];
-      auto p = nodeToPoly(pNode, branchId);
-      auto pLeadingCoeff = pNode;
-      if (pLeadingCoeff.getKind() == Kind::FINITE_FIELD_ADD)
-        pLeadingCoeff = pLeadingCoeff[0][0];
-      else if (pLeadingCoeff.getKind() == Kind::FINITE_FIELD_MULT)
-        pLeadingCoeff = pLeadingCoeff[0];
-      Assert(pLeadingCoeff.getKind() == Kind::CONST_FINITE_FIELD)
-          << pLeadingCoeff;
-      auto inverse =
-          pLeadingCoeff.getConst<FiniteFieldValue>().recip().getValue();
+      auto p = nodeToPoly(children[0].get()->getResult()[0], branchId);
       out << PacheckRule::LinComp << " " << result.getId() << " " << p.getId()
-          << " * (" << inverse << "), " << result.getRepr() << ";" << std::endl;
+          << " * (";
+      writePolyRepr(out, args[1]);
+      out << "), " << result.getRepr() << ";" << std::endl;
       break;
     }
     case ProofRule::FF_ROOT_BRANCH:
