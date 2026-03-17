@@ -40,19 +40,20 @@ class PacheckProofPrinter : protected EnvObj
   void print(std::ostream& out, std::shared_ptr<ProofNode> pfn);
 
  private:
-  PacheckPolynomial nodeToPoly(Node poly, size_t branch);
+  PacheckPolynomial nodeToPoly(Node poly, size_t branchId, std::vector<size_t> &parents);
   std::string convertPP(Node pp);
   void writePP(std::ostream& out, Node pp);
   void writePolyRepr(std::ostream& out, Node poly);
   std::string convertVar(TNode var);
   void printInternal(std::ostream& out,
                      std::shared_ptr<ProofNode> pfn,
-                     size_t branchSize);
-  bool containsProof(Node poly, size_t branch);
+                     size_t branchId, std::vector<size_t> &parents);
+  bool containsProof(Node poly, size_t branch, std::vector<size_t> &parents);
   Node cachedFlatten(Node poly, Kind kind);
   const FfSize& d_size;
   size_t d_maxId;
   size_t d_varId;
+  size_t d_branchId;
   CDProof* d_proof;
   std::unordered_map<Node, PacheckPolynomial> d_nodeToPacheckPoly;
   std::unordered_map<Node, std::string> d_varToPacheckVar;
