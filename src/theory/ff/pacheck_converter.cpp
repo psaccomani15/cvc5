@@ -50,35 +50,6 @@ Node PacheckProofPrinter::cachedFlatten(Node poly, Kind kind)
   return flattened;
 }
 
-std::string PacheckProofPrinter::convertPP(Node pp)
-{
-  pp = cachedFlatten(pp, Kind::FINITE_FIELD_MULT);
-  if (pp.getKind() == Kind::FINITE_FIELD_MULT)
-  {
-    std::stringstream ss;
-    for (size_t it = 0; it < pp.getNumChildren(); ++it)
-    {
-      if (it > 0) ss << " * ";
-      if (pp[it].getKind() == Kind::CONST_FINITE_FIELD)
-      {
-        ss << convertConst(pp[it]);
-        continue;
-      }
-      Node currVar = pp[it];
-      size_t exp = 1;
-      while (it + 1 < pp.getNumChildren() && pp[it + 1] == currVar)
-      {
-        exp += 1;
-        it += 1;
-      }
-      ss << convertVar(currVar);
-      if (exp > 1) ss << "^" << exp;
-    }
-    return ss.str();
-  }
-  if (pp.getKind() == Kind::CONST_FINITE_FIELD) return convertConst(pp);
-  return convertVar(pp);
-}
 
 void PacheckProofPrinter::writePP(std::ostream& out, Node pp)
 {
@@ -144,21 +115,9 @@ PacheckPolynomial PacheckProofPrinter::nodeToPoly(Node poly, size_t branch, std:
     d_nodeToPacheckPoly.insert_or_assign(flattened, newRes);
     return newRes;
   }
-  if (flattened.getKind() == Kind::FINITE_FIELD_ADD)
-  {
-    std::stringstream ss;
-    size_t count = 0;
-    for (const auto& child : flattened)
-    {
-      ss << convertPP(child);
-      count += 1;
-      if (count < flattened.getNumChildren()) ss << " + ";
-    }
-    auto result = PacheckPolynomial(ss.str(), d_maxId++, branch);
-    d_nodeToPacheckPoly.emplace(flattened, result);
-    return result;
-  }
-  PacheckPolynomial result(convertPP(flattened), d_maxId++, branch);
+  std::stringstream ss;
+  writePolyRepr(ss, poly);
+  PacheckPolynomial result(ss.str(), d_maxId++, branch);
   d_nodeToPacheckPoly.emplace(flattened, result);
   return result;
 }

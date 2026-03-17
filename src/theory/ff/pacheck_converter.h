@@ -41,7 +41,6 @@ class PacheckProofPrinter : protected EnvObj
 
  private:
   PacheckPolynomial nodeToPoly(Node poly, size_t branchId, std::vector<size_t> &parents);
-  std::string convertPP(Node pp);
   void writePP(std::ostream& out, Node pp);
   void writePolyRepr(std::ostream& out, Node poly);
   std::string convertVar(TNode var);
