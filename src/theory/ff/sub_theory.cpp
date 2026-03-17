@@ -161,10 +161,7 @@ Result SubTheory::postCheck(Theory::Effort e)
             {
               Trace("ff::core")
                   << "In" << i << " : " << d_facts[i] << std::endl;
-              d_conflict.push_back(enc.polyFact(generators[i]));
-              if (d_env.isTheoryProofProducing())
-                corePolys.push_back(enc.decode(generators[i]));
-            }
+           }
             for (size_t i : coreIndices)
             {
               // omit (field polys, bitsum polys, ...) from core
@@ -173,6 +170,9 @@ Result SubTheory::postCheck(Theory::Effort e)
                 Trace("ff::core")
                     << "Core: " << i << " : " << d_facts[i] << std::endl;
                 d_conflict.push_back(enc.polyFact(generators[i]));
+                if (d_env.isTheoryProofProducing())
+                  corePolys.push_back(enc.decode(generators[i]));
+ 
               }
             }
           }
