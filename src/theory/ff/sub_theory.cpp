@@ -143,7 +143,7 @@ Result SubTheory::postCheck(Theory::Effort e)
           idealProofs->setFunctionPointers();
           idealProofs->enableProofHooks();
         }
-        const auto basis = GBasisTimeout(ideal, d_env.getResourceManager());;
+        const auto basis = GBasisTimeout(ideal, d_env.getResourceManager());
         if (options().ff.ffTraceGb) tracer.unsetFunctionPointers();
         if (d_env.isProofProducing()) idealProofs->disableProofHooks();
         // if it is trivial, create a conflict
@@ -161,10 +161,7 @@ Result SubTheory::postCheck(Theory::Effort e)
             {
               Trace("ff::core")
                   << "In" << i << " : " << d_facts[i] << std::endl;
-              d_conflict.push_back(enc.polyFact(generators[i]));
-              if (d_env.isTheoryProofProducing())
-                corePolys.push_back(enc.decode(generators[i]));
-            }
+           }
             for (size_t i : coreIndices)
             {
               // omit (field polys, bitsum polys, ...) from core
@@ -173,6 +170,8 @@ Result SubTheory::postCheck(Theory::Effort e)
                 Trace("ff::core")
                     << "Core: " << i << " : " << d_facts[i] << std::endl;
                 d_conflict.push_back(enc.polyFact(generators[i]));
+              if (d_env.isTheoryProofProducing())
+                corePolys.push_back(enc.decode(generators[i])); 
               }
             }
           }

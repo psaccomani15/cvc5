@@ -182,7 +182,6 @@ Node IdealProofManager::proveBrancher(std::vector<Node>& childrenSatFact,
   Assert(CoCoA::HasGBasis(d_cocoaIdeal));
   std::vector<Node> arguments = {
       nodeManager()->mkNode(Kind::SEXPR, nonAssignedVars())};
-  d_membershipProofs->registerProofs();
   for (auto poly : CoCoA::gens(d_cocoaIdeal))
   {
     premises.push_back(d_membershipProofs->getMembershipFact(poly));

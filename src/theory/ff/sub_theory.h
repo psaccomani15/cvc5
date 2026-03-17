@@ -111,7 +111,7 @@ class SubTheory : protected EnvObj, public FieldObj
    * Uses SAT context.
    */
   context::CDList<Node> d_facts;
-  CDProof* d_proof;
+  CDProof* d_proof = nullptr;
 
   /**
    * Non-empty if we're in a conflict. The vector is the conflict.
