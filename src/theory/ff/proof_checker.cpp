@@ -44,9 +44,10 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     Assert(field.isFiniteField());
     Integer maxValue = field.getFfSize();
     FfSize fieldCard(maxValue);
-    for (const auto& var : args[0])
+
+    for (Integer it = 0; it < maxValue; it += 1)
     {
-      for (Integer it = 0; it < maxValue; it += 1)
+      for (const auto& var : args[0])
       {
         Node assignmentPoly = var;
         if (it > 0)
@@ -59,6 +60,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
         Node newIdeal =
             nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, generators);
         disjuncts.push_back(emptyVarPred(nodeManager(), newIdeal).negate());
+        generators.pop_back();
       }
     }
     return nodeManager()->mkOr(disjuncts);
@@ -141,7 +143,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
       Assert(ideal == child[1]);
       if (ideal != child[1] || child.getKind() != Kind::SET_MEMBER)
         return Node::null();
-    } 
+    }
     return d_nm->mkNode(Kind::SET_MEMBER, args[0], ideal);
   }
   if (id == ProofRule::FF_IDEAL_MONIC)

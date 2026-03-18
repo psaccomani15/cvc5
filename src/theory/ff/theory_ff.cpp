@@ -125,7 +125,7 @@ void TheoryFiniteFields::postCheck(Effort level)
       {
         CDProof cdp(d_env);
         std::shared_ptr<ProofNode> conflictProof = subTheory.second.getProof();
-        Node notConflict = conflict.negate();
+        Node notConflict = conflict.notNode();
         Node falseNode = nm->mkConst<bool>(false);
         cdp.addProof(conflictProof);
         cdp.addStep(
