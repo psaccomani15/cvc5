@@ -49,6 +49,14 @@ name   = "Finite Field Theory"
   help = "use multiple groebner bases for partitions of the system"
 
 [[option]]
+  name       = "ffProofPac"
+  category   = "expert"
+  long       = "ff-proof-pac"
+  type       = "bool"
+  default    = "false"
+  help       = "Emit proofs of theories lemmas in terms of the extended PAC format to finite fields"
+
+[[option]]
   name       = "ff"
   category   = "expert"
   long       = "ff"

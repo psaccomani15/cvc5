@@ -38,6 +38,7 @@
 #include "util/result.h"
 #include "util/statistics_registry.h"
 #include "util/utility.h"
+#include "util/string.h"
 
 using namespace cvc5::internal::kind;
 
@@ -127,18 +128,26 @@ void TheoryFiniteFields::postCheck(Effort level)
         std::shared_ptr<ProofNode> conflictProof = subTheory.second.getProof();
         Node notConflict = conflict.notNode();
         Node falseNode = nm->mkConst<bool>(false);
-        cdp.addProof(conflictProof);
+        if (options().ff.ffProofPac)
+        {
+          PacheckProofPrinter converter(d_env, subTheory.second.size());
+          std::ostringstream pacheckBuf;
+          converter.print(pacheckBuf, conflictProof);
+          const std::string pfPac = pacheckBuf.str();
+          Trace("ff::pacheck") << pfPac << std::endl;
+          Node pacheckPf = nodeManager()->mkRawSymbol(pfPac, nodeManager()->stringType());
+          cdp.addProof(converter.getPolyConversionPf());
+          const auto premise = converter.getPolyConversionPf().get()->getResult();
+          cdp.addStep(falseNode, ProofRule::FF_PAC, {premise}, {pacheckPf});
+        }
+        else
+        {
+          cdp.addProof(conflictProof);
+        }
         cdp.addStep(
             notConflict, ProofRule::SCOPE, {falseNode}, {conflict}, true);
         std::shared_ptr<ProofNode> pf = cdp.getProofFor(notConflict);
         d_proof.addProof(pf);
-        std::ostringstream s;
-        pf.get()->printDebug(s, true);
-        Trace("ff::proof") << "Proof in theory_ff: " << s.str() << std::endl;
-        PacheckProofPrinter converter(d_env, subTheory.second.size(), d_proof);
-        std::ostringstream pacheckBuf;
-        converter.print(pacheckBuf, pf);
-        Trace("ff::pacheck") << pacheckBuf.str() << std::endl;
         TrustNode tn = TrustNode::mkTrustConflict(conflict, &d_proof);
         d_im.trustedConflict(tn, InferenceId::FF_LEMMA);
       }

@@ -21,9 +21,8 @@ PacheckPolynomial::PacheckPolynomial(std::string poly, size_t id, size_t branch)
 }
 
 PacheckProofPrinter::PacheckProofPrinter(Env& env,
-                                         const FfSize& size,
-                                         CDProof& cdp)
-    : EnvObj(env), d_size(size), d_maxId(1), d_varId(1), d_branchId(1), d_proof(&cdp)
+                                         const FfSize& size)
+    : EnvObj(env), d_size(size), d_maxId(1), d_varId(1), d_branchId(1)
 {
 }
 
@@ -231,6 +230,11 @@ void PacheckProofPrinter::printInternal(std::ostream& out,
   }
   switch (rule)
   {
+    case ProofRule::EQ_RESOLVE:
+    {
+      d_polyConversionPf = pfn; 
+      break;
+    }
     case ProofRule::FF_POLY_CONVERSION:
     {
       auto ideal = args[1][0][0][0];
@@ -332,13 +336,19 @@ void PacheckProofPrinter::printInternal(std::ostream& out,
     default: return;
   }
 }
+
 void PacheckProofPrinter::print(std::ostream& out,
                                 std::shared_ptr<ProofNode> pfn)
 {
-  out << PacheckRule::Modulus << " " << d_size.d_val << ";\n";
+  out << PacheckRule::Modulus << " " << d_size.d_val << ";" << std::endl;;
   std::vector<size_t> parents = {d_branchId};
   printInternal(out, pfn, d_branchId, parents);
   return;
+}
+
+std::shared_ptr<ProofNode> PacheckProofPrinter::getPolyConversionPf()
+{
+  return d_polyConversionPf; 
 }
 }  // namespace ff
 }  // namespace theory

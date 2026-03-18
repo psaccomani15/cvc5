@@ -479,6 +479,10 @@ enum class AletheRule : uint32_t
   // their respective CPC counterpart for now.
   BV_BITWISE_SLICING,
   BV_REPEAT_ELIM,
+  FF_PAC,
+  FF_POLY_NORM,
+  FF_POLY_NORM_EQ,
+  FF_POLY_CONVERSION,
   // ======== hole
   // Used for unjustified steps
   HOLE,

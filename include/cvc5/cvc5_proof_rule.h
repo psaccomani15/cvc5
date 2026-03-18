@@ -2631,6 +2631,8 @@ enum ENUM(ProofRule)
    */
 
   EVALUE(FF_ONE_UNSAT),
+
+  EVALUE(FF_PAC),
  /**
    * \verbatim embed:rst:leading-asterisk
    * **External -- LFSC**

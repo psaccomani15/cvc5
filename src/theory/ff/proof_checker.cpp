@@ -23,12 +23,17 @@ void FfProofRuleChecker::registerTo(ProofChecker* pc)
   pc->registerChecker(ProofRule::FF_IDEAL_SPOLY, this);
   pc->registerChecker(ProofRule::FF_POLY_CONVERSION, this);
   pc->registerChecker(ProofRule::FF_ONE_UNSAT, this);
+  pc->registerChecker(ProofRule::FF_PAC, this);
 }
 
 Node FfProofRuleChecker::checkInternal(ProofRule id,
                                        const std::vector<Node>& children,
                                        const std::vector<Node>& args)
 {
+  if (id == ProofRule::FF_PAC)
+  {
+    return nodeManager()->mkConst<bool>(false); 
+  }
   if (id == ProofRule::FF_EXHAUST_BRANCH)
   {
     Assert(args.size() >= 1);

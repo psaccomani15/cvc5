@@ -2431,6 +2431,25 @@ bool AletheProofPostprocessCallback::update(Node res,
       }
       return success;
     }
+    case ProofRule::FF_PAC:
+    {
+      return addAletheStep(AletheRule::FF_PAC,
+                           res,
+                           nm->mkNode(Kind::SEXPR, d_cl),
+                           children,
+                           args, *cdp);
+      
+    }
+    case ProofRule::FF_POLY_CONVERSION:
+    {
+      return addAletheStep(AletheRule::FF_POLY_CONVERSION,
+                           res,
+                           nm->mkNode(Kind::SEXPR, d_cl, res),
+                           children,
+                           args,
+                           *cdp);
+      
+    }
     default:
     {
       Trace("alethe-proof")

@@ -1,4 +1,3 @@
-
 #include "cvc5_private.h"
 
 #ifndef CVC5__THEORY__FF__PACHECK_CONVERTER_H
@@ -35,10 +34,11 @@ class PacheckPolynomial
 class PacheckProofPrinter : protected EnvObj
 {
  public:
-  PacheckProofPrinter(Env& env, const FfSize& size, CDProof& cdp);
+  PacheckProofPrinter(Env& env, const FfSize& size);
   ~PacheckProofPrinter() {};
   void print(std::ostream& out, std::shared_ptr<ProofNode> pfn);
-
+  // Must be run after the print function.
+  std::shared_ptr<ProofNode> getPolyConversionPf();
  private:
   PacheckPolynomial nodeToPoly(Node poly, size_t branchId, std::vector<size_t> &parents);
   void writePP(std::ostream& out, Node pp);
@@ -53,9 +53,9 @@ class PacheckProofPrinter : protected EnvObj
   size_t d_maxId;
   size_t d_varId;
   size_t d_branchId;
-  CDProof* d_proof;
   std::unordered_map<Node, PacheckPolynomial> d_nodeToPacheckPoly;
   std::unordered_map<Node, std::string> d_varToPacheckVar;
+  std::shared_ptr<ProofNode> d_polyConversionPf;
   std::unordered_map<Node, Node> d_flattenCache;
   std::unordered_set<const ProofNode*> d_visited;
 };

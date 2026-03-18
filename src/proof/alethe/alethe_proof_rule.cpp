@@ -149,6 +149,11 @@ const char* aletheRuleToString(AletheRule id)
     //================================================= Temporary
     case AletheRule::BV_BITWISE_SLICING: return "bv_bitwise_slicing";
     case AletheRule::BV_REPEAT_ELIM: return "bv_repeat_elim";
+    //================================================== Finite Fields
+    case AletheRule::FF_PAC: return "ff_pac";
+    case AletheRule::FF_POLY_CONVERSION: return "ff_poly_conversion";
+    case AletheRule::FF_POLY_NORM: return "ff_poly_norm";
+    case AletheRule::FF_POLY_NORM_EQ: return "ff_poly_norm_eq";
     //================================================= Hole
     case AletheRule::HOLE: return "hole";
     //================================================= Undefined rule

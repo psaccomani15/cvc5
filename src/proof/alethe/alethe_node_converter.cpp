@@ -422,6 +422,13 @@ Node AletheNodeConverter::postConvert(Node n)
     case Kind::INST_ADD_TO_POOL:
     case Kind::SKOLEM_ADD_TO_POOL:
     case Kind::INST_PATTERN_LIST:
+    case Kind::FINITE_FIELD_ADD:
+    case Kind::FINITE_FIELD_MULT:
+    case Kind::FINITE_FIELD_NEG:
+    case Kind::FINITE_FIELD_IDEAL:
+    case Kind::FINITE_FIELD_VARIETY:
+    case Kind::CONST_FINITE_FIELD:
+    case Kind::SET_IS_EMPTY:
     {
       return n;
     }
@@ -454,6 +461,7 @@ Node AletheNodeConverter::postConvert(Node n)
           case Kind::SELECTOR_TYPE:
           case Kind::TESTER_TYPE:
           case Kind::ASCRIPTION_TYPE:
+          case Kind::FINITE_FIELD_TYPE:
           {
             continue;
           }
