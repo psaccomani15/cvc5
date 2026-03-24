@@ -1,10 +1,7 @@
 /******************************************************************************
- * Top contributors (to current version):
- *   Alex Ozdemir, Andrew Reynolds
- *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2026 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -36,9 +33,13 @@
 #include "theory/theory_eq_notify.h"
 #include "theory/theory_inference_manager.h"
 #include "theory/theory_state.h"
-#include "proof/proof.h" 
+#include "proof/proof_checker.h"
+#include "theory/ff/proof_checker.h"
+
 namespace cvc5::internal {
+class ProofRuleChecker;
 class CDProof;
+
 namespace theory {
 namespace ff {
 
@@ -112,6 +113,7 @@ class TheoryFiniteFields : public Theory
 #endif /* CVC5_USE_COCOA */
 
   std::unique_ptr<FfStatistics> d_stats;
+
 }; /* class TheoryFiniteFields */
 
 }  // namespace ff

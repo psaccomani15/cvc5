@@ -1,10 +1,7 @@
 /******************************************************************************
- * Top contributors (to current version):
- *   Alex Ozdemir, Andrew Reynolds, Aina Niemetz
- *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2026 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -18,8 +15,8 @@
 #include "expr/algorithm/flatten.h"
 #include "expr/attribute.h"
 #include "expr/node_manager.h"
+#include "theory/arith/arith_poly_norm.h"
 #include "util/finite_field_value.h"
-
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
@@ -130,8 +127,8 @@ Node TheoryFiniteFieldsRewriter::postRewriteFfAdd(TNode t)
     else
     {
       Node c = nm->mkConst(summand.second);
-      summands.push_back(expr::algorithm::flatten(nm,
-          nm->mkNode(Kind::FINITE_FIELD_MULT, c, summand.first)));
+      summands.push_back(expr::algorithm::flatten(
+          nm, nm->mkNode(Kind::FINITE_FIELD_MULT, c, summand.first)));
     }
   }
   if (summands.size() == 0)
@@ -240,11 +237,14 @@ RewriteResponse TheoryFiniteFieldsRewriter::postRewrite(TNode t)
     case Kind::FINITE_FIELD_NEG: return RewriteResponse(REWRITE_DONE, t);
     case Kind::FINITE_FIELD_ADD:
     {
-      Node nt = postRewriteFfAdd(t);
-      return RewriteResponse(nt == t ? REWRITE_DONE : REWRITE_AGAIN, nt);
+     Node nt = postRewriteFfAdd(t);
+     return RewriteResponse(nt == t ? REWRITE_DONE : REWRITE_AGAIN, nt);
     }
     case Kind::FINITE_FIELD_MULT:
-      return RewriteResponse(REWRITE_DONE, postRewriteFfMult(t));
+    {
+      Node nt = postRewriteFfMult(t);
+      return RewriteResponse(REWRITE_DONE, nt);
+    }
     case Kind::FINITE_FIELD_BITSUM:
       return RewriteResponse(REWRITE_DONE, postRewriteFfBitsum(t));
     case Kind::EQUAL: return RewriteResponse(REWRITE_DONE, postRewriteFfEq(t));

@@ -30,9 +30,9 @@ Node emptyVarPred(NodeManager* nm, Node ideal)
 
 void produceContradiction(NodeManager* nm,
                           CDProof* cdp,
-                          std::vector<Node>& fieldPolys,
-                          std::vector<Node>& gens,
-                          std::vector<Node>& conflict)
+                          const std::vector<Node>& fieldPolys,
+                          const std::vector<Node>& gens,
+                          const std::vector<Node>& conflict)
 {
   Node idealGens = nm->mkNode(Kind::FINITE_FIELD_IDEAL, gens);
   const Node unsatCore = nm->mkAnd(conflict);

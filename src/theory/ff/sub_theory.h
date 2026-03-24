@@ -1,10 +1,7 @@
 /******************************************************************************
- * Top contributors (to current version):
- *   Alex Ozdemir
- *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2026 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -39,7 +36,7 @@
 #include "theory/theory.h"
 #include "util/integer.h"
 #include "util/result.h"
-
+#include "proof/proof_checker.h"
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
@@ -65,7 +62,7 @@ class SubTheory : protected EnvObj, public FieldObj
    * Parameters:
    * * modulus: the size of this field for this theory, a prime.
    */
-  SubTheory(Env& env, FfStatistics* stats, Integer modulus);
+  SubTheory(Env& env, FfStatistics* stats, const Integer& modulus);
 
   /**
    * Assert a fact to this theory.
@@ -100,10 +97,6 @@ class SubTheory : protected EnvObj, public FieldObj
 
  private:
   /**
-   * Set the conflict to be all facts.
-   */
-  void setTrivialConflict();
- /**
    * Facts, in notification order.
    *
    * Contains only the facts in *this specific field*.
@@ -128,6 +121,7 @@ class SubTheory : protected EnvObj, public FieldObj
    * Statistics shared among all finite-field sub-theories.
    */
   FfStatistics* d_stats;
+
 };
 }  // namespace ff
 }  // namespace theory

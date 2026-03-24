@@ -30,7 +30,12 @@ namespace ff {
 // Produce a statement that the ideal is non Empty
 Node emptyVarPred(NodeManager* nm, Node ideal);
 
-void produceContradiction(NodeManager *nm, CDProof *cdp, std::vector<Node> &fieldPolys, std::vector<Node> &gens, std::vector<Node> &conflict);
+void produceContradiction(NodeManager* nm,
+                          CDProof* cdp,
+                          const std::vector<Node>& fieldPolys,
+                          const std::vector<Node>& gens,
+                          const std::vector<Node>& conflict);
+
 // Stores elements that will be inserted to a CDProof
 class ProofInfo
 {

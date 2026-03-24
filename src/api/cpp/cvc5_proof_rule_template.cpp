@@ -1,10 +1,7 @@
 /******************************************************************************
- * Top contributors (to current version):
- *   Hans-Joerg Schurr, Andrew Reynolds, Abdalrhman Mohamed
- *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2026 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -211,12 +208,14 @@ const char* toString(ProofRule rule)
     case ProofRule::FF_POLY_CONVERSION: return "FF_POLY_CONVERSION";
     case ProofRule::FF_IDEAL_ZERO: return "FF_IDEAL_ZERO";
     case ProofRule::FF_IDEAL_GENERATOR: return "FF_IDEAL_GENERATOR";
-    case ProofRule::FF_IDEAL_REDUCE_ZERO: return "F_IDEAL_REDUCE_ZERO";
     case ProofRule::FF_IDEAL_REDUCE: return "FF_IDEAL_REDUCE";
+    case ProofRule::FF_IDEAL_REDUCE_ZERO: return "FF_IDEAL_REDUCE_ZERO";
     case ProofRule::FF_IDEAL_SPOLY: return "FF_IDEAL_SPOLY";
     case ProofRule::FF_IDEAL_MONIC: return "FF_IDEAL_MONIC";
+    case ProofRule::FF_POLY_NORM: return "FF_POLY_NORM";
+    case ProofRule::FF_POLY_NORM_EQ: return "FF_POLY_NORM_EQ";
     case ProofRule::FF_PAC: return "FF_PAC";
-   //================================================= External rules
+    //================================================= External rules
     case ProofRule::LFSC_RULE: return "LFSC_RULE";
     case ProofRule::ALETHE_RULE: return "ALETHE_RULE";
     //================================================= Unknown rule
@@ -242,8 +241,9 @@ const char* toString(cvc5::ProofRewriteRule rule)
     case ProofRewriteRule::UBV_TO_INT_ELIM: return "ubv-to-int-elim";
     case ProofRewriteRule::INT_TO_BV_ELIM: return "int-to-bv-elim";
     case ProofRewriteRule::MACRO_BOOL_NNF_NORM: return "macro-bool-nnf-norm";
-    case ProofRewriteRule::MACRO_BOOL_BV_INVERT_SOLVE:
-      return "macro-bool-bv-invert-solve";
+    case ProofRewriteRule::MACRO_BOOL_EQ_CONST_EQ:
+      return "macro-bool-eq-const-eq";
+    case ProofRewriteRule::MACRO_BOOL_BV_INVERT_SOLVE: return "macro-bool-bv-invert-solve";
     case ProofRewriteRule::MACRO_ARITH_INT_EQ_CONFLICT:
       return "macro-arith-int-eq-conflict";
     case ProofRewriteRule::MACRO_ARITH_INT_GEQ_TIGHTEN:

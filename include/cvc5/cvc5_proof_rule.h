@@ -1,10 +1,7 @@
 /******************************************************************************
- * Top contributors (to current version):
- *   Andrew Reynolds, Gereon Kremer, Abdalrhman Mohamed
- *
  * This file is part of the cvc5 project.
  *
- * Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
+ * Copyright (c) 2009-2026 by the authors listed in the file AUTHORS
  * in the top-level source directory and their institutional affiliations.
  * All rights reserved.  See the file COPYING in the top-level source
  * directory for licensing information.
@@ -1867,7 +1864,7 @@ enum ENUM(ProofRule)
    *
    *   \inferrule{t \not \in \mathit{re}.\text{++}(R_1, \ldots, R_n)\mid -}{\forall L. L < 0 \vee \mathit{str.len}(t) < L \vee \mathit{pre}(t, L) \not \in R_1 \vee \mathit{suf}(t, L) \not \in \mathit{re}.\text{++}(R_2, \ldots, R_n)}
    *
-   * Note that in either case the varaible :math:`L` has type :math:`Int` and
+   * Note that in either case the variable :math:`L` has type :math:`Int` and
    * name `"@var.str_index"`.
    *
    * \endverbatim
@@ -2479,6 +2476,15 @@ enum ENUM(ProofRule)
   // Finite Field Rules
 
   /**
+   * Arith Polynorm in finite fields.
+   *
+   */
+  EVALUE(FF_POLY_NORM),
+  /**
+   *  Arith PolynormRel for finite fields
+   */
+  EVALUE(FF_POLY_NORM_EQ),
+ /**
    * \verbatim embed:rst:leading-asterisk
    * **Finite Fields - Polynomial Conversion**
    *
@@ -2769,6 +2775,22 @@ enum ENUM(ProofRewriteRule)
    * \endverbatim
    */
   EVALUE(MACRO_BOOL_NNF_NORM),
+  /**
+   * \verbatim embed:rst:leading-asterisk
+   * **Booleans -- Macro equality to constant equality**
+   *
+   * .. math::
+   *
+   *   ((t = c) = (t = d)) = s
+   *
+   * where :math:`c` and :math:`d` are values, and :math:`s` is
+   * one of :math:`\neg (t = c) \wedge \neg (t = d)` or :math:`\top`
+   * depending on if :math:`c` and :math:`d` are distinct. Also applies where
+   * one or both equalities are flipped.
+   *
+   * \endverbatim
+   */
+  EVALUE(MACRO_BOOL_EQ_CONST_EQ),
   /**
    * \verbatim embed:rst:leading-asterisk
    * **Booleans -- Bitvector invert solve**
@@ -4159,16 +4181,14 @@ enum ENUM(ProofRewriteRule)
   EVALUE(ARITH_EQ_ELIM_REAL),
   /** Auto-generated from RARE rule arith-eq-elim-int */
   EVALUE(ARITH_EQ_ELIM_INT),
-  /** Auto-generated from RARE rule arith-to-int-elim */
-  EVALUE(ARITH_TO_INT_ELIM),
   /** Auto-generated from RARE rule arith-to-int-elim-to-real */
   EVALUE(ARITH_TO_INT_ELIM_TO_REAL),
-  /** Auto-generated from RARE rule arith-div-elim-to-real1 */
-  EVALUE(ARITH_DIV_ELIM_TO_REAL1),
-  /** Auto-generated from RARE rule arith-div-elim-to-real2 */
-  EVALUE(ARITH_DIV_ELIM_TO_REAL2),
+  /** Auto-generated from RARE rule arith-mod-over-mod-1 */
+  EVALUE(ARITH_MOD_OVER_MOD_1),
   /** Auto-generated from RARE rule arith-mod-over-mod */
   EVALUE(ARITH_MOD_OVER_MOD),
+  /** Auto-generated from RARE rule arith-mod-over-mod-mult */
+  EVALUE(ARITH_MOD_OVER_MOD_MULT),
   /** Auto-generated from RARE rule arith-int-eq-conflict */
   EVALUE(ARITH_INT_EQ_CONFLICT),
   /** Auto-generated from RARE rule arith-int-geq-tighten */
@@ -4725,6 +4745,10 @@ enum ENUM(ProofRewriteRule)
   EVALUE(STR_REPLACE_ALL_NO_CONTAINS),
   /** Auto-generated from RARE rule str-replace-all-empty */
   EVALUE(STR_REPLACE_ALL_EMPTY),
+  /** Auto-generated from RARE rule str-replace-all-id */
+  EVALUE(STR_REPLACE_ALL_ID),
+  /** Auto-generated from RARE rule str-replace-all-self */
+  EVALUE(STR_REPLACE_ALL_SELF),
   /** Auto-generated from RARE rule str-replace-re-none */
   EVALUE(STR_REPLACE_RE_NONE),
   /** Auto-generated from RARE rule str-replace-re-all-none */
@@ -4869,10 +4893,16 @@ enum ENUM(ProofRewriteRule)
   EVALUE(RE_STAR_EMP),
   /** Auto-generated from RARE rule re-star-star */
   EVALUE(RE_STAR_STAR),
+  /** Auto-generated from RARE rule re-range-refl */
+  EVALUE(RE_RANGE_REFL),
+  /** Auto-generated from RARE rule re-range-emp */
+  EVALUE(RE_RANGE_EMP),
   /** Auto-generated from RARE rule re-range-non-singleton-1 */
   EVALUE(RE_RANGE_NON_SINGLETON_1),
   /** Auto-generated from RARE rule re-range-non-singleton-2 */
   EVALUE(RE_RANGE_NON_SINGLETON_2),
+  /** Auto-generated from RARE rule re-star-union-char */
+  EVALUE(RE_STAR_UNION_CHAR),
   /** Auto-generated from RARE rule re-star-union-drop-emp */
   EVALUE(RE_STAR_UNION_DROP_EMP),
   /** Auto-generated from RARE rule re-loop-neg */

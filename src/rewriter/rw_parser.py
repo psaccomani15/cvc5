@@ -1,10 +1,7 @@
 ###############################################################################
-# Top contributors (to current version):
-#   Haniel Barbosa, Leni Aniva, Andrew Reynolds
-#
 # This file is part of the cvc5 project.
 #
-# Copyright (c) 2009-2025 by the authors listed in the file AUTHORS
+# Copyright (c) 2009-2026 by the authors listed in the file AUTHORS
 # in the top-level source directory and their institutional affiliations.
 # All rights reserved.  See the file COPYING in the top-level source
 # directory for licensing information.
@@ -160,9 +157,13 @@ class Parser:
             lambda s, l, t: Sort(BaseSort.AbsSet, []))
         abs_abs_sort = pp.Keyword('?').setParseAction(
             lambda s, l, t: Sort(BaseSort.AbsAbs, []))
+        ff_sort = (pp.Suppress('(') +
+                   (pp.Suppress('_') + pp.Keyword('FiniteField')) +
+                   self.expr(False) + pp.Suppress(')')).setParseAction(
+                       lambda s, l, t: Sort(BaseSort.FiniteField, [t[1]]))
         return bv_sort | int_sort | real_sort | bool_sort | string_sort | \
             reglan_sort | abs_array_sort | abs_bv_sort | abs_seq_sort | \
-            abs_set_sort | abs_abs_sort
+            abs_set_sort | abs_abs_sort | ff_sort
 
     def var_decl_action(self, name, sort, attrs):
         if attrs:
