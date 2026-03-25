@@ -102,6 +102,7 @@ FfResult gb(const std::vector<Node>& facts,
     if (stats) ++stats->d_numTrivialUnsat;
     std::vector<Node> corePolys{};
     FfCore conflict;
+    std::unique_ptr<FfCore> result;
     if (env.getOptions().ff.ffTraceGb)
     {
       std::vector<size_t> coreIndices = tracer.trace(basis.front());
@@ -120,12 +121,13 @@ FfResult gb(const std::vector<Node>& facts,
             corePolys.push_back(enc.decode(generators[i]));
         }
       }
-      return conflict;
+      result = std::make_unique<FfCore>(conflict);
     }
     else
     {
+
+      result = std::make_unique<FfCore>(facts);
       // set trivial conflict
-      return facts;
     }
     if (env.isTheoryProofProducing())
     {
@@ -141,6 +143,7 @@ FfResult gb(const std::vector<Node>& facts,
       produceContradiction(
           env.getNodeManager(), cdp, fieldPolys, corePolys, conflict);
     }
+    return *result.get();
   }
   else
   {

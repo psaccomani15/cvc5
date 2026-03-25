@@ -158,8 +158,8 @@ const char* aletheRuleToString(AletheRule id)
     //================================================== Finite Fields
     case AletheRule::FF_PAC: return "ff_pac";
     case AletheRule::FF_POLY_CONVERSION: return "ff_poly_conversion";
-    case AletheRule::FF_POLY_NORM: return "ff_poly_norm";
-    case AletheRule::FF_POLY_NORM_EQ: return "ff_poly_norm_eq";
+    case AletheRule::FF_POLY_SIMP: return "ff_poly_simp";
+    case AletheRule::FF_POLY_SIMP_EQ: return "ff_poly_simp_eq";
     //================================================= Hole
     case AletheRule::HOLE: return "hole";
     case AletheRule::AND_INTRO: return "and_intro";

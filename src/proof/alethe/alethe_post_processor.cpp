@@ -895,6 +895,24 @@ bool AletheProofPostprocessCallback::update(Node res,
                            {},
                            *cdp);
     }
+    case ProofRule::FF_POLY_NORM:
+    {
+      return addAletheStep(AletheRule::FF_POLY_SIMP,
+                           res,
+                           nm->mkNode(Kind::SEXPR, d_cl, res),
+                           {},
+                           {},
+                           *cdp);
+    }
+    case ProofRule::FF_POLY_NORM_EQ:
+    {
+      return addAletheStep(AletheRule::FF_POLY_SIMP_EQ,
+                           res,
+                           nm->mkNode(Kind::SEXPR, d_cl, res),
+                           children,
+                           {},
+                           *cdp);
+    } 
     case ProofRule::EVALUATE:
     {
       return addAletheStep(AletheRule::EVALUATE,
