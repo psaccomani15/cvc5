@@ -31,6 +31,8 @@ namespace ff {
 Node emptyVarPred(NodeManager* nm, Node ideal);
 
 void produceContradiction(NodeManager *nm, CDProof *cdp, std::vector<Node> &fieldPolys, std::vector<Node> &gens, std::vector<Node> &conflict);
+
+Node polyComb(NodeManager* nm, Node rs, Node ms);
 // Stores elements that will be inserted to a CDProof
 class ProofInfo
 {

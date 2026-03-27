@@ -156,6 +156,7 @@ PfManager::PfManager(Env& env)
     // theory-specific lazy proof reconstruction
     d_pfpp->setEliminateRule(ProofRule::MACRO_STRING_INFERENCE);
     d_pfpp->setEliminateRule(ProofRule::MACRO_BV_BITBLAST);
+    d_pfpp->setEliminateRule(ProofRule::MACRO_FF_POLY_COMBINATION);
     // we only try to eliminate TRUST if not macro level
     d_pfpp->setEliminateRule(ProofRule::TRUST);
   }

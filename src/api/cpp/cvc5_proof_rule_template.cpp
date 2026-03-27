@@ -215,6 +215,8 @@ const char* toString(ProofRule rule)
     case ProofRule::FF_IDEAL_REDUCE: return "FF_IDEAL_REDUCE";
     case ProofRule::FF_IDEAL_SPOLY: return "FF_IDEAL_SPOLY";
     case ProofRule::FF_IDEAL_MONIC: return "FF_IDEAL_MONIC";
+    case ProofRule::MACRO_FF_POLY_COMBINATION: return "MACRO_FF_POLY_COMBINATION";
+    case ProofRule::FF_POLY_COMBINATION: return "FF_POLY_COMBINATION";
     case ProofRule::FF_POLY_NORM: return "FF_POLY_NORM";
     case ProofRule::FF_POLY_NORM_EQ: return "FF_POLY_NORM_EQ"; 
    //================================================= External rules

@@ -28,6 +28,7 @@
 #include "theory/builtin/proof_checker.h"
 #include "theory/bv/bitblast/bitblast_proof_generator.h"
 #include "theory/bv/bitblast/proof_bitblaster.h"
+#include "theory/ff/proof_utils.h"
 #include "theory/rewriter.h"
 #include "theory/strings/infer_proof_cons.h"
 #include "theory/theory.h"
@@ -991,6 +992,30 @@ Node ProofPostprocessCallback::expandMacros(ProofRule id,
     Node bbAtom = bb.getStoredBBAtom(eq[0]);
     bb.getProofGenerator()->addProofTo(eq[0].eqNode(bbAtom), cdp);
     return eq;
+  }
+  else if (id == ProofRule::MACRO_FF_POLY_COMBINATION)
+  {
+    Node rs = args[0];
+    Node ms = args[1];
+    Node p = args[2];
+    Node polyComb = theory::ff::polyComb(nodeManager(), rs, ms);
+    Node ideal = res[1];
+    Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL)
+        << "got " << ideal.getKind() << "instead";
+    Node memComb = nodeManager()->mkNode(Kind::SET_MEMBER, polyComb, ideal);
+    cdp->addStep(
+        memComb, ProofRule::FF_POLY_COMBINATION, children, {rs, ms, polyComb});
+    Node eq = nodeManager()->mkNode(Kind::EQUAL, polyComb,p);
+    Node rfl = nodeManager()->mkNode(Kind::EQUAL, ideal, ideal);
+    Node equiv = nodeManager()->mkNode(Kind::EQUAL, memComb, res);
+    cdp->addStep(eq, ProofRule::FF_POLY_NORM, {}, {eq});
+    cdp->addStep(rfl, ProofRule::REFL, {}, {ideal});
+    cdp->addStep(equiv, ProofRule::CONG, {eq, rfl}, {memComb});
+    cdp->addStep(res,
+                 ProofRule::EQ_RESOLVE,
+                 {memComb, equiv},
+                 {});
+    return res;
   }
   return Node::null();
 }

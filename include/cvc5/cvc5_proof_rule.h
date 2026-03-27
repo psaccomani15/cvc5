@@ -2594,7 +2594,10 @@ enum ENUM(ProofRule)
    * \endverbatim
    */
   EVALUE(FF_IDEAL_MONIC),
+  EVALUE(MACRO_FF_POLY_COMBINATION),
+  EVALUE(FF_POLY_COMBINATION),
  /**
+   * 
    * \verbatim embed:rst:leading-asterisk
    * **Finite Fields -- Branch on Roots of a univariate polynomial**
    *

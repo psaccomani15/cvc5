@@ -63,6 +63,19 @@ void produceContradiction(NodeManager* nm,
   cdp->addStep(falseNode, ProofRule::CONTRA, {noCommonRoot, commonRoot}, {});
 }
 
+Node polyComb(NodeManager* nm, Node rs, Node ms)
+{
+  Assert(rs.getNumChildren() == ms.getNumChildren());
+  Assert(rs.getNumChildren() != 0);
+  std::vector<Node> monoms;
+  for (size_t it = 0; it < rs.getNumChildren(); ++it)
+  {
+    Node monom = nm->mkNode(Kind::FINITE_FIELD_MULT, ms[it], rs[it]);
+    monoms.push_back(monom); 
+  }
+  if(monoms.size() == 1) return monoms[0];
+  return nm->mkNode(Kind::FINITE_FIELD_ADD, monoms);
+}
 ProofInfo::ProofInfo(ProofRule id,
                      std::vector<Node> children,
                      std::vector<Node> args)

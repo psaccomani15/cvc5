@@ -25,6 +25,8 @@ void FfProofRuleChecker::registerTo(ProofChecker* pc)
   pc->registerChecker(ProofRule::FF_ONE_UNSAT, this);
   pc->registerChecker(ProofRule::FF_POLY_NORM, this);
   pc->registerChecker(ProofRule::FF_POLY_NORM_EQ, this);
+  pc->registerChecker(ProofRule::MACRO_FF_POLY_COMBINATION, this);
+  pc->registerChecker(ProofRule::FF_POLY_COMBINATION, this);
 }
 
 Node FfProofRuleChecker::checkInternal(ProofRule id,
@@ -33,14 +35,12 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
 {
   if (id == ProofRule::FF_EXHAUST_BRANCH)
   {
-    Assert(args.size() >= 1);
-    Assert(children.size() >= 2);
+    Assert(args.size() == 2);
+    Assert(children.size() == 1);
     std::vector<Node> generators;
-    for (size_t it = 1; it < children.size(); ++it)
-    {
-      Assert(children[it].getKind() == Kind::SET_MEMBER);
-      generators.push_back(children[it][0]);
-    }
+    Node ideal = args[1];
+    Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
+    for (const auto gen : ideal) generators.push_back(gen);
     std::vector<Node> disjuncts;
     TypeNode field = generators[0].getType();
     Assert(field.isFiniteField());
@@ -69,16 +69,14 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
   }
   if (id == ProofRule::FF_ROOT_BRANCH)
   {
-    Assert(args.size() >= 1);
-    Assert(children.size() >= 2);
+    Assert(args.size() == 5);
+    Assert(children.size() == 2);
+    Node ideal = args[1];
+    Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
     std::vector<Node> generators;
-    for (size_t it = 1; it < children.size() - 1; ++it)
-    {
-      Assert(children[it].getKind() == Kind::SET_MEMBER);
-      generators.push_back(children[it][0]);
-    }
+    for (const auto gen: ideal) generators.push_back(gen);
     std::vector<Node> disjuncts;
-    Node branchVariable = args[1];
+    Node branchVariable = args[2];
     bool isNonAssigned = true;
     for (const auto& nonAssigned : args[0])
     {
@@ -103,6 +101,26 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     }
     return nodeManager()->mkOr(disjuncts);
   }
+  if (id == ProofRule::FF_POLY_COMBINATION) {
+    Assert(!children.empty());
+    Assert(args.size() == 3);
+    Assert(args[0].getNumChildren() == args[1].getNumChildren());
+    Node res = args[2];
+    Assert(children[0].getKind() == Kind::SET_MEMBER);
+    Node ideal = children[0][1];
+    Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
+    return nodeManager()->mkNode(Kind::SET_MEMBER, res, ideal);
+  }
+  if (id == ProofRule::MACRO_FF_POLY_COMBINATION) {
+    Assert(!children.empty());
+    Assert(args.size() == 3);
+    Assert(args[0].getNumChildren() == args[1].getNumChildren());
+    Node res = args[2];
+    Assert(children[0].getKind() == Kind::SET_MEMBER);
+    Node ideal = children[0][1];
+    Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
+    return nodeManager()->mkNode(Kind::SET_MEMBER, res, ideal);
+  } 
   if (id == ProofRule::FF_IDEAL_GENERATOR)
   {
     Assert(children.empty());
