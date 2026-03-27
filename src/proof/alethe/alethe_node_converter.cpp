@@ -18,6 +18,7 @@
 #include "proof/proof_rule_checker.h"
 #include "theory/builtin/generic_op.h"
 #include "util/bitvector.h"
+#include "util/finite_field_value.h"
 #include "util/rational.h"
 
 namespace cvc5::internal {
@@ -209,6 +210,38 @@ Node AletheNodeConverter::postConvert(Node n)
           {
             d_skolemsList.push_back(n);
           }
+          return n;
+        }
+        return witness;
+      }
+      if (sfi == SkolemId::FF_DISEQ)
+      {
+        // The cache value is (not (= a b)). Build a witness term:
+        //   (choice ((k FF)) (= (ff.mul k (ff.add a (ff.neg b))) 1))
+        // expressing that k is the inverse of (a - b).
+        Assert(!cacheVal.isNull());
+        Assert(cacheVal.getKind() == Kind::NOT);
+        Node eq = cacheVal[0];
+        Assert(eq.getKind() == Kind::EQUAL);
+        Node a = eq[0];
+        Node b = eq[1];
+        TypeNode ffType = a.getType();
+        Node one = d_nm->mkConst(
+            FiniteFieldValue(Integer(1), ffType.getFfSize()));
+        Node diff = d_nm->mkNode(
+            Kind::FINITE_FIELD_ADD, a, d_nm->mkNode(Kind::FINITE_FIELD_NEG, b));
+        Node var = d_nm->mkBoundVar(ffType);
+        Node body = d_nm->mkNode(
+            Kind::EQUAL,
+            d_nm->mkNode(Kind::FINITE_FIELD_MULT, var, diff),
+            one);
+        Node witness = d_nm->mkNode(
+            Kind::WITNESS, d_nm->mkNode(Kind::BOUND_VAR_LIST, var), body);
+        witness = convert(witness);
+        d_skolemsList.push_back(n);
+        d_skolems[n] = witness;
+        if (d_defineSkolems)
+        {
           return n;
         }
         return witness;

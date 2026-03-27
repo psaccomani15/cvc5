@@ -613,6 +613,15 @@ TypeNode SkolemManager::getTypeFor(SkolemId id,
       }
       return d_nm->mkFunctionType(intDomain, intRange);
     }
+    case SkolemId::FF_DISEQ:
+    {
+      Assert(cacheVals.size() == 1);
+      Node ffEq = cacheVals[0];
+      Assert(cacheVals[0].getKind() == Kind::NOT);
+      Assert(cacheVals[0][0].getKind() == Kind::EQUAL);
+      Assert(cacheVals[0][0][0].getType().isFiniteField());
+      return cacheVals[0][0][0].getType();
+    }
     //
     default: break;
   }
@@ -656,7 +665,8 @@ size_t SkolemManager::getNumIndicesForSkolemId(SkolemId id) const
     case SkolemId::FP_MIN_ZERO:
     case SkolemId::FP_MAX_ZERO:
     case SkolemId::BV_TO_INT_UF:
-    case SkolemId::FP_TO_REAL: return 1;
+    case SkolemId::FP_TO_REAL:
+    case SkolemId::FF_DISEQ: return 1;
 
     // Number of skolem indices: 2
     case SkolemId::ARRAY_DEQ_DIFF:

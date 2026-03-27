@@ -773,7 +773,14 @@ enum ENUM(SkolemId)
    *   otherwise.
    */
   EVALUE(BV_TO_INT_UF),
-
+  /**
+   * A skolem variable introduced to represent finite field disequalities as
+   * polynomials.
+   * - Number of skolem indices: ``1``
+   *   - ``1:`` the disequality that originated this variable.
+   * - Sort: ``(_ FiniteField p)``
+   */
+  EVALUE(FF_DISEQ),
   //================================================= Unknown rule
   /** Indicates this is not a skolem. */
   EVALUE(NONE),

@@ -30,6 +30,7 @@
 #include "expr/node.h"
 #include "theory/ff/cocoa_util.h"
 #include "theory/theory.h"
+#include "expr/skolem_manager.h"
 
 namespace cvc5::internal {
 namespace theory {
@@ -153,7 +154,7 @@ void CocoaEncoder::addFact(const Node& fact)
       {
         Trace("ff::cocoa") << "CoCoA != sym for " << node << std::endl;
         CoCoA::symbol sym = freshSym("diseq", d_diseqSyms.size());
-        Node newVar = d_nm->mkBoundVar(extractStr(sym), node[0][0].getType());
+        Node newVar = d_nm->getSkolemManager()->mkSkolemFunction(SkolemId::FF_DISEQ, node);
         d_diseqSyms.insert({node, sym});
         d_diseqNodes.insert({extractStr(sym), newVar});
       }
