@@ -128,7 +128,7 @@ void MembershipProofManager::registerProofs()
     ProofRule id = it.second.d_id;
     std::vector<Node> children = it.second.d_children;
     std::vector<Node> args = it.second.d_args;
-    if (id == ProofRule::FF_IDEAL_ZERO || id == ProofRule::FF_IDEAL_GENERATOR)
+    if (id == ProofRule::FF_IDEAL_GENERATOR)
       args.push_back(d_ideal);
     else
     {

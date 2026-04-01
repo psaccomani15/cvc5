@@ -16,11 +16,6 @@ void FfProofRuleChecker::registerTo(ProofChecker* pc)
   pc->registerChecker(ProofRule::FF_ROOT_BRANCH, this);
   pc->registerChecker(ProofRule::FF_FIELD_POLYS, this);
   pc->registerChecker(ProofRule::FF_IDEAL_GENERATOR, this);
-  pc->registerChecker(ProofRule::FF_IDEAL_ZERO, this);
-  pc->registerChecker(ProofRule::FF_IDEAL_MONIC, this);
-  pc->registerChecker(ProofRule::FF_IDEAL_REDUCE_ZERO, this);
-  pc->registerChecker(ProofRule::FF_IDEAL_REDUCE, this);
-  pc->registerChecker(ProofRule::FF_IDEAL_SPOLY, this);
   pc->registerChecker(ProofRule::FF_POLY_CONVERSION, this);
   pc->registerChecker(ProofRule::FF_ONE_UNSAT, this);
   pc->registerChecker(ProofRule::FF_POLY_NORM, this);
@@ -154,109 +149,6 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
       if (args[0] == poly)
         return d_nm->mkNode(Kind::SET_MEMBER, args[0], args[1]);
     }
-  }
-  if (id == ProofRule::FF_IDEAL_ZERO)
-  {
-    Assert(children.empty());
-    Assert(args.size() == 2);
-    Assert(args[1].getKind() == Kind::FINITE_FIELD_IDEAL);
-    if (args[0].getKind() != Kind::CONST_FINITE_FIELD
-        || !args[0].getConst<FiniteFieldValue>().isZero())
-    {
-      return Node::null();
-    }
-    return d_nm->mkNode(Kind::SET_MEMBER, args[0], args[1]);
-  }
-  if (id == ProofRule::FF_IDEAL_SPOLY)
-  {
-    Assert(children.size() == 2);
-    Assert(args.size() == 3);
-    // Both children are proofs of membership to the *same* ideal
-    Assert(children[0].getKind() == children[1].getKind()
-           && children[0].getKind() == Kind::SET_MEMBER);
-    Assert(children[0][1] == children[1][1]);
-    Node ideal = children[0][1];
-    arith::PolyNorm expected = arith::PolyNorm::mkPolyNorm(args[0]);
-    Node p = d_nm->mkNode(Kind::FINITE_FIELD_MULT, children[0][0], args[1]);
-    Node q = d_nm->mkNode(Kind::FINITE_FIELD_MULT, children[1][0], args[2]);
-    arith::PolyNorm computed =
-        arith::PolyNorm::mkPolyNorm(d_nm->mkNode(Kind::FINITE_FIELD_ADD, p, q));
-    Assert(expected.isEqual(computed))
-        << "Expected: " << expected.toNode(args[0].getType()) << std::endl
-        << "Computed: " << computed.toNode(args[0].getType()) << std::endl;
-    if (!computed.isEqual(expected)) return Node::null();
-    return d_nm->mkNode(Kind::SET_MEMBER, args[0], children[0][1]);
-  }
-  if (id == ProofRule::FF_IDEAL_REDUCE || id == ProofRule::FF_IDEAL_REDUCE_ZERO)
-  {
-    Assert(args.size() == 3);
-    Assert(children[0].getKind() == Kind::SET_MEMBER);
-    Node ideal = children[0][1];
-    // All children must be proofs of membership for the *same* ideal
-    Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
-    for (const auto& child : children)
-    {
-      Assert(child.getKind() == Kind::SET_MEMBER);
-      Assert(ideal == child[1]);
-      if (ideal != child[1] || child.getKind() != Kind::SET_MEMBER)
-        return Node::null();
-    }
-    const auto reductors = args[1];
-    const auto multipliers = args[2];
-
-    arith::PolyNorm computedNormed;
-    arith::PolyNorm expected = arith::PolyNorm::mkPolyNorm(args[0]);
-    if (id == ProofRule::FF_IDEAL_REDUCE_ZERO)
-    {
-      Assert(reductors.getNumChildren() == multipliers.getNumChildren());
-      Node computed = nodeManager()->mkNode(
-          Kind::FINITE_FIELD_MULT, reductors[0], multipliers[0]);
-      for (size_t it = 1; it < reductors.getNumChildren(); ++it)
-      {
-        const auto term = nodeManager()->mkNode(
-            Kind::FINITE_FIELD_MULT, reductors[it], multipliers[it]);
-        computed =
-            nodeManager()->mkNode(Kind::FINITE_FIELD_ADD, computed, term);
-      }
-      computedNormed = arith::PolyNorm::mkPolyNorm(computed);
-    }
-    else
-    {
-      // FF_IDEAL_REDUCE: reductors[0] is the initial polynomial with implicit
-      // multiplier 1, reductors[1..] pair with multipliers[0..]
-      Assert(reductors.getNumChildren() == multipliers.getNumChildren() + 1);
-      Node computed = reductors[0];
-      for (size_t it = 1; it < reductors.getNumChildren(); ++it)
-      {
-        const auto term = nodeManager()->mkNode(
-            Kind::FINITE_FIELD_MULT, reductors[it], multipliers[it - 1]);
-        computed =
-            nodeManager()->mkNode(Kind::FINITE_FIELD_ADD, computed, term);
-      }
-      computedNormed = arith::PolyNorm::mkPolyNorm(computed);
-    }
-    Assert(expected.isEqual(computedNormed))
-        << "Expected: " << expected.toNode(args[0].getType()) << std::endl
-        << "Computed: " << computedNormed.toNode(args[0].getType())
-        << std::endl;
-
-    return d_nm->mkNode(Kind::SET_MEMBER, args[0], ideal);
-  }
-  if (id == ProofRule::FF_IDEAL_MONIC)
-  {
-    Assert(args.size() == 2);
-    Assert(children.size() == 1);
-    Assert(children[0].getKind() == Kind::SET_MEMBER);
-    Node ideal = children[0][1];
-    Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
-    arith::PolyNorm expected = arith::PolyNorm::mkPolyNorm(args[0]);
-    arith::PolyNorm computed = arith::PolyNorm::mkPolyNorm(
-        d_nm->mkNode(Kind::FINITE_FIELD_MULT, args[1], children[0][0]));
-    Assert(expected.isEqual(computed))
-        << "Expected: " << expected.toNode(args[0].getType()) << std::endl
-        << "Computed: " << computed.toNode(args[0].getType()) << std::endl;
-    if (!expected.isEqual(computed)) return Node::null();
-    return d_nm->mkNode(Kind::SET_MEMBER, args[0], ideal);
   }
   if (id == ProofRule::FF_POLY_CONVERSION)
   {

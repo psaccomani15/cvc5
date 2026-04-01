@@ -156,12 +156,7 @@ bool AlfPrinter::isHandled(const Options& opts, const ProofNode* pfn)
     case ProofRule::ARITH_TRANS_SINE_TANGENT_PI:
     case ProofRule::FF_POLY_CONVERSION:
     case ProofRule::FF_FIELD_POLYS:
-    case ProofRule::FF_IDEAL_SPOLY:
     case ProofRule::FF_IDEAL_GENERATOR:
-    case ProofRule::FF_IDEAL_REDUCE:
-    case ProofRule::FF_IDEAL_REDUCE_ZERO:
-    case ProofRule::FF_IDEAL_MONIC:
-    case ProofRule::FF_IDEAL_ZERO:
     case ProofRule::FF_POLY_COMBINATION:
     case ProofRule::MACRO_FF_POLY_COMBINATION:
     case ProofRule::FF_ONE_UNSAT:
