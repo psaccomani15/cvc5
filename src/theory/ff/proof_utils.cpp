@@ -96,7 +96,7 @@ void produceContradiction(
   Node core = nm->mkAnd(newLits);
   Node coreEquiv = nm->mkNode(Kind::EQUAL, unsatCore, core);
   Node idealGens = nm->mkNode(Kind::FINITE_FIELD_IDEAL, newGens);
-  if (core.getNumChildren() > 1)
+  if (core.getKind() == Kind::AND)
     cdp->addStep(coreEquiv, ProofRule::NARY_CONG, litEquivs, {unsatCore});
   cdp->addStep(core, ProofRule::EQ_RESOLVE, {unsatCore, coreEquiv}, {});
   Trace("ff::proof") << "Assumption: " << unsatCore << std::endl;
@@ -162,7 +162,7 @@ void registerDisequalityProof(
   cdp->addStep(equivZ, ProofRule::FF_POLY_NORM, {}, {equivZ});
   cdp->addStep(equiv, ProofRule::FF_POLY_NORM_EQ, {equivZ}, {equiv});
   cdp->addStep(origConvEquiv, ProofRule::TRANS, {origNEquiv, equiv}, {});
-  cdp->addStep(convEq, ProofRule::EQ_RESOLVE, {nEq, equiv}, {});
+  cdp->addStep(convEq, ProofRule::EQ_RESOLVE, {orig, origConvEquiv}, {});
 }
 
 void registerEqualityProof(NodeManager* nm, Node orig, Node conv, CDProof* cdp)
