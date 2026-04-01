@@ -92,7 +92,7 @@ Result SubTheory::postCheck(Theory::Effort e)
       }
       else if (options().ff.ffSolver == options::FfSolver::GB)
       {
-        CocoaEncoder enc(nodeManager(), size());
+        CocoaEncoder enc(nodeManager(), d_proof, size());
         for (const Node& node : d_facts)
         {
           enc.addFact(node);
@@ -190,7 +190,12 @@ Result SubTheory::postCheck(Theory::Effort e)
           if (d_env.isTheoryProofProducing())
           {
             Node unsatVariety = idealProofs->oneRefutation(basis.front());
-            produceContradiction(nodeManager(), d_proof, fieldPolys, corePolys, d_conflict);
+            produceContradiction(nodeManager(),
+                                 d_proof,
+                                 fieldPolys,
+                                 enc.getTranslation(),
+                                 enc.getMonicMapping(),
+                                 corePolys, d_conflict);
           }
         }
         else
@@ -205,7 +210,13 @@ Result SubTheory::postCheck(Theory::Effort e)
             result = Result::UNSAT;
             setTrivialConflict();
             if (d_env.isTheoryProofProducing())
-              produceContradiction(nodeManager(), d_proof, fieldPolys, gens, d_conflict);
+              produceContradiction(nodeManager(),
+                                   d_proof,
+                                   fieldPolys,
+                                   enc.getTranslation(),
+                                   enc.getMonicMapping(),
+                                   gens,
+                                   d_conflict);
           }
           else
           {

@@ -63,7 +63,7 @@ class CocoaEncoder : public FieldObj
 {
  public:
   /** Create a new encoder, for this field. */
-  CocoaEncoder(NodeManager* nm, const FfSize& size);
+  CocoaEncoder(NodeManager* nm, CDProof* cdp, const FfSize& size);
   /** Add a fact (one must call this twice per fact, once per stage). */
   void addFact(const Node& fact);
   /** Start Stage::Encode. */
@@ -84,7 +84,25 @@ class CocoaEncoder : public FieldObj
    * Available in Stage::Encode.
    */
   const Poly& getTermEncoding(const Node& t) const { return d_cache.at(t); }
+  /**
+   * Get the mapping between facts and their immediate translation
+   * i.e before trying to convert it to a monic polynomial.
+   */
+  const std::unordered_map<Node, Node> getTranslation() const {
+    return d_factToConv;
+  };
 
+  /**
+   * Get the mapping between facts and their monic conversion
+   */
+  const std::unordered_map<Node, std::pair<Node, Node>> getMonicMapping() const
+  {
+    return d_extraMonic;
+  }
+
+ /**
+   * Get the map of equalities and their monic polynomials equivalent. 
+   */
   /**
    * Build the term that represents p.
    * The type of the term must implement << and
@@ -173,6 +191,9 @@ class CocoaEncoder : public FieldObj
   std::unordered_map<std::string, Node> d_symNodes{};
   /** map: diseq symbol name to term */
   std::unordered_map<std::string, Node> d_diseqNodes{};
+  std::unordered_map<Node, Node> d_factToConv{};
+  std::unordered_map<Node, std::pair<Node, Node>> d_extraMonic{};
+  std::unordered_map<Node, Node> d_skolemVar;
   // populated at the end of Stage::Scan
 
   /** the polynomial ring */
@@ -190,6 +211,7 @@ class CocoaEncoder : public FieldObj
   std::unordered_map<std::string, Node> d_polyFacts{};
 
   NodeManager *d_nm;
+  CDProof *d_cdp;
 };
 
 }  // namespace ff

@@ -2596,6 +2596,8 @@ enum ENUM(ProofRule)
   EVALUE(FF_IDEAL_MONIC),
   EVALUE(MACRO_FF_POLY_COMBINATION),
   EVALUE(FF_POLY_COMBINATION),
+  EVALUE(FF_DISEQ),
+  EVALUE(FF_IDEAL_INVARIANT),
  /**
    * 
    * \verbatim embed:rst:leading-asterisk

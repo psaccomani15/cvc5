@@ -217,8 +217,10 @@ const char* toString(ProofRule rule)
     case ProofRule::FF_IDEAL_MONIC: return "FF_IDEAL_MONIC";
     case ProofRule::MACRO_FF_POLY_COMBINATION: return "MACRO_FF_POLY_COMBINATION";
     case ProofRule::FF_POLY_COMBINATION: return "FF_POLY_COMBINATION";
+    case ProofRule::FF_DISEQ: return "FF_DISEQ";
     case ProofRule::FF_POLY_NORM: return "FF_POLY_NORM";
     case ProofRule::FF_POLY_NORM_EQ: return "FF_POLY_NORM_EQ"; 
+    case ProofRule::FF_IDEAL_INVARIANT: return "FF_IDEAL_INVARIANT";
    //================================================= External rules
     case ProofRule::LFSC_RULE: return "LFSC_RULE";
     case ProofRule::ALETHE_RULE: return "ALETHE_RULE";

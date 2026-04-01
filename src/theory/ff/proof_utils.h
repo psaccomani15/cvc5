@@ -30,9 +30,22 @@ namespace ff {
 // Produce a statement that the ideal is non Empty
 Node emptyVarPred(NodeManager* nm, Node ideal);
 
-void produceContradiction(NodeManager *nm, CDProof *cdp, std::vector<Node> &fieldPolys, std::vector<Node> &gens, std::vector<Node> &conflict);
+void produceContradiction(
+    NodeManager* nm,
+    CDProof* cdp,
+    const std::vector<Node>& fieldPolys,
+    const std::unordered_map<Node, Node>& convertedNodes,
+    const std::unordered_map<Node, std::pair<Node, Node>>& extraMonic,
+    const std::vector<Node>& gens,
+    const std::vector<Node>& conflict);
 
 Node polyComb(NodeManager* nm, Node rs, Node ms);
+
+void registerDisequalityProof(
+    NodeManager* nm, Node orig, Node conv, Node sk, CDProof* cdp);
+
+void registerEqualityProof(NodeManager* nm, Node orig, Node conv, CDProof* cdp);
+
 // Stores elements that will be inserted to a CDProof
 class ProofInfo
 {

@@ -180,8 +180,7 @@ void MembershipProofManager::sPoly(CoCoA::ConstRefRingElem p,
     Node qNode = d_enc.decode(q); 
     Node rs = nodeManager()->mkNode(Kind::SEXPR, {pNode, qNode});
     Node ms = nodeManager()->mkNode(Kind::SEXPR, {mpNode, mqNode});
-    storeProof(sNode, ProofRule::MACRO_FF_POLY_COMBINATION, {pNode, qNode}, {rs, ms, sNode});
-  }
+    storeProof(sNode, ProofRule::MACRO_FF_POLY_COMBINATION, {pNode, qNode}, {rs, ms, sNode});}
   else
   {
     Trace("ff::proof") << " drop" << std::endl;
