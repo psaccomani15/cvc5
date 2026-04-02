@@ -77,13 +77,13 @@ IdealProofManager::IdealProofManager(Env& env,
 }
 Node IdealProofManager::getSatFact()
 {
-  return emptyVarPred(nodeManager(), d_ideal).negate();
+  return varietyIsEmpty(nodeManager(), d_ideal).negate();
 }
-Node IdealProofManager::getUnsatFact() { return emptyVarPred(nodeManager(), d_ideal); }
+Node IdealProofManager::getUnsatFact() { return varietyIsEmpty(nodeManager(), d_ideal); }
 
 Node IdealProofManager::oneRefutation(CoCoA::RingElem p)
 {
-  d_emptyVarFact = emptyVarPred(nodeManager(), d_ideal);
+  d_emptyVarFact = varietyIsEmpty(nodeManager(), d_ideal);
   // We collected all necessary proofs of membership and already have the
   // restriction to the unsat core, then we can register the proofs in d_proof.
   d_membershipProofs->registerProofs();
@@ -240,7 +240,7 @@ void IdealProofManager::finishProof(bool rootBranching)
   }
   // This variety is empty and may be used to either conclude that the ideal
   // that branched into this have an empty variety or conclude unsat
-  d_emptyVarFact = emptyVarPred(nodeManager(), d_ideal);
+  d_emptyVarFact = varietyIsEmpty(nodeManager(), d_ideal);
   d_proof.addStep(
       getSatFact().notNode(), ProofRule::SCOPE, {falseNode}, {getSatFact()});
   d_proof.addStep(d_emptyVarFact, ProofRule::NOT_NOT_ELIM, {getSatFact().notNode()}, {});

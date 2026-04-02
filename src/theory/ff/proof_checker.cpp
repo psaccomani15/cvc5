@@ -77,7 +77,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
           generators.push_back(assignmentPoly);
           Node newIdeal =
               nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, generators);
-          disjuncts.push_back(emptyVarPred(nodeManager(), newIdeal).negate());
+          disjuncts.push_back(varietyIsEmpty(nodeManager(), newIdeal).negate());
           generators.pop_back();
         }
       }
@@ -112,7 +112,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
           Kind::FINITE_FIELD_ADD, branchVariable, branchValue));
       Node newIdeal =
           nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, generators);
-      disjuncts.push_back(emptyVarPred(nodeManager(), newIdeal).negate());
+      disjuncts.push_back(varietyIsEmpty(nodeManager(), newIdeal).negate());
       generators.pop_back();
     }
     return nodeManager()->mkOr(disjuncts);
@@ -167,7 +167,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     std::vector<Node> gens(ideal.begin(), ideal.end());
     gens.insert(gens.end(), args.begin(), args.end());
     Node newIdeal = d_nm->mkNode(Kind::FINITE_FIELD_IDEAL, gens);
-    return emptyVarPred(nodeManager(), newIdeal).negate();
+    return varietyIsEmpty(nodeManager(), newIdeal).negate();
   }
   if (id == ProofRule::FF_ONE_UNSAT)
   {
@@ -176,7 +176,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     Assert(children[0].getKind() == Kind::SET_MEMBER);
     Assert(children[0][1].getKind() == Kind::FINITE_FIELD_IDEAL)
         << children[0][1].getKind();
-    return emptyVarPred(nodeManager(), children[0][1]);
+    return varietyIsEmpty(nodeManager(), children[0][1]);
   }
   if (id == ProofRule::FF_POLY_NORM)
   {

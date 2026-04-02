@@ -195,7 +195,7 @@ Result SubTheory::postCheck(Theory::Effort e)
                                  fieldPolys,
                                  enc.getTranslation(),
                                  enc.getMonicMapping(),
-                                 corePolys, d_conflict);
+                                 d_conflict);
           }
         }
         else
@@ -215,7 +215,6 @@ Result SubTheory::postCheck(Theory::Effort e)
                                    fieldPolys,
                                    enc.getTranslation(),
                                    enc.getMonicMapping(),
-                                   gens,
                                    d_conflict);
           }
           else

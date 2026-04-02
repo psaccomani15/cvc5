@@ -28,15 +28,14 @@ namespace cvc5::internal {
 namespace theory {
 namespace ff {
 // Produce a statement that the ideal is non Empty
-Node emptyVarPred(NodeManager* nm, Node ideal);
+Node varietyIsEmpty(NodeManager* nm, Node ideal);
 
 void produceContradiction(
     NodeManager* nm,
     CDProof* cdp,
     const std::vector<Node>& fieldPolys,
-    const std::unordered_map<Node, Node>& convertedNodes,
-    const std::unordered_map<Node, std::pair<Node, Node>>& extraMonic,
-    const std::vector<Node>& gens,
+    const std::unordered_map<Node, Node>& litToPolyEq,
+    const std::unordered_map<Node, std::pair<Node, Node>>& litToMonic,
     const std::vector<Node>& conflict);
 
 Node polyComb(NodeManager* nm, Node rs, Node ms);

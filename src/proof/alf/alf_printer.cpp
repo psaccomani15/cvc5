@@ -159,6 +159,7 @@ bool AlfPrinter::isHandled(const Options& opts, const ProofNode* pfn)
     case ProofRule::FF_IDEAL_GENERATOR:
     case ProofRule::FF_POLY_COMBINATION:
     case ProofRule::MACRO_FF_POLY_COMBINATION:
+    case ProofRule::FF_DISEQ:
     case ProofRule::FF_ONE_UNSAT:
     case ProofRule::FF_ROOT_BRANCH:
     case ProofRule::FF_EXHAUST_BRANCH: 
