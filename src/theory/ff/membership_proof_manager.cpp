@@ -213,14 +213,12 @@ void MembershipProofManager::reductionEnd(CoCoA::ConstRefRingElem r)
   Trace("ff::proof") << "reduction proof end: " << std::endl;
   if (d_factToProof.count(rTerm) == 0)
   {
-    std::unordered_set<Node> uniquePolys;
     Trace("ff::proof") << " keep" << std::endl;
     std::vector<Node> reductors{};
     for (auto& reductor : d_reductionSeq)
     {
       Node polyNode = d_enc.decode(reductor);
       reductors.push_back(polyNode);
-      uniquePolys.insert(polyNode);
     }
     // Assert(d_multiplierSeq.size() == d_reductionSeq.size() - 1)
      //  << d_reductionSeq.size();
@@ -231,7 +229,7 @@ void MembershipProofManager::reductionEnd(CoCoA::ConstRefRingElem r)
     args.push_back(nodeManager()->mkNode(Kind::SEXPR, multipliers));
     storeProof(rTerm,
                ProofRule::MACRO_FF_POLY_COMBINATION,
-               std::vector(uniquePolys.begin(), uniquePolys.end()),
+               reductors,
                {rs, ms, rTerm});
   }
   d_multiplierSeq.clear();
@@ -267,13 +265,11 @@ void MembershipProofManager::membershipStep(CoCoA::RingElem red)
 void MembershipProofManager::membershipEnd()
 {
   CoCoA::membershipTest = false;
-  std::unordered_set<Node> uniquePolys;
   std::vector<Node> reductors;
   for (auto& reductor : d_membershipSeq)
   {
     Node polyNode = d_enc.decode(reductor);
     reductors.push_back(polyNode);
-    uniquePolys.insert(polyNode);
   }
   Assert(!d_membershipSeq.empty());
   std::vector<Node> multipliers{};
@@ -281,8 +277,7 @@ void MembershipProofManager::membershipEnd()
   Node rs = nodeManager()->mkNode(Kind::SEXPR, reductors);
   Node ms = nodeManager()->mkNode(Kind::SEXPR, multipliers);
   Node reducingPolyNode = d_enc.decode(d_reducingPoly);
-  std::vector<Node> children(uniquePolys.begin(), uniquePolys.end());
-  storeProof(reducingPolyNode, ProofRule::MACRO_FF_POLY_COMBINATION, children, {rs, ms, reducingPolyNode});
+  storeProof(reducingPolyNode, ProofRule::MACRO_FF_POLY_COMBINATION, reductors, {rs, ms, reducingPolyNode});
   d_multiplierSeq.clear();
   d_membershipSeq.clear();
   Trace("ff::proof") << "finish membership Proof for " << d_reducingPoly
