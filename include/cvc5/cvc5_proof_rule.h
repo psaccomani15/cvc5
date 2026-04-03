@@ -2510,8 +2510,8 @@ enum ENUM(ProofRule)
    *
    * .. math::
    *
-   *   \inferrule{- \mid \ell_1, \dots, \ell_n, G}
-   *   {(\ell_1 \land \dots \land l_n) \iff \mathcal V(\langle G \rangle) \neq \emptyset}
+   *   \inferrule{(\ell_1 \land \dots \land l_n)  \mid (\ell_1, \dots, \ell_n), G}
+   *   {\mathcal V(\langle G \rangle) \neq \emptyset}
    *
    * where each :math:`\ell_i` is a literal in the Finite Fields theory, :math:`G = (g_1, \dots, g_m)`
    * in which each :math:`g_i` is a polynomial that represents the literal :math:`\ell_i`.
