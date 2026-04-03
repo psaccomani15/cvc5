@@ -104,7 +104,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     }
     Assert(!isNonAssigned);
     if (isNonAssigned) return Node::null();
-    for (const auto& root : args[2])
+    for (const auto& root : args[3])
     {
       const FiniteFieldValue rootValue = root.getConst<FiniteFieldValue>();
       Node branchValue = nodeManager()->mkConst(-rootValue);
@@ -152,9 +152,9 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
   }
   if (id == ProofRule::FF_POLY_CONVERSION)
   {
-    Assert(children.size() == 0);
-    Assert(args.size() == 2) << args.size();
-    return d_nm->mkNode(Kind::EQUAL, args[0], args[1]);
+    Assert(children.size() == 1);
+    Assert(args.size() == 2);
+    return args[1];
   }
   if (id == ProofRule::FF_FIELD_POLYS)
   {

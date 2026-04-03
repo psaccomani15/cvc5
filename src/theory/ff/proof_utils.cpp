@@ -100,10 +100,8 @@ void produceContradiction(
   Trace("ff::proof") << "Assumption: " << unsatCore << std::endl;
   Trace("ff::proof") << "Converting from " << core << std::endl;
   Node hasCommonRoot = varietyIsEmpty(nm, idealGens).negate();
-  Node coreIffVariety = nm->mkNode(Kind::EQUAL, core, hasCommonRoot);
   cdp->addStep(
-      coreIffVariety, ProofRule::FF_POLY_CONVERSION, {}, {core, hasCommonRoot});
-  cdp->addStep(hasCommonRoot, ProofRule::EQ_RESOLVE, {core, coreIffVariety}, {});
+      hasCommonRoot, ProofRule::FF_POLY_CONVERSION, {core}, {core, hasCommonRoot});
   if (!fieldPolys.empty())
   {
     monicPolys.insert(monicPolys.end(), fieldPolys.begin(), fieldPolys.end());
