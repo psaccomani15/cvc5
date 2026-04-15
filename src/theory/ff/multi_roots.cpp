@@ -26,16 +26,17 @@
 #include <CoCoA/SparsePolyOps-RingElem.H>
 #include <CoCoA/SparsePolyOps-ideal.H>
 #include <CoCoA/ring.H>
-
 #include <algorithm>
 #include <memory>
 #include <sstream>
 
 #include "smt/assertions.h"
+#include "theory/ff/cocoa_converter.h"
 #include "theory/ff/cocoa_util.h"
 #include "theory/ff/ideal_proof_manager.h"
 #include "theory/ff/uni_roots.h"
 #include "theory/ff/util.h"
+#include "theory/ff/proof_utils.h"
 #include "util/resource_manager.h"
 
 namespace cvc5::internal {
@@ -86,7 +87,11 @@ std::unique_ptr<ListEnumerator> factorEnumerator(
   Assert(varIdx >= 0);
   Trace("ff::model::factor") << "roots for: " << univariatePoly << std::endl;
   std::vector<CoCoA::RingElem> theRoots = roots(univariatePoly);
-  if (idealProof) idealProof->registerRoots(theRoots);
+  if (idealProof)
+  {
+    idealProof->registerRoots(theRoots);
+    idealProof->registerDistinctRootsGcd(distinctRootsGcd(univariatePoly));
+  }
   std::vector<CoCoA::RingElem> linears{};
   CoCoA::RingElem var = CoCoA::indet(CoCoA::owner(univariatePoly), varIdx);
   for (const auto& r : theRoots)

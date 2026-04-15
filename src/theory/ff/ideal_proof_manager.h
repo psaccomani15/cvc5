@@ -82,6 +82,16 @@ class IdealProofManager : protected EnvObj
   void registerRoots(std::vector<CoCoA::RingElem> roots);
 
   /**
+   * Also called only when we are branching on the roots of a polynomial.
+   * Register the distinct-roots gcd witness produced by libpoly's extended
+   * gcd: the gcd polynomial and the Bezout coefficients A, B such that
+   *     A * branchPoly + B * fieldPoly = gcd.
+   * The three RingElems are decoded into Nodes via the encoder and bundled
+   * as a single SEXPR argument appended to the FF_ROOT_BRANCH rule.
+   */
+  void registerDistinctRootsGcd(const GcdInfo& info);
+
+  /**
    * Register a possible conclusion derived from the current object.
    * A conclusion consists in a disjunct of a branching application, i.e a
    * possible valid assignment.
@@ -189,6 +199,12 @@ class IdealProofManager : protected EnvObj
    * sexpr
    */
   Node d_branchPolyRoots;
+  /**
+   * (Univariate Branching) The gcd witness for the distinct-roots polynomial:
+   * SEXPR(gcd, bezoutA, bezoutB), where the three operands are the decoded
+   * RingElems produced by libpoly's extended gcd in distinctRootsPoly.
+   */
+  Node d_branchPolyGcdInfo;
   /**
    * (Univariate Branching) The variable that we will be branching through
    */

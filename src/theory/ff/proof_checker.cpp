@@ -85,7 +85,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
   }
   if (id == ProofRule::FF_ROOT_BRANCH)
   {
-    Assert(args.size() == 5);
+    Assert(args.size() == 6);
     Assert(children.size() == 2);
     Node ideal = args[1];
     Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
@@ -104,6 +104,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     }
     Assert(!isNonAssigned);
     if (isNonAssigned) return Node::null();
+
     for (const auto& root : args[3])
     {
       const FiniteFieldValue rootValue = root.getConst<FiniteFieldValue>();

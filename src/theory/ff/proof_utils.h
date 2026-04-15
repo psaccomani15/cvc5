@@ -24,6 +24,10 @@
 #include "proof/proof.h"
 #include "util/finite_field_value.h"
 
+#ifdef CVC5_USE_COCOA
+#include "CoCoA/ring.H"
+#endif
+
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
@@ -54,6 +58,15 @@ class ProofInfo
   std::vector<Node> d_children;
   std::vector<Node> d_args;
 };
+
+#ifdef CVC5_USE_COCOA
+struct GcdInfo
+{
+  CoCoA::RingElem res;
+  CoCoA::RingElem bezoutA;
+  CoCoA::RingElem bezoutB;
+};
+#endif
 
 }  // namespace ff
 }  // namespace theory

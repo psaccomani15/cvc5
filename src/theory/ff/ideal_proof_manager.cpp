@@ -129,6 +129,15 @@ void IdealProofManager::registerRoots(std::vector<CoCoA::RingElem> roots)
   }
   d_branchPolyRoots = nodeManager()->mkNode(Kind::SEXPR, rootsNode);
 }
+
+void IdealProofManager::registerDistinctRootsGcd(const GcdInfo& info)
+{
+  Node gcd = d_enc.decode(info.res);
+  Node bezA = d_enc.decode(info.bezoutA);
+  Node bezB = d_enc.decode(info.bezoutB);
+  d_branchPolyGcdInfo =
+      nodeManager()->mkNode(Kind::SEXPR, {gcd, bezA, bezB});
+}
 std::shared_ptr<IdealProofManager> IdealProofManager::registerBranch(
     CoCoA::RingElem choicePoly, CoCoA::ideal newIdeal)
 {
@@ -197,6 +206,7 @@ Node IdealProofManager::proveBrancher(std::vector<Node>& childrenSatFact,
   arguments.push_back(d_branchVar);
   arguments.push_back(d_branchPolyRoots);
   arguments.push_back(d_branchPoly);
+  arguments.push_back(d_branchPolyGcdInfo);
   d_proof.addStep(conclusion, ProofRule::FF_ROOT_BRANCH, premises, arguments);
   return conclusion;
 }
