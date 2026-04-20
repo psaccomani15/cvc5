@@ -94,7 +94,7 @@ poly::Polynomial CoCoAConverter::operator()(const CoCoA::RingElem& p) const
     // the Zp element into its underlying ZZ representative.
     CoCoA::BigInt coeffBi;
     bool isInt = CoCoA::IsInteger(coeffBi, CoCoA::CanonicalRepr(CoCoA::coeff(it)));
-    Assert(isInt) << "CoCoAConverter: 𝔽ₚ coefficient did not reduce to an "
+    AlwaysAssert(isInt) << "CoCoAConverter: 𝔽ₚ coefficient did not reduce to an "
                      "integer representative";
 
     // Stringify and rebuild as an lp_integer reduced into K.
