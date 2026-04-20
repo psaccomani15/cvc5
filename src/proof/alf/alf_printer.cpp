@@ -162,7 +162,7 @@ bool AlfPrinter::isHandled(const Options& opts, const ProofNode* pfn)
     case ProofRule::FF_DISEQ:
     case ProofRule::FF_ONE_UNSAT:
     case ProofRule::FF_ROOT_BRANCH:
-    case ProofRule::FF_EXHAUST_BRANCH: 
+    case ProofRule::FF_EXHAUST_BRANCH:
     case ProofRule::INT_TIGHT_LB:
     case ProofRule::INT_TIGHT_UB:
     case ProofRule::SKOLEM_INTRO:

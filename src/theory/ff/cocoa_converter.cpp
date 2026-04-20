@@ -140,9 +140,7 @@ GcdInfo distinctRootsGcd(const CoCoA::RingElem& f)
 
   CoCoA::BigInt q =
       CoCoA::power(CoCoA::characteristic(field), CoCoA::LogCardinality(field));
-  CoCoA::RingElem Q;
-  CoCoA::RingElem fieldMod = powerMod(x, q, f, &Q);
-  CoCoA::RingElem reducedFieldPoly = fieldMod - x;
+  CoCoA::RingElem reducedFieldPoly = powerMod(x, q, f) - x;
 
   CoCoA::BigInt p = CoCoA::characteristic(field);
   std::ostringstream pss;
@@ -178,10 +176,9 @@ GcdInfo distinctRootsGcd(const CoCoA::RingElem& f)
       vU.get_internal(), ffCtx, var.get_internal()));
 
   info.res = conv(dP, ring);
-  CoCoA::RingElem libpolyA = conv(uP, ring);
-  CoCoA::RingElem libpolyB = conv(vP, ring);
-  info.bezoutA = libpolyA - libpolyB * Q;
-  info.bezoutB = libpolyB;
+  info.bezoutA = conv(uP, ring);
+  info.bezoutB = conv(vP, ring);
+  info.reducedFieldPoly = reducedFieldPoly;
 
   lp_polynomial_context_detach(ffCtx);
   return info;

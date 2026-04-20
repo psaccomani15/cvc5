@@ -2578,29 +2578,33 @@ enum ENUM(ProofRule)
    * .. math::
    *
    *   \inferrule{\mathcal{V}(\langle G \rangle) \neq \emptyset, p \in \langle G
-   *   \rangle, g_1 \in \langle G \rangle, \dots, g_m \in \langle G \rangle \mid
-   *   N, \mathtt{Roots} (p)} {\lor_{v \in \mathtt{Roots}(p)} \mathcal V(\langle
-   *   G \cup \{x - v \}\rangle) \neq \emptyset}
+   *   \rangle \mid N, G, x, \mathtt{Roots}(p), p, r, (d, A, B)}
+   *   {\lor_{v \in \mathtt{Roots}(p)} \mathcal V(\langle G \cup \{x - v\}\rangle)
+   *   \neq \emptyset}
    *
-   * where :math:`p` is an univariate polynomial, G is a set of polynomials and
-   * N is the set of non-assigned variables. This rule unifies both Triangular
-   * and Univariate present in the paper Ozdemir et al, CAV 2023,
-   * "Satisfiability Modulo Finite Fields". \endverbatim
+   * where :math:`p` is a univariate polynomial in :math:`x`, :math:`G` is a set
+   * of polynomials, :math:`N` is the set of non-assigned variables,
+   * :math:`r = (x^q \bmod p) - x` is the reduced field polynomial, and
+   * :math:`(d, A, B)` is a Bezout witness satisfying :math:`A p + B r = d`.
+   * Since :math:`\gcd(p, x^q - x) = \gcd(p, r) = d`, this establishes that
+   * :math:`\mathtt{Roots}(p)` are exactly the roots of :math:`p` in
+   * :math:`\mathbb{F}_q`. This rule unifies both Triangular and Univariate
+   * present in the paper Ozdemir et al, CAV 2023, "Satisfiability Modulo
+   * Finite Fields". \endverbatim
    */
   EVALUE(FF_ROOT_BRANCH),
 /**
    * \verbatim embed:rst:leading-asterisk
-   * **Finite Fields -- Exhaustive search through all elements of a finite field**
+   * **Finite Fields -- Exhaustive branching on a single variable**
    *
    * .. math::
    *
-   *   \inferrule{\mathcal{V}(\langle G \rangle) \neq \emptyset, g_1 \in \langle G \rangle, \dots, g_m \in \langle G \rangle \mid N}
-   *   {\lor_{x \in N} \lor_{v \in F_p} \mathcal V(\langle G \cup \{x - v \}\rangle) \neq \emptyset}
+   *   \inferrule{\mathcal V(\langle G \rangle) \neq \emptyset \mid x, G}
+   *   {\bigvee_{v \in F_p} \mathcal V(\langle G \cup \{x - v\}\rangle) \neq \emptyset}
    *
-   * where :math:`N` is the set of unassigned variables, :math:`F_p` is the fixed prime field
-   * and G is  a set of polynomials.
-   * This rule is an analogue of FF_ROOT_BRANCH where instead of restricting our search in the
-   * roots of a univariate polynomial, we have to look at all possible cases.
+   * Branches on a single variable :math:`x`, producing the disjunction over
+   * all field values. Combined with the :math:`q` child unsat facts, a single
+   * application is sufficient to refute the ideal by chain resolution.
    * \endverbatim
    */
   EVALUE(FF_EXHAUST_BRANCH),

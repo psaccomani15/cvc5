@@ -60,11 +60,17 @@ class ProofInfo
 };
 
 #ifdef CVC5_USE_COCOA
+/**
+ * Distinct-roots gcd witness for a univariate f over 𝔽_q.
+ * Let r = (x^q mod f) - x. Then res = gcd(f, r) and
+ * bezoutA * f + bezoutB * r = res.
+ */
 struct GcdInfo
 {
   CoCoA::RingElem res;
   CoCoA::RingElem bezoutA;
   CoCoA::RingElem bezoutB;
+  CoCoA::RingElem reducedFieldPoly;
 };
 #endif
 

@@ -53,12 +53,8 @@ CoCoA::RingElem redMod(CoCoA::RingElem b, CoCoA::RingElem m)
   return CoCoA::NR(b, mm);
 }
 
-CoCoA::RingElem powerMod(CoCoA::RingElem b,
-                         CoCoA::BigInt e,
-                         CoCoA::RingElem m,
-                         CoCoA::RingElem* quotient)
+CoCoA::RingElem powerMod(CoCoA::RingElem b, CoCoA::BigInt e, CoCoA::RingElem m)
 {
-  CoCoA::BigInt origE = e;
   CoCoA::RingElem acc = CoCoA::owner(b)->myOne();
   CoCoA::RingElem bPower = b;
   while (!CoCoA::IsZero(e))
@@ -71,10 +67,6 @@ CoCoA::RingElem powerMod(CoCoA::RingElem b,
     bPower *= bPower;
     bPower = redMod(bPower, m);
     e /= 2;
-  }
-  if (quotient != nullptr)
-  {
-    *quotient = (CoCoA::power(b, origE) - acc) / m;
   }
   return acc;
 }

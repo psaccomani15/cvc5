@@ -29,16 +29,9 @@ namespace cvc5::internal {
 namespace theory {
 namespace ff {
 
-/**
- * Polynomial modular exponentiation: returns b^e mod m via repeated squaring.
- * If `quotient` is non-null, also writes into *quotient the polynomial Q
- * satisfying b^e = Q*m + (returned value). Computing Q uses CoCoA::power
- * on b^e directly, so it's only practical for modest exponents.
- */
 CoCoA::RingElem powerMod(CoCoA::RingElem b,
                          CoCoA::BigInt e,
-                         CoCoA::RingElem m,
-                         CoCoA::RingElem* quotient = nullptr);
+                         CoCoA::RingElem m);
 
 /**
  * Compute a monic polynomial q(X) of minimal degree that has the same real root

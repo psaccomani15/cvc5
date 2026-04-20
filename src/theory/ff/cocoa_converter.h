@@ -123,16 +123,10 @@ class CoCoAConverter
 };
 
 /**
- * Compute gcd(f, X^q - X) along with Bezout coefficients A, B satisfying
- *   A * f + B * (X^q - X) = gcd
- * over the prime field 𝔽_q, via libpoly's extended gcd.
- *
- * The result is returned as a GcdInfo whose three RingElems live in the same
- * CoCoA ring as f.
- *
- * f must be a univariate polynomial in a polynomial ring over 𝔽_q. The
- * function materializes X^q - X directly in libpoly, so q must currently fit
- * in an unsigned long; larger cardinalities will assert.
+ * Compute gcd(f, r) with Bezout witness, where r = (x^q mod f) - x is the
+ * reduced field polynomial. Equivalent to gcd(f, x^q - x) for distinct-roots
+ * purposes, but avoids materializing anything of degree q. f must be
+ * univariate over a prime field.
  */
 GcdInfo distinctRootsGcd(const CoCoA::RingElem& f);
 

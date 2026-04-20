@@ -51,41 +51,38 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
   }
   if (id == ProofRule::FF_EXHAUST_BRANCH)
   {
+    // Single-variable exhaust: args = [x, G], one premise V(G) ≠ ∅.
     Assert(args.size() == 2);
     Assert(children.size() == 1);
-    std::vector<Node> generators;
+    Node x = args[0];
     Node ideal = args[1];
     Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
-    for (const auto gen : ideal) generators.push_back(gen);
-    std::vector<Node> disjuncts;
-    TypeNode field = generators[0].getType();
+    TypeNode field = x.getType();
     Assert(field.isFiniteField());
     Integer maxValue = field.getFfSize();
     FfSize fieldCard(maxValue);
-
+    std::vector<Node> generators;
+    for (const auto gen : ideal) generators.push_back(gen);
+    std::vector<Node> disjuncts;
     for (Integer it = 0; it < maxValue; it += 1)
-      for (const auto& var : args[0])
-      {
-        {
-          Node assignmentPoly = var;
-          if (it > 0)
-            assignmentPoly =
-                nodeManager()->mkNode(Kind::FINITE_FIELD_ADD,
-                                      var,
-                                      nodeManager()->mkConst(FiniteFieldValue(
-                                          maxValue - it, fieldCard)));
-          generators.push_back(assignmentPoly);
-          Node newIdeal =
-              nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, generators);
-          disjuncts.push_back(varietyIsEmpty(nodeManager(), newIdeal).negate());
-          generators.pop_back();
-        }
-      }
+    {
+      Node assignmentPoly = x;
+      if (it > 0)
+        assignmentPoly = nodeManager()->mkNode(
+            Kind::FINITE_FIELD_ADD,
+            x,
+            nodeManager()->mkConst(FiniteFieldValue(maxValue - it, fieldCard)));
+      generators.push_back(assignmentPoly);
+      Node newIdeal =
+          nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, generators);
+      disjuncts.push_back(varietyIsEmpty(nodeManager(), newIdeal).negate());
+      generators.pop_back();
+    }
     return nodeManager()->mkOr(disjuncts);
   }
   if (id == ProofRule::FF_ROOT_BRANCH)
   {
-    Assert(args.size() == 6);
+    Assert(args.size() == 7);
     Assert(children.size() == 2);
     Node ideal = args[1];
     Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
