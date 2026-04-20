@@ -498,6 +498,7 @@ enum class AletheRule : uint32_t
   FF_POLY_SIMP,
   FF_POLY_SIMP_EQ,
   FF_POLY_CONVERSION,
+  FF_DISEQ,
   // ======== hole
   // Used for unjustified steps
   HOLE,

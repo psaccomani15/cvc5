@@ -82,6 +82,12 @@ class IdealProofManager : protected EnvObj
   void registerRoots(std::vector<CoCoA::RingElem> roots);
 
   /**
+   * Register the distinct-roots gcd witness for the branch polynomial:
+   * r = (x^q mod p) - x together with (d, A, B) such that A*p + B*r = d.
+   */
+  void registerDistinctRootsGcd(const GcdInfo& info);
+
+  /**
    * Register a possible conclusion derived from the current object.
    * A conclusion consists in a disjunct of a branching application, i.e a
    * possible valid assignment.
@@ -129,13 +135,6 @@ class IdealProofManager : protected EnvObj
    */
   void updateIdeal(std::vector<Node>& newGens);
 
-  /**
-   * Determines the non-assigned variables in the current branch. Used for
-   * producing branch proof arguments.
-   * @return A vector of Nodes representing those variables
-   * */
-  void registerNonAssignedVars(std::vector<CoCoA::RingElem> &toGuess);
- 
  private:
   /**
    * Determines the non-assigned variables in the current branch. Used for
@@ -197,6 +196,15 @@ class IdealProofManager : protected EnvObj
    */
   Node d_branchPolyRoots;
   /**
+   * (Univariate Branching) SEXPR(gcd, bezoutA, bezoutB) — witness that
+   * A*p + B*r = d over r = (x^q mod p) - x.
+   */
+  Node d_branchPolyGcdInfo;
+  /**
+   * (Univariate Branching) The reduced field polynomial r = (x^q mod p) - x.
+   */
+  Node d_branchPolyReducedFieldPoly;
+  /**
    * (Univariate Branching) The variable that we will be branching through
    */
   Node d_branchVar;
@@ -210,7 +218,6 @@ class IdealProofManager : protected EnvObj
    */
   std::unordered_map<std::string, Node> d_polyToNode;
 
-  std::vector<Node> d_toGuess;
   /**
    * The CDProof to record the derivation for this branch.
    */

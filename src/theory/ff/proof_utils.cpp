@@ -14,53 +14,167 @@
  */
 #include "theory/ff/proof_utils.h"
 
-// std includes
-
-// internal includes
+#include "proof/proof.h"
+#include "util/finite_field_value.h"
 
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
 
-Node emptyVarPred(NodeManager* nm, Node ideal)
+// Builds the term c * (l - r), used as the canonical form for FF_POLY_NORM.
+Node mkScaledDiff(NodeManager* nm, Node l, Node r, Node c)
+{
+  return nm->mkNode(
+      Kind::FINITE_FIELD_MULT,
+      c,
+      nm->mkNode(
+          Kind::FINITE_FIELD_ADD, l, nm->mkNode(Kind::FINITE_FIELD_NEG, r)));
+}
+
+Node varietyIsEmpty(NodeManager* nm, Node ideal)
 {
   Node variety = nm->mkNode(Kind::FINITE_FIELD_VARIETY, ideal);
   return nm->mkNode(Kind::SET_IS_EMPTY, variety);
 }
 
-void produceContradiction(NodeManager* nm,
-                          CDProof* cdp,
-                          const std::vector<Node>& fieldPolys,
-                          const std::vector<Node>& gens,
-                          const std::vector<Node>& conflict)
+void produceContradiction(
+    NodeManager* nm,
+    CDProof* cdp,
+    const std::vector<Node>& fieldPolys,
+    const std::unordered_map<Node, Node>& litToPolyEq,
+    const std::unordered_map<Node, std::pair<Node, Node>>& litToMonic,
+    const std::vector<Node>& conflict)
 {
-  Node idealGens = nm->mkNode(Kind::FINITE_FIELD_IDEAL, gens);
   const Node unsatCore = nm->mkAnd(conflict);
-  cdp->addStep(unsatCore, ProofRule::ASSUME, {}, {unsatCore});
+  std::vector<Node> monicPolys{};
+  std::vector<Node> litEquivs;
+  for (const auto& lit : conflict)
+  {
+    Node litPolyEq = litToPolyEq.at(lit);
+    Node litPoly = litPolyEq[0];
+    const Integer size = litPoly.getType().getFfSize();
+    Node zero = nm->mkConst(FiniteFieldValue(0, size));
+    Node one = nm->mkConst(FiniteFieldValue(1, size));
+    const auto res = litToMonic.find(lit);
+    Assert(res != litToMonic.end());
+    auto [scaleFactor, monicPoly] = res->second;
+    if (scaleFactor.getConst<FiniteFieldValue>().getValue() != 1)
+    {
+      Node scaledLitPoly = mkScaledDiff(nm, litPoly, zero, scaleFactor);
+      Node monicNorm = mkScaledDiff(nm, monicPoly, zero, one);
+      Node monicEqZ = nm->mkNode(Kind::EQUAL, monicPoly, zero);
+      Node polyToMonicEq = nm->mkNode(Kind::EQUAL, litPolyEq, monicEqZ);
+      Node normEq = nm->mkNode(Kind::EQUAL, scaledLitPoly, monicNorm);
+      cdp->addStep(normEq, ProofRule::FF_POLY_NORM, {}, {normEq});
+      cdp->addStep(
+          polyToMonicEq, ProofRule::FF_POLY_NORM_EQ, {normEq}, {polyToMonicEq});
+      cdp->addStep(monicEqZ, ProofRule::EQ_RESOLVE, {litPolyEq, polyToMonicEq}, {});
+      Node litConvEq = nm->mkNode(Kind::EQUAL, lit, litPolyEq);
+      Node litMonicEq = nm->mkNode(Kind::EQUAL, lit, monicEqZ);
+      cdp->addStep(litMonicEq, ProofRule::TRANS, {litConvEq, polyToMonicEq}, {});
+      litEquivs.push_back(litMonicEq);
+      monicPolys.push_back(monicPoly);
+    }
+    else
+    {
+      // Already have a proof of equivalence.
+      Node eq = litToPolyEq.at(lit);
+      Node convertedPoly = eq[0];
+      Node litEquiv = nm->mkNode(Kind::EQUAL, lit, eq);
+      litEquivs.push_back(litEquiv);
+      monicPolys.push_back(convertedPoly);
+    }
+  }
+  std::vector<Node> polyEqs;
+  for (const auto& litEquiv : litEquivs)
+  {
+    Assert(litEquiv[1].getKind() == Kind::EQUAL);
+    polyEqs.push_back(litEquiv[1]);
+  }
+  Node core = nm->mkAnd(polyEqs);
+  Node coreEquiv = nm->mkNode(Kind::EQUAL, unsatCore, core);
+  Node idealGens = nm->mkNode(Kind::FINITE_FIELD_IDEAL, monicPolys);
+  if (core.getKind() == Kind::AND)
+    cdp->addStep(coreEquiv, ProofRule::NARY_CONG, litEquivs, {unsatCore});
+  cdp->addStep(core, ProofRule::EQ_RESOLVE, {unsatCore, coreEquiv}, {});
   Trace("ff::proof") << "Assumption: " << unsatCore << std::endl;
-  Node commonRoot = emptyVarPred(nm, idealGens).negate();
-  Node satIffCRoot = nm->mkNode(Kind::EQUAL, unsatCore, commonRoot);
+  Trace("ff::proof") << "Converting from " << core << std::endl;
+  Node hasCommonRoot = varietyIsEmpty(nm, idealGens).negate();
   cdp->addStep(
-      satIffCRoot,
-      ProofRule::FF_POLY_CONVERSION,
-      {},
-      {unsatCore, commonRoot});
-  cdp->addStep(commonRoot, ProofRule::EQ_RESOLVE, {unsatCore, satIffCRoot}, {});
+      hasCommonRoot, ProofRule::FF_POLY_CONVERSION, {core}, {core, hasCommonRoot});
   if (!fieldPolys.empty())
   {
-    std::vector<Node> newGens = gens;
-    newGens.insert(newGens.end(), fieldPolys.begin(), fieldPolys.end());
-    idealGens = nm->mkNode(Kind::FINITE_FIELD_IDEAL, newGens);
-    Node commonRootFieldPolys = emptyVarPred(nm, idealGens).negate();
-    cdp->addStep(commonRootFieldPolys,
+    monicPolys.insert(monicPolys.end(), fieldPolys.begin(), fieldPolys.end());
+    idealGens = nm->mkNode(Kind::FINITE_FIELD_IDEAL, monicPolys);
+    Node extendedHasCommonRoot = varietyIsEmpty(nm, idealGens).negate();
+    cdp->addStep(extendedHasCommonRoot,
                  ProofRule::FF_FIELD_POLYS,
-                 {commonRoot},
-                 fieldPolys);
-    commonRoot = commonRootFieldPolys;
+                 {hasCommonRoot},
+                 {fieldPolys});
+    hasCommonRoot = extendedHasCommonRoot;
   }
   Node falseNode = nm->mkConst<bool>(false);
-  Node noCommonRoot = emptyVarPred(nm, idealGens);
-  cdp->addStep(falseNode, ProofRule::CONTRA, {noCommonRoot, commonRoot}, {});
+  Node noCommonRoot = varietyIsEmpty(nm, idealGens);
+  cdp->addStep(falseNode, ProofRule::CONTRA, {noCommonRoot, hasCommonRoot}, {});
+}
+
+Node polyComb(NodeManager* nm, Node rs, Node ms)
+{
+  Assert(rs.getNumChildren() == ms.getNumChildren());
+  Assert(rs.getNumChildren() != 0);
+  std::vector<Node> monoms;
+  for (size_t it = 0; it < rs.getNumChildren(); ++it)
+  {
+    Node monom = nm->mkNode(Kind::FINITE_FIELD_MULT, ms[it], rs[it]);
+    monoms.push_back(monom);
+  }
+  if (monoms.size() == 1) return monoms[0];
+  return nm->mkNode(Kind::FINITE_FIELD_ADD, monoms);
+}
+
+void registerDisequalityProof(
+    NodeManager* nm, Node orig, Node conv, Node sk, CDProof* cdp)
+{
+  Node l = orig[0][0];
+  Node r = orig[0][1];
+  const Integer size = orig[0][0].getType().getFfSize();
+  Node sub = nm->mkNode(
+      Kind::FINITE_FIELD_ADD, l, nm->mkNode(Kind::FINITE_FIELD_NEG, r));
+  Node one = nm->mkConst(FiniteFieldValue(1, size));
+  Node minusOne = nm->mkConst(FiniteFieldValue(-1, size));
+  Node zero = nm->mkConst(FiniteFieldValue(0, size));
+  Node diseqWitness = nm->mkNode(Kind::FINITE_FIELD_ADD,
+                      nm->mkNode(Kind::FINITE_FIELD_MULT, sub, sk),
+                      minusOne);
+  Node diseqWitnessEqZ = nm->mkNode(Kind::EQUAL, diseqWitness, zero);
+  Node convEq = nm->mkNode(Kind::EQUAL, conv, zero);
+  Node equiv = nm->mkNode(Kind::EQUAL, diseqWitnessEqZ, convEq);
+  Node normEq = nm->mkNode(Kind::EQUAL,
+                           mkScaledDiff(nm, diseqWitness, zero, one),
+                           mkScaledDiff(nm, conv, zero, one));
+  Node origNEquiv = nm->mkNode(Kind::EQUAL, orig, diseqWitnessEqZ);
+  Node origConvEquiv = nm->mkNode(Kind::EQUAL, orig, convEq);
+  cdp->addStep(origNEquiv, ProofRule::FF_DISEQ, {}, {l, r, sk});
+  cdp->addStep(normEq, ProofRule::FF_POLY_NORM, {}, {normEq});
+  cdp->addStep(equiv, ProofRule::FF_POLY_NORM_EQ, {normEq}, {equiv});
+  cdp->addStep(origConvEquiv, ProofRule::TRANS, {origNEquiv, equiv}, {});
+  cdp->addStep(convEq, ProofRule::EQ_RESOLVE, {orig, origConvEquiv}, {});
+}
+
+void registerEqualityProof(NodeManager* nm, Node orig, Node conv, CDProof* cdp)
+{
+  Node l = orig[0];
+  Node r = orig[1];
+  const Integer size = orig[0].getType().getFfSize();
+  Node zero = nm->mkConst(FiniteFieldValue(0, size));
+  Node one = nm->mkConst(FiniteFieldValue(1, size));
+  Node diffNorm = mkScaledDiff(nm, l, r, one);
+  Node convEq = nm->mkNode(Kind::EQUAL, conv, zero);
+  Node normEq = nm->mkNode(Kind::EQUAL, diffNorm, mkScaledDiff(nm, conv, zero, one));
+  Node litConvEq = nm->mkNode(Kind::EQUAL, orig, convEq);
+  cdp->addStep(normEq, ProofRule::FF_POLY_NORM, {}, {normEq});
+  cdp->addStep(litConvEq, ProofRule::FF_POLY_NORM_EQ, {normEq}, {litConvEq});
+  cdp->addStep(convEq, ProofRule::EQ_RESOLVE, {orig, litConvEq}, {});
 }
 
 ProofInfo::ProofInfo(ProofRule id,

@@ -49,6 +49,10 @@ CoCoA::RingElem distinctRootsPoly(CoCoA::RingElem f);
  */
 std::vector<CoCoA::RingElem> roots(CoCoA::RingElem f);
 
+CoCoA::RingElem powerMod(CoCoA::RingElem b,
+                         CoCoA::BigInt e,
+                         CoCoA::RingElem m);
+
 }  // namespace ff
 }  // namespace theory
 }  // namespace cvc5::internal

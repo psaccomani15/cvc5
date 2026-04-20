@@ -24,17 +24,30 @@
 #include "proof/proof.h"
 #include "util/finite_field_value.h"
 
+#ifdef CVC5_USE_COCOA
+#include "CoCoA/ring.H"
+#endif
+
 namespace cvc5::internal {
 namespace theory {
 namespace ff {
 // Produce a statement that the ideal is non Empty
-Node emptyVarPred(NodeManager* nm, Node ideal);
+Node varietyIsEmpty(NodeManager* nm, Node ideal);
 
-void produceContradiction(NodeManager* nm,
-                          CDProof* cdp,
-                          const std::vector<Node>& fieldPolys,
-                          const std::vector<Node>& gens,
-                          const std::vector<Node>& conflict);
+void produceContradiction(
+    NodeManager* nm,
+    CDProof* cdp,
+    const std::vector<Node>& fieldPolys,
+    const std::unordered_map<Node, Node>& litToPolyEq,
+    const std::unordered_map<Node, std::pair<Node, Node>>& litToMonic,
+    const std::vector<Node>& conflict);
+
+Node polyComb(NodeManager* nm, Node rs, Node ms);
+
+void registerDisequalityProof(
+    NodeManager* nm, Node orig, Node conv, Node sk, CDProof* cdp);
+
+void registerEqualityProof(NodeManager* nm, Node orig, Node conv, CDProof* cdp);
 
 // Stores elements that will be inserted to a CDProof
 class ProofInfo
@@ -45,6 +58,21 @@ class ProofInfo
   std::vector<Node> d_children;
   std::vector<Node> d_args;
 };
+
+#ifdef CVC5_USE_COCOA
+/**
+ * Distinct-roots gcd witness for a univariate f over 𝔽_q.
+ * Let r = (x^q mod f) - x. Then res = gcd(f, r) and
+ * bezoutA * f + bezoutB * r = res.
+ */
+struct GcdInfo
+{
+  CoCoA::RingElem res;
+  CoCoA::RingElem bezoutA;
+  CoCoA::RingElem bezoutB;
+  CoCoA::RingElem reducedFieldPoly;
+};
+#endif
 
 }  // namespace ff
 }  // namespace theory

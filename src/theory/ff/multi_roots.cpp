@@ -28,8 +28,13 @@
 #include <memory>
 #include <sstream>
 
+#include "smt/assertions.h"
+#ifdef CVC5_POLY_IMP
+#include "theory/ff/cocoa_converter.h"
+#endif
 #include "theory/ff/cocoa_util.h"
 #include "theory/ff/ideal_proof_manager.h"
+#include "theory/ff/proof_utils.h"
 #include "theory/ff/uni_roots.h"
 #include "theory/ff/util.h"
 #include "util/resource_manager.h"
@@ -72,7 +77,13 @@ std::unique_ptr<ListEnumerator> factorEnumerator(
   Assert(varIdx >= 0);
   Trace("ff::model::factor") << "roots for: " << univariatePoly << std::endl;
   std::vector<CoCoA::RingElem> theRoots = roots(univariatePoly);
-  if (idealProof) idealProof->registerRoots(theRoots);
+  if (idealProof)
+  {
+    idealProof->registerRoots(theRoots);
+#ifdef CVC5_POLY_IMP
+    idealProof->registerDistinctRootsGcd(distinctRootsGcd(univariatePoly));
+#endif
+  }
   std::vector<CoCoA::RingElem> linears{};
   CoCoA::RingElem var = CoCoA::indet(CoCoA::owner(univariatePoly), varIdx);
   for (const auto& r : theRoots)
@@ -219,7 +230,6 @@ std::unique_ptr<AssignmentEnumerator> applyRule(
         toGuess.push_back(var);
       }
     }
-    if (idealProof) idealProof->registerNonAssignedVars(toGuess);
     return std::make_unique<RoundRobinEnumerator>(toGuess,
                                                   polyRing->myBaseRing());
   }

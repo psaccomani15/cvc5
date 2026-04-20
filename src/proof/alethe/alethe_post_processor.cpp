@@ -2772,7 +2772,16 @@ bool AletheProofPostprocessCallback::update(Node res,
                            children,
                            args,
                            *cdp);
-    }  
+    }
+    case ProofRule::FF_DISEQ:
+    {
+      return addAletheStep(AletheRule::FF_DISEQ,
+                           res,
+                           nm->mkNode(Kind::SEXPR, d_cl, res),
+                           children,
+                           args,
+                           *cdp);
+    }
     case ProofRule::ACI_NORM:
     {
       return addAletheStep(AletheRule::ACI_SIMP,

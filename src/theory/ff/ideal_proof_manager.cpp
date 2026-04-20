@@ -77,13 +77,13 @@ IdealProofManager::IdealProofManager(Env& env,
 }
 Node IdealProofManager::getSatFact()
 {
-  return emptyVarPred(nodeManager(), d_ideal).negate();
+  return varietyIsEmpty(nodeManager(), d_ideal).negate();
 }
-Node IdealProofManager::getUnsatFact() { return emptyVarPred(nodeManager(), d_ideal); }
+Node IdealProofManager::getUnsatFact() { return varietyIsEmpty(nodeManager(), d_ideal); }
 
 Node IdealProofManager::oneRefutation(CoCoA::RingElem p)
 {
-  d_emptyVarFact = emptyVarPred(nodeManager(), d_ideal);
+  d_emptyVarFact = varietyIsEmpty(nodeManager(), d_ideal);
   // We collected all necessary proofs of membership and already have the
   // restriction to the unsat core, then we can register the proofs in d_proof.
   d_membershipProofs->registerProofs();
@@ -129,6 +129,16 @@ void IdealProofManager::registerRoots(std::vector<CoCoA::RingElem> roots)
   }
   d_branchPolyRoots = nodeManager()->mkNode(Kind::SEXPR, rootsNode);
 }
+
+void IdealProofManager::registerDistinctRootsGcd(const GcdInfo& info)
+{
+  Node gcd = d_enc.decode(info.res);
+  Node bezA = d_enc.decode(info.bezoutA);
+  Node bezB = d_enc.decode(info.bezoutB);
+  d_branchPolyGcdInfo =
+      nodeManager()->mkNode(Kind::SEXPR, {gcd, bezA, bezB});
+  d_branchPolyReducedFieldPoly = d_enc.decode(info.reducedFieldPoly);
+}
 std::shared_ptr<IdealProofManager> IdealProofManager::registerBranch(
     CoCoA::RingElem choicePoly, CoCoA::ideal newIdeal)
 {
@@ -144,13 +154,6 @@ std::shared_ptr<IdealProofManager> IdealProofManager::registerBranch(
   // In such case, all ideals does not change.
   d_childrenUnsat.push_back(childrenProof->getUnsatFact());
   return childrenProof;
-}
-
-void IdealProofManager::registerNonAssignedVars(
-    std::vector<CoCoA::RingElem>& toGuess)
-{
-  for (auto var : toGuess)
-    d_toGuess.push_back(d_enc.decode(var));
 }
 
 std::vector<Node> IdealProofManager::nonAssignedVars()
@@ -183,32 +186,54 @@ std::vector<Node> IdealProofManager::nonAssignedVars()
 Node IdealProofManager::proveBrancher(std::vector<Node>& childrenSatFact,
                                bool rootBranching)
 {
-  // Both proofs share a common structure. We first collect this structure.
-  Node conclusion = nodeManager()->mkOr(childrenSatFact);
+  NodeManager* nm = nodeManager();
   std::vector<Node> premises{getSatFact()};
   Assert(CoCoA::HasGBasis(d_cocoaIdeal));
-  std::vector<Node> arguments = {
-      nodeManager()->mkNode(Kind::SEXPR, nonAssignedVars())};
-  d_membershipProofs->registerProofs();
-  for (auto poly : CoCoA::gens(d_cocoaIdeal))
-  {
-    premises.push_back(d_membershipProofs->getMembershipFact(poly));
-  }
-  // Here comes the main difference: Exhaust_branch do not contain facts about
-  // a branch polynomial.
   if (!rootBranching)
   {
+    // Exhaustive branching on a single non-assigned variable. We pick the
+    // first non-assigned variable and build the q-disjunction over its
+    // field values; chain resolution against the corresponding q child
+    // unsats suffices to refute the ideal.
+    std::vector<Node> nonAssigned = nonAssignedVars();
+    Assert(!nonAssigned.empty());
+    Node x = nonAssigned[0];
+    std::vector<Node> generators;
+    for (const auto& gen : d_ideal) generators.push_back(gen);
+    TypeNode field = x.getType();
+    Assert(field.isFiniteField());
+    Integer maxValue = field.getFfSize();
+    FfSize fieldCard(maxValue);
+    std::vector<Node> disjuncts;
+    for (Integer it = 0; it < maxValue; it += 1)
+    {
+      Node assignmentPoly = x;
+      if (it > 0)
+        assignmentPoly = nm->mkNode(
+            Kind::FINITE_FIELD_ADD,
+            x,
+            nm->mkConst(FiniteFieldValue(maxValue - it, fieldCard)));
+      generators.push_back(assignmentPoly);
+      Node newIdeal = nm->mkNode(Kind::FINITE_FIELD_IDEAL, generators);
+      disjuncts.push_back(varietyIsEmpty(nm, newIdeal).negate());
+      generators.pop_back();
+    }
+    Node conclusion = nm->mkOr(disjuncts);
     d_proof.addStep(
-        conclusion, ProofRule::FF_EXHAUST_BRANCH, premises, arguments);
+        conclusion, ProofRule::FF_EXHAUST_BRANCH, premises, {x, d_ideal});
     return conclusion;
   }
-  // Branch polynomial must be in the ideal. We also need to know its roots to
-  // compute the branches.
+  // Root branching: conclusion is the OR of the roots' sat facts.
+  Node conclusion = nm->mkOr(childrenSatFact);
+  std::vector<Node> arguments = {
+      nm->mkNode(Kind::SEXPR, nonAssignedVars()), d_ideal};
   premises.push_back(d_branchPolyProof);
   Assert(d_proof.getProof(d_branchPolyProof) != nullptr);
   arguments.push_back(d_branchVar);
   arguments.push_back(d_branchPolyRoots);
   arguments.push_back(d_branchPoly);
+  arguments.push_back(d_branchPolyReducedFieldPoly);
+  arguments.push_back(d_branchPolyGcdInfo);
   d_proof.addStep(conclusion, ProofRule::FF_ROOT_BRANCH, premises, arguments);
   return conclusion;
 }
@@ -219,10 +244,27 @@ void IdealProofManager::finishProof(bool rootBranching)
   d_membershipProofs->registerProofs();
   std::vector<Node> childrenSatFact;
   std::vector<Node> childrenUnsatFact;
-  for (const auto& childUnsat : d_childrenUnsat)
+  if (rootBranching)
   {
-    childrenSatFact.push_back(childUnsat.negate());
-    childrenUnsatFact.push_back(childUnsat);
+    for (const auto& childUnsat : d_childrenUnsat)
+    {
+      childrenSatFact.push_back(childUnsat.negate());
+      childrenUnsatFact.push_back(childUnsat);
+    }
+  }
+  else
+  {
+    // proveBrancher selects the first non-assigned variable and produces a
+    // q-disjunction over it. The matching child unsats are those registered
+    // for branches on that variable; with the value-major RoundRobinEnumerator
+    // they sit at every numVars-th position of d_childrenUnsat.
+    size_t numVars = nonAssignedVars().size();
+    Assert(numVars > 0);
+    for (size_t i = 0; i < d_childrenUnsat.size(); i += numVars)
+    {
+      childrenSatFact.push_back(d_childrenUnsat[i].negate());
+      childrenUnsatFact.push_back(d_childrenUnsat[i]);
+    }
   }
   Node conclusion = proveBrancher(childrenSatFact, rootBranching);
   Node falseNode = nodeManager()->mkConst<bool>(false);
@@ -252,7 +294,7 @@ void IdealProofManager::finishProof(bool rootBranching)
   }
   // This variety is empty and may be used to either conclude that the ideal
   // that branched into this have an empty variety or conclude unsat
-  d_emptyVarFact = emptyVarPred(nodeManager(), d_ideal);
+  d_emptyVarFact = varietyIsEmpty(nodeManager(), d_ideal);
   d_proof.addStep(
       getSatFact().notNode(), ProofRule::SCOPE, {falseNode}, {getSatFact()});
   d_proof.addStep(d_emptyVarFact, ProofRule::NOT_NOT_ELIM, {getSatFact().notNode()}, {});

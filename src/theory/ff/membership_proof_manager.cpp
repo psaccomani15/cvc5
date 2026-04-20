@@ -42,7 +42,6 @@ MembershipProofManager::MembershipProofManager(Env& env,
     Trace("ff::proof") << "\t" << polyRepr << std::endl;
     storeProof(polyRepr, ProofRule::FF_IDEAL_GENERATOR, {}, {polyRepr});
   }
-  storeProof(d_enc.zero(), ProofRule::FF_IDEAL_ZERO, {}, {d_enc.zero()});
 };
 
 void MembershipProofManager::updateIdeal(Node ideal) { d_ideal = ideal; }
@@ -129,7 +128,7 @@ void MembershipProofManager::registerProofs()
     ProofRule id = it.second.d_id;
     std::vector<Node> children = it.second.d_children;
     std::vector<Node> args = it.second.d_args;
-    if (id == ProofRule::FF_IDEAL_ZERO || id == ProofRule::FF_IDEAL_GENERATOR)
+    if (id == ProofRule::FF_IDEAL_GENERATOR)
       args.push_back(d_ideal);
     else
     {
@@ -169,19 +168,19 @@ void MembershipProofManager::sPoly(CoCoA::ConstRefRingElem p,
                                    CoCoA::ConstRefRingElem q,
                                    CoCoA::ConstRefRingElem s)
 {
-  Node pNode = d_enc.decode(p);
-  Node qNode = d_enc.decode(q);
-  Node sNode = d_enc.decode(s);
+ Node sNode = d_enc.decode(s);
   Trace("ff::proof") << "s: " << p << ", " << q << " -> " << s << std::endl;
   if (d_factToProof.count(sNode) == 0)
   {
     Trace("ff::proof") << " keep" << std::endl;
-    std::vector<Node> parents{pNode, qNode};
-    std::vector<Node> args{sNode};
     Assert(d_multiplierSeq.size() == 2) << d_multiplierSeq.size();
-    for (auto& mul : d_multiplierSeq) args.push_back(d_enc.decode(mul));
-    storeProof(sNode, ProofRule::FF_IDEAL_SPOLY, parents, args);
-  }
+    Node pNode = d_enc.decode(p);
+    Node mpNode = d_enc.decode(d_multiplierSeq[0]);
+    Node mqNode = d_enc.decode(d_multiplierSeq[1]);
+    Node qNode = d_enc.decode(q); 
+    Node rs = nodeManager()->mkNode(Kind::SEXPR, {pNode, qNode});
+    Node ms = nodeManager()->mkNode(Kind::SEXPR, {mpNode, mqNode});
+    storeProof(sNode, ProofRule::MACRO_FF_POLY_COMBINATION, {pNode, qNode}, {rs, ms, sNode});}
   else
   {
     Trace("ff::proof") << " drop" << std::endl;
@@ -212,30 +211,26 @@ void MembershipProofManager::reductionEnd(CoCoA::ConstRefRingElem r)
   Node rTerm = d_enc.decode(r);
   std::vector<Node> args{rTerm};
   Trace("ff::proof") << "reduction proof end: " << std::endl;
-  auto currPoly = d_reductionSeq[0];
   if (d_factToProof.count(rTerm) == 0)
   {
-    std::unordered_set<Node> uniquePolys;
     Trace("ff::proof") << " keep" << std::endl;
-    // TODO: Use indices of the premises list as argument.
-
     std::vector<Node> reductors{};
     for (auto& reductor : d_reductionSeq)
     {
       Node polyNode = d_enc.decode(reductor);
       reductors.push_back(polyNode);
-      uniquePolys.insert(polyNode);
     }
-    args.push_back(nodeManager()->mkNode(Kind::SEXPR, reductors));
     // Assert(d_multiplierSeq.size() == d_reductionSeq.size() - 1)
      //  << d_reductionSeq.size();
-    std::vector<Node> multipliers{};
+    std::vector<Node> multipliers{d_enc.one()};
     for (auto& mul : d_multiplierSeq) multipliers.push_back(d_enc.decode(mul));
+    Node rs = nodeManager()->mkNode(Kind::SEXPR, reductors);
+    Node ms = nodeManager()->mkNode(Kind::SEXPR, multipliers);
     args.push_back(nodeManager()->mkNode(Kind::SEXPR, multipliers));
     storeProof(rTerm,
-               ProofRule::FF_IDEAL_REDUCE,
-               std::vector(uniquePolys.begin(), uniquePolys.end()),
-               args);
+               ProofRule::MACRO_FF_POLY_COMBINATION,
+               reductors,
+               {rs, ms, rTerm});
   }
   d_multiplierSeq.clear();
   d_reductionSeq.clear();
@@ -247,10 +242,11 @@ void MembershipProofManager::monicProof(CoCoA::ConstRefRingElem poly,
   Node polyTerm = d_enc.decode(poly);
   Node monicTerm = d_enc.decode(monic);
   CoCoA::RingElem lcInv = CoCoA::one(d_cocoaRing) / CoCoA::LC(poly);
-  Node lcInvNode = d_enc.decode(lcInv);
+  Node rs = nodeManager()->mkNode(Kind::SEXPR, polyTerm);
+  Node ms = nodeManager()->mkNode(Kind::SEXPR, d_enc.decode(lcInv));
   Trace("ff::monic") << "Orig: " << poly << " New: " << monic;
   Assert(d_factToProof.count(polyTerm));
-  storeProof(monicTerm, ProofRule::FF_IDEAL_MONIC, {polyTerm}, {monicTerm, lcInvNode});
+  storeProof(monicTerm, ProofRule::MACRO_FF_POLY_COMBINATION, {polyTerm}, {rs, ms, monicTerm});
 }
 void MembershipProofManager::membershipStart(CoCoA::ConstRefRingElem p)
 {
@@ -266,34 +262,26 @@ void MembershipProofManager::membershipStep(CoCoA::RingElem red)
   d_membershipSeq.push_back(red);
 }
 
-// TODO:: Refactor this section to reuse code from reduction.
 void MembershipProofManager::membershipEnd()
 {
-
   CoCoA::membershipTest = false;
-  Node reducingPolyNode = d_enc.decode(d_reducingPoly);
-  auto currPoly = d_reducingPoly;
-  std::vector<Node> args{reducingPolyNode};
-  std::unordered_set<Node> uniquePolys;
-  std::vector<Node> reductors{};
+  std::vector<Node> reductors;
   for (auto& reductor : d_membershipSeq)
   {
     Node polyNode = d_enc.decode(reductor);
     reductors.push_back(polyNode);
-    uniquePolys.insert(polyNode);
   }
-  args.push_back(nodeManager()->mkNode(Kind::SEXPR, reductors));
   Assert(!d_membershipSeq.empty());
   std::vector<Node> multipliers{};
   for (auto& mul : d_multiplierSeq) multipliers.push_back(d_enc.decode(mul));
-  args.push_back(nodeManager()->mkNode(Kind::SEXPR, multipliers));
+  Node rs = nodeManager()->mkNode(Kind::SEXPR, reductors);
+  Node ms = nodeManager()->mkNode(Kind::SEXPR, multipliers);
+  Node reducingPolyNode = d_enc.decode(d_reducingPoly);
+  storeProof(reducingPolyNode, ProofRule::MACRO_FF_POLY_COMBINATION, reductors, {rs, ms, reducingPolyNode});
   d_multiplierSeq.clear();
-  std::vector<Node> children(uniquePolys.begin(), uniquePolys.end());
-  children.push_back(d_enc.zero());
-  Trace("ff::proof") << "finish membership Proof for " << d_reducingPoly
-                     << std::endl;
-  storeProof(reducingPolyNode, ProofRule::FF_IDEAL_REDUCE_ZERO, children, args);
   d_membershipSeq.clear();
+  Trace("ff::proof") << "finish membership Proof for " << d_reducingPoly
+                     << std::endl; 
 }
 }  // namespace ff
 }  // namespace theory

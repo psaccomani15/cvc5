@@ -160,6 +160,7 @@ const char* aletheRuleToString(AletheRule id)
     case AletheRule::FF_POLY_CONVERSION: return "ff_poly_conversion";
     case AletheRule::FF_POLY_SIMP: return "ff_poly_simp";
     case AletheRule::FF_POLY_SIMP_EQ: return "ff_poly_simp_eq";
+    case AletheRule::FF_DISEQ: return "ff_diseq";
     //================================================= Hole
     case AletheRule::HOLE: return "hole";
     case AletheRule::AND_INTRO: return "and_intro";

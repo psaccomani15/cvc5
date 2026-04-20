@@ -742,6 +742,8 @@ libcvc5_add_sources(
   theory/evaluator.h
   theory/ext_theory.cpp
   theory/ext_theory.h
+  theory/ff/cocoa_converter.cpp
+  theory/ff/cocoa_converter.h
   theory/ff/cocoa_encoder.cpp
   theory/ff/cocoa_encoder.h
   theory/ff/cocoa_util.cpp

@@ -29,6 +29,7 @@
 #include "expr/node_traversal.h"
 #include "expr/node.h"
 #include "theory/ff/cocoa_util.h"
+#include "theory/ff/proof_utils.h"
 #include "theory/theory.h"
 #include "expr/skolem_manager.h"
 
@@ -76,8 +77,8 @@ CoCoA::symbol cocoaSym(const std::string& varName, std::optional<size_t> index)
   return index.has_value() ? CoCoA::symbol(s, *index) : CoCoA::symbol(s);
 }
 
-CocoaEncoder::CocoaEncoder(NodeManager* nm, const FfSize& size)
-    : FieldObj(nm, size), d_nm(nm)
+CocoaEncoder::CocoaEncoder(NodeManager* nm, CDProof *cdp, const FfSize& size)
+    : FieldObj(nm, size), d_nm(nm), d_proof(cdp)
 {
 }
 
@@ -157,6 +158,7 @@ void CocoaEncoder::addFact(const Node& fact)
         Node newVar = d_nm->getSkolemManager()->mkSkolemFunction(SkolemId::FF_DISEQ, node);
         d_diseqSyms.insert({node, sym});
         d_diseqNodes.insert({extractStr(sym), newVar});
+        d_skolemVar.insert({node, newVar});
       }
       else if (node.getKind() == Kind::FINITE_FIELD_BITSUM)
       {
@@ -317,6 +319,9 @@ void CocoaEncoder::encodeFact(const Node& f)
     encodeTerm(f[0]);
     encodeTerm(f[1]);
     p = d_cache.at(f[0]) - d_cache.at(f[1]);
+    Node pNode = decode(p);
+    if (d_proof) registerEqualityProof(d_nm, f, pNode, d_proof);
+    d_factToConv.insert({f, d_nm->mkNode(Kind::EQUAL, pNode, zero())}); 
   }
   // !=
   else
@@ -325,12 +330,19 @@ void CocoaEncoder::encodeFact(const Node& f)
     encodeTerm(f[0][1]);
     Poly diff = d_cache.at(f[0][0]) - d_cache.at(f[0][1]);
     p = diff * symPoly(d_diseqSyms.at(f)) - 1;
+    Node pNode = decode(p);
+    Node sk = d_skolemVar.at(f);
+    if (d_proof) registerDisequalityProof(d_nm, f, pNode, sk, d_proof);
+    d_factToConv.insert({f, d_nm->mkNode(Kind::EQUAL, pNode, zero())});
+ 
   }
   if (!CoCoA::IsZero(p))
   {
     // normalize; if we don't do it, CoCoA will in GB input, confusing our
     // tracer.
-    p = p / CoCoA::LC(p);
+    Poly mul = 1/CoCoA::LC(p);
+    p = mul * p;
+    d_extraMonic.insert({f, std::pair(decode(mul), decode(p))});
   }
   d_cache.insert({f, p});
   d_polyFacts.insert({extractStr(p), f});

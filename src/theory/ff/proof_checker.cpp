@@ -16,16 +16,14 @@ void FfProofRuleChecker::registerTo(ProofChecker* pc)
   pc->registerChecker(ProofRule::FF_ROOT_BRANCH, this);
   pc->registerChecker(ProofRule::FF_FIELD_POLYS, this);
   pc->registerChecker(ProofRule::FF_IDEAL_GENERATOR, this);
-  pc->registerChecker(ProofRule::FF_IDEAL_ZERO, this);
-  pc->registerChecker(ProofRule::FF_IDEAL_MONIC, this);
-  pc->registerChecker(ProofRule::FF_IDEAL_REDUCE_ZERO, this);
-  pc->registerChecker(ProofRule::FF_IDEAL_REDUCE, this);
-  pc->registerChecker(ProofRule::FF_IDEAL_SPOLY, this);
   pc->registerChecker(ProofRule::FF_POLY_CONVERSION, this);
   pc->registerChecker(ProofRule::FF_ONE_UNSAT, this);
-  pc->registerChecker(ProofRule::FF_PAC, this);
   pc->registerChecker(ProofRule::FF_POLY_NORM, this);
   pc->registerChecker(ProofRule::FF_POLY_NORM_EQ, this);
+  pc->registerChecker(ProofRule::MACRO_FF_POLY_COMBINATION, this);
+  pc->registerChecker(ProofRule::FF_POLY_COMBINATION, this);
+  pc->registerChecker(ProofRule::FF_DISEQ, this);
+  pc->registerChecker(ProofRule::FF_PAC, this);
 }
 
 Node FfProofRuleChecker::checkInternal(ProofRule id,
@@ -34,56 +32,69 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
 {
   if (id == ProofRule::FF_PAC)
   {
-    return nodeManager()->mkConst<bool>(false); 
+    return nodeManager()->mkConst<bool>(false);
+  }
+  // Todo: Add a proper checker and change arguments.
+  if (id == ProofRule::FF_DISEQ)
+  {
+    Assert(args.size() == 3);
+    Node l = args[0];
+    Node r = args[1];
+    Node sk = args[2];
+    const Integer size = l.getType().getFfSize();
+    Node sub = nodeManager()->mkNode(
+        Kind::FINITE_FIELD_ADD, l, nodeManager()->mkNode(Kind::FINITE_FIELD_NEG, r));
+    Node minusOne = nodeManager()->mkConst(FiniteFieldValue(-1, size));
+    Node zero = nodeManager()->mkConst(FiniteFieldValue(0, size));
+    Node n = nodeManager()->mkNode(Kind::FINITE_FIELD_ADD,
+                        nodeManager()->mkNode(Kind::FINITE_FIELD_MULT, sub, sk),
+                        minusOne);
+    Node nEq = nodeManager()->mkNode(Kind::EQUAL, n, zero);
+    Node lrEq = nodeManager()->mkNode(Kind::NOT,
+                                      nodeManager()->mkNode(Kind::EQUAL, l, r));
+    return nodeManager()->mkNode(Kind::EQUAL, lrEq, nEq);
   }
   if (id == ProofRule::FF_EXHAUST_BRANCH)
   {
-    Assert(args.size() >= 1);
-    Assert(children.size() >= 2);
-    std::vector<Node> generators;
-    for (size_t it = 1; it < children.size(); ++it)
-    {
-      Assert(children[it].getKind() == Kind::SET_MEMBER);
-      generators.push_back(children[it][0]);
-    }
-    std::vector<Node> disjuncts;
-    TypeNode field = generators[0].getType();
+    // Single-variable exhaust: args = [x, G], one premise V(G) ≠ ∅.
+    Assert(args.size() == 2);
+    Assert(children.size() == 1);
+    Node x = args[0];
+    Node ideal = args[1];
+    Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
+    TypeNode field = x.getType();
     Assert(field.isFiniteField());
     Integer maxValue = field.getFfSize();
     FfSize fieldCard(maxValue);
-
+    std::vector<Node> generators;
+    for (const auto gen : ideal) generators.push_back(gen);
+    std::vector<Node> disjuncts;
     for (Integer it = 0; it < maxValue; it += 1)
     {
-      for (const auto& var : args[0])
-      {
-        Node assignmentPoly = var;
-        if (it > 0)
-          assignmentPoly =
-              nodeManager()->mkNode(Kind::FINITE_FIELD_ADD,
-                                    var,
-                                    nodeManager()->mkConst(FiniteFieldValue(
-                                        maxValue - it, fieldCard)));
-        generators.push_back(assignmentPoly);
-        Node newIdeal =
-            nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, generators);
-        disjuncts.push_back(emptyVarPred(nodeManager(), newIdeal).negate());
-        generators.pop_back();
-      }
+      Node assignmentPoly = x;
+      if (it > 0)
+        assignmentPoly = nodeManager()->mkNode(
+            Kind::FINITE_FIELD_ADD,
+            x,
+            nodeManager()->mkConst(FiniteFieldValue(maxValue - it, fieldCard)));
+      generators.push_back(assignmentPoly);
+      Node newIdeal =
+          nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, generators);
+      disjuncts.push_back(varietyIsEmpty(nodeManager(), newIdeal).negate());
+      generators.pop_back();
     }
     return nodeManager()->mkOr(disjuncts);
   }
   if (id == ProofRule::FF_ROOT_BRANCH)
   {
-    Assert(args.size() >= 1);
-    Assert(children.size() >= 2);
+    Assert(args.size() == 7);
+    Assert(children.size() == 2);
+    Node ideal = args[1];
+    Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
     std::vector<Node> generators;
-    for (size_t it = 1; it < children.size() - 1; ++it)
-    {
-      Assert(children[it].getKind() == Kind::SET_MEMBER);
-      generators.push_back(children[it][0]);
-    }
+    for (const auto gen : ideal) generators.push_back(gen);
     std::vector<Node> disjuncts;
-    Node branchVariable = args[1];
+    Node branchVariable = args[2];
     bool isNonAssigned = true;
     for (const auto& nonAssigned : args[0])
     {
@@ -95,7 +106,8 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     }
     Assert(!isNonAssigned);
     if (isNonAssigned) return Node::null();
-    for (const auto& root : args[2])
+
+    for (const auto& root : args[3])
     {
       const FiniteFieldValue rootValue = root.getConst<FiniteFieldValue>();
       Node branchValue = nodeManager()->mkConst(-rootValue);
@@ -103,10 +115,32 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
           Kind::FINITE_FIELD_ADD, branchVariable, branchValue));
       Node newIdeal =
           nodeManager()->mkNode(Kind::FINITE_FIELD_IDEAL, generators);
-      disjuncts.push_back(emptyVarPred(nodeManager(), newIdeal).negate());
+      disjuncts.push_back(varietyIsEmpty(nodeManager(), newIdeal).negate());
       generators.pop_back();
     }
     return nodeManager()->mkOr(disjuncts);
+  }
+  if (id == ProofRule::FF_POLY_COMBINATION)
+  {
+    Assert(!children.empty());
+    Assert(args.size() == 3);
+    Assert(args[0].getNumChildren() == args[1].getNumChildren());
+    Node res = args[2];
+    Assert(children[0].getKind() == Kind::SET_MEMBER);
+    Node ideal = children[0][1];
+    Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
+    return nodeManager()->mkNode(Kind::SET_MEMBER, res, ideal);
+  }
+  if (id == ProofRule::MACRO_FF_POLY_COMBINATION)
+  {
+    Assert(!children.empty());
+    Assert(args.size() == 3);
+    Assert(args[0].getNumChildren() == args[1].getNumChildren());
+    Node res = args[2];
+    Assert(children[0].getKind() == Kind::SET_MEMBER);
+    Node ideal = children[0][1];
+    Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
+    return nodeManager()->mkNode(Kind::SET_MEMBER, res, ideal);
   }
   if (id == ProofRule::FF_IDEAL_GENERATOR)
   {
@@ -119,54 +153,11 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
         return d_nm->mkNode(Kind::SET_MEMBER, args[0], args[1]);
     }
   }
-  if (id == ProofRule::FF_IDEAL_ZERO)
-  {
-    Assert(children.empty());
-    Assert(args.size() == 2);
-    Assert(args[1].getKind() == Kind::FINITE_FIELD_IDEAL);
-    return d_nm->mkNode(Kind::SET_MEMBER, args[0], args[1]);
-  }
-  if (id == ProofRule::FF_IDEAL_SPOLY)
-  {
-    Assert(children.size() == 2);
-    Assert(args.size() == 3);
-    // Both children are proofs of membership to the *same* ideal
-    Assert(children[0].getKind() == children[1].getKind()
-           && children[0].getKind() == Kind::SET_MEMBER);
-    Assert(children[0][1] == children[1][1]);
-    Node ideal = children[0][1];
-    return d_nm->mkNode(Kind::SET_MEMBER, args[0], children[0][1]);
-  }
-  if (id == ProofRule::FF_IDEAL_REDUCE || id == ProofRule::FF_IDEAL_REDUCE_ZERO)
-  {
-    Assert(args.size() == 3);
-    Assert(children[0].getKind() == Kind::SET_MEMBER);
-    Node ideal = children[0][1];
-    // All children must be proofs of membership for the *same* ideal
-    Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
-    for (const auto& child : children)
-    {
-      Assert(child.getKind() == Kind::SET_MEMBER);
-      Assert(ideal == child[1]);
-      if (ideal != child[1] || child.getKind() != Kind::SET_MEMBER)
-        return Node::null();
-    }
-    return d_nm->mkNode(Kind::SET_MEMBER, args[0], ideal);
-  }
-  if (id == ProofRule::FF_IDEAL_MONIC)
-  {
-    Assert(args.size() == 2);
-    Assert(children.size() == 1);
-    Assert(children[0].getKind() == Kind::SET_MEMBER);
-    Node ideal = children[0][1];
-    Assert(ideal.getKind() == Kind::FINITE_FIELD_IDEAL);
-    return d_nm->mkNode(Kind::SET_MEMBER, args[0], ideal);
-  }
   if (id == ProofRule::FF_POLY_CONVERSION)
   {
-    Assert(children.size() == 0);
-    Assert(args.size() == 2) << args.size();
-    return d_nm->mkNode(Kind::EQUAL, args[0], args[1]);
+    Assert(children.size() == 1);
+    Assert(args.size() == 2);
+    return args[1];
   }
   if (id == ProofRule::FF_FIELD_POLYS)
   {
@@ -179,7 +170,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     std::vector<Node> gens(ideal.begin(), ideal.end());
     gens.insert(gens.end(), args.begin(), args.end());
     Node newIdeal = d_nm->mkNode(Kind::FINITE_FIELD_IDEAL, gens);
-    return emptyVarPred(nodeManager(), newIdeal).negate();
+    return varietyIsEmpty(nodeManager(), newIdeal).negate();
   }
   if (id == ProofRule::FF_ONE_UNSAT)
   {
@@ -188,7 +179,7 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     Assert(children[0].getKind() == Kind::SET_MEMBER);
     Assert(children[0][1].getKind() == Kind::FINITE_FIELD_IDEAL)
         << children[0][1].getKind();
-    return emptyVarPred(nodeManager(), children[0][1]);
+    return varietyIsEmpty(nodeManager(), children[0][1]);
   }
   if (id == ProofRule::FF_POLY_NORM)
   {
@@ -202,7 +193,6 @@ Node FfProofRuleChecker::checkInternal(ProofRule id,
     }
     if (!arith::PolyNorm::isArithPolyNorm(args[0][0], args[0][1]))
     {
-      Assert(false) << "args do not normalize to the same term";
       return Node::null();
     }
     return args[0];

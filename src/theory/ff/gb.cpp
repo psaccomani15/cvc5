@@ -36,7 +36,7 @@ FfResult gb(const std::vector<Node>& facts,
             CDProof* cdp,
             FfStatistics* stats)
 {
-  CocoaEncoder enc(env.getNodeManager(), size);
+  CocoaEncoder enc(env.getNodeManager(), cdp, size);
   // collect leaves
   for (const Node& node : facts)
   {
@@ -51,12 +51,7 @@ FfResult gb(const std::vector<Node>& facts,
 
   // compute a GB
   std::vector<CoCoA::RingElem> generators;
-  std::vector<Node> gensNode;
   generators.insert(generators.end(), enc.polys().begin(), enc.polys().end());
-  std::transform(generators.begin(),
-                 generators.end(),
-                 std::back_inserter(gensNode),
-                 [&enc](const CoCoA::RingElem x) { return enc.decode(x); }); 
   generators.insert(
       generators.end(), enc.bitsumPolys().begin(), enc.bitsumPolys().end());
   if (env.isProofProducing())
@@ -141,7 +136,7 @@ FfResult gb(const std::vector<Node>& facts,
       }
       Node unsatVariety = idealProofs->oneRefutation(basis.front());
       produceContradiction(
-          env.getNodeManager(), cdp, fieldPolys, corePolys, conflict);
+          env.getNodeManager(), cdp, fieldPolys, enc.getTranslation(), enc.getMonicMapping(), conflict);
     }
     return *result.get();
   }
@@ -163,7 +158,7 @@ FfResult gb(const std::vector<Node>& facts,
       if (env.isProofProducing())
       {
         produceContradiction(
-            env.getNodeManager(), cdp, fieldPolys, gensNode, facts);
+            env.getNodeManager(), cdp, fieldPolys, enc.getTranslation(), enc.getMonicMapping(), facts);
       }
       return facts;
     }

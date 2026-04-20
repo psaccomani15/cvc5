@@ -2511,20 +2511,7 @@ enum ENUM(ProofRule)
    * \endverbatim
    */
   EVALUE(FF_FIELD_POLYS),
-  /**
-   * \verbatim embed:rst:leading-asterisk
-   * **Finite Fields -- Ideal Membership: Zero**
-   *
-   * .. math::
-   *
-   *   \inferrule{- \mid G}{0 \in \langle G \rangle}
-   *
-   *
-   * where :math:`G` is a set of polynomials.
-   * \endverbatim
-   */
-  EVALUE(FF_IDEAL_ZERO),
- /**
+/**
    * \verbatim embed:rst:leading-asterisk
    * **Finite Fields -- Ideal Membership: Generators**
    *
@@ -2539,87 +2526,64 @@ enum ENUM(ProofRule)
   EVALUE(FF_IDEAL_GENERATOR),
 /**
    * \verbatim embed:rst:leading-asterisk
-   * **Finite Fields -- Ideal Membership: Result of reduction**
+   * **Finite Fields -- Ideal Membership: Polynomial Combination**
    *
    * .. math::
    *
-   *   \inferrule{p \in \langle G \rangle, r_1 \in \langle G \rangle, \dots, \langle r_k \in \langle G \rangle \mid \mathtt{Seq}_r, \mathtt{reduce}(p, R)}
-   *   {\mathtt{reduce}(p, R) \in \langle G \rangle}
-   *
-   * where :math:`G` is a set of polynomials, :math:`R = \{r_1, \dots, r_k\}`
-   * and :math:`\mathtt{Seq}_r` is the sequence of reductors in a :math:`\mathtt{reduce}` operation.
-   * \endverbatim
-   */
-  EVALUE(FF_IDEAL_REDUCE),
-  /**
-   * \verbatim embed:rst:leading-asterisk
-   * **Finite Fields -- Ideal Membership: Membership Test**
-   *
-   * .. math::
-   *
-   *   \inferrule{0 \in \langle G \rangle, g_1 \in \langle G \rangle, \dots, \langle g_m \in \langle G \rangle \mid \mathtt{Seq}_r, p}
+   *   \inferrule{r_1 \in \langle G \rangle, \dots, \langle r_k \in \langle G \rangle \mid \mathtt{Seq}_r, \mathtt{Seq}_m, p}
    *   {p \in \langle G \rangle}
    *
-   * where :math:`G` is a set of polynomials, :math:`p` is the polynomial we are testing the membership
-   * and :math:`\mathtt{Seq}_r` is the sequence of reductors such that :math:`\mathtt{reduce}(p, R) = 0`.
-   * \endverbatim
+   * where :math:`G` is a set of polynomials, and :math:`\mathtt{Seq}_r = (r_1,
+   * \dots, r_k)` and :math:`\mathtt{Seq}_m = (m_1, \dots, m_k)` are a sequence
+   * of polynomials, such that :math:`p = \sum_i^k m_i * r_i` \endverbatim
    */
-  EVALUE(FF_IDEAL_REDUCE_ZERO),
+  EVALUE(MACRO_FF_POLY_COMBINATION),
+  EVALUE(FF_POLY_COMBINATION),
 /**
    * \verbatim embed:rst:leading-asterisk
-   * **Finite Fields -- Ideal Membership: S-Polynomials**
+   * **Finite Fields -- Disequalities Conversion**
    *
    * .. math::
    *
-   *   \inferrule{p \in \langle G \rangle, q \in \langle G \rangle \mid \mathtt{spoly}(p, q)}
-   *   {\mathtt{spoly}(p, q) \in \langle G \rangle }
+   *   \inferrule{- \mid l, r, k}
+   *   {l \neq r = ((l - r) * k - 1 = 0)}
    *
-   * where :math:`G` is a set of polynomials.
-   * \endverbatim
-   */
-  EVALUE(FF_IDEAL_SPOLY),
+   */ 
+  EVALUE(FF_DISEQ), 
 /**
-   * \verbatim embed:rst:leading-asterisk
-   * **Finite Fields -- Ideal Membership: Monic Polynomials**
-   *
-   * .. math::
-   *
-   *   \inferrule{p \in \langle G \rangle \mid \mathtt{monic}(p, q)}
-   *   {\mathtt{monic}(p) \in \langle G \rangle }
-   *
-   * where :math:`G` is a set of polynomials.
-   * \endverbatim
-   */
-  EVALUE(FF_IDEAL_MONIC),
- /**
    * \verbatim embed:rst:leading-asterisk
    * **Finite Fields -- Branch on Roots of a univariate polynomial**
    *
    * .. math::
    *
-   *   \inferrule{\mathcal{V}(\langle G \rangle) \neq \emptyset, p \in \langle G \rangle, g_1 \in \langle G \rangle, \dots, g_m \in \langle G \rangle \mid N, \mathtt{Roots} (p)}
-   *   {\lor_{v \in \mathtt{Roots}(p)} \mathcal V(\langle G \cup \{x - v \}\rangle) \neq \emptyset}
+   *   \inferrule{\mathcal{V}(\langle G \rangle) \neq \emptyset, p \in \langle G
+   *   \rangle \mid N, G, x, \mathtt{Roots}(p), p, r, (d, A, B)}
+   *   {\lor_{v \in \mathtt{Roots}(p)} \mathcal V(\langle G \cup \{x - v\}\rangle)
+   *   \neq \emptyset}
    *
-   * where :math:`p` is an univariate polynomial, G is a set of polynomials and N is the
-   * set of non-assigned variables. This rule unifies both Triangular
-   * and Univariate present in the paper Ozdemir et al, CAV 2023, "Satisfiability
-   * Modulo Finite Fields".
-   * \endverbatim
+   * where :math:`p` is a univariate polynomial in :math:`x`, :math:`G` is a set
+   * of polynomials, :math:`N` is the set of non-assigned variables,
+   * :math:`r = (x^q \bmod p) - x` is the reduced field polynomial, and
+   * :math:`(d, A, B)` is a Bezout witness satisfying :math:`A p + B r = d`.
+   * Since :math:`\gcd(p, x^q - x) = \gcd(p, r) = d`, this establishes that
+   * :math:`\mathtt{Roots}(p)` are exactly the roots of :math:`p` in
+   * :math:`\mathbb{F}_q`. This rule unifies both Triangular and Univariate
+   * present in the paper Ozdemir et al, CAV 2023, "Satisfiability Modulo
+   * Finite Fields". \endverbatim
    */
   EVALUE(FF_ROOT_BRANCH),
 /**
    * \verbatim embed:rst:leading-asterisk
-   * **Finite Fields -- Exhaustive search through all elements of a finite field**
+   * **Finite Fields -- Exhaustive branching on a single variable**
    *
    * .. math::
    *
-   *   \inferrule{\mathcal{V}(\langle G \rangle) \neq \emptyset, g_1 \in \langle G \rangle, \dots, g_m \in \langle G \rangle \mid N}
-   *   {\lor_{x \in N} \lor_{v \in F_p} \mathcal V(\langle G \cup \{x - v \}\rangle) \neq \emptyset}
+   *   \inferrule{\mathcal V(\langle G \rangle) \neq \emptyset \mid x, G}
+   *   {\bigvee_{v \in F_p} \mathcal V(\langle G \cup \{x - v\}\rangle) \neq \emptyset}
    *
-   * where :math:`N` is the set of unassigned variables, :math:`F_p` is the fixed prime field
-   * and G is  a set of polynomials.
-   * This rule is an analogue of FF_ROOT_BRANCH where instead of restricting our search in the
-   * roots of a univariate polynomial, we have to look at all possible cases.
+   * Branches on a single variable :math:`x`, producing the disjunction over
+   * all field values. Combined with the :math:`q` child unsat facts, a single
+   * application is sufficient to refute the ideal by chain resolution.
    * \endverbatim
    */
   EVALUE(FF_EXHAUST_BRANCH),

@@ -134,7 +134,7 @@ FfResult split(const std::vector<Node>& facts,
                FfStatistics* stats)
 {
   std::unordered_set<Node> bits{};
-  CocoaEncoder enc(env.getNodeManager(), size);
+  CocoaEncoder enc(env.getNodeManager(), nullptr, size);
   for (const auto& fact : facts)
   {
     enc.addFact(fact);
