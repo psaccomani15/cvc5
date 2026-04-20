@@ -35,6 +35,7 @@
 #include "theory/theory_state.h"
 #include "proof/proof_checker.h"
 #include "theory/ff/proof_checker.h"
+#include "proof/proof.h"
 
 namespace cvc5::internal {
 class ProofRuleChecker;
