@@ -281,10 +281,10 @@ void IdealProofManager::finishProof(bool rootBranching)
     {
       d_proof.addProof(d_globalProof->getProofFor(unsatFacts));
       resolutionPremises.push_back(unsatFacts);
+      pivot.push_back(unsatFacts);
     }
     for (size_t it = 0; it < childrenSatFact.size(); ++it)
       polarity.push_back(falseNode);
-    for (const auto& unsatFact : childrenUnsatFact) pivot.push_back(unsatFact);
     d_proof.addStep(falseNode,
                     ProofRule::CHAIN_RESOLUTION,
                     resolutionPremises,
