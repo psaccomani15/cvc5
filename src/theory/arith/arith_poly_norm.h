@@ -38,18 +38,18 @@ class PolyNorm
    * Add the monomial x*c to this polynomial.
    * If x is null, then x*c is treated as c.
    */
-  void addMonomial(TNode x, const Rational& c, const Integer& modBy = 0, bool isNeg = false);
+  void addMonomial(TNode x, const Rational& c, bool isNeg = false);
   /**
    * Multiply this polynomial by the monomial x*c, where c is a constant.
    * If x is null, then x*c is treated as c.
    */
-  void multiplyMonomial(TNode x, const Rational& c, const Integer& modBy = 0);
+  void multiplyMonomial(TNode x, const Rational& c);
   /** Add polynomial p to this one. */
-  void add(const PolyNorm& p, const Integer& modBy = 0);
+  void add(const PolyNorm& p);
   /** Subtract polynomial p from this one. */
-  void subtract(const PolyNorm& p, const Integer& modBy = 0);
+  void subtract(const PolyNorm& p);
   /** Multiply this polynomial by p */
-  void multiply(const PolyNorm& p, const Integer& modBy = 0);
+  void multiply(const PolyNorm& p);
   /** Multiply the coefficients of this polynomial by constant c */
   void mulCoeffs(const Rational& c);
   /**
