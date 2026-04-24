@@ -131,6 +131,11 @@ Node TheoryFiniteFieldsRewriter::postRewriteFfAdd(TNode t)
           nm, nm->mkNode(Kind::FINITE_FIELD_MULT, c, summand.first)));
     }
   }
+  // Sort by the full summand's node id to match PolyNorm::toNode's canonical
+  // form. Otherwise the rewriter and poly-norm disagree on argument order for
+  // semantically equal sums, which breaks the global TConvProofGenerator's
+  // ability to stitch them together.
+  std::sort(summands.begin(), summands.end());
   if (summands.size() == 0)
   {
     // again, this is possible through cancellation.
