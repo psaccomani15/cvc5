@@ -922,6 +922,40 @@ bool AletheProofPostprocessCallback::update(Node res,
                            {},
                            *cdp);
     }
+    // ======== Distinct values
+    //
+    // ----- EVALUATE       ----- EQUIV_SIMPLIFY
+    //  VP0                  VP1
+    //                      ----- EQUIV1
+    //                       VP2                 VP0
+    // ------------------------------------------------ RESOLUTION
+    //                  (cl (not (= t s)))*
+    //
+    // VP0: (cl (= (= t s) false))
+    // VP1: (cl (= (= (= t s) false) (not (= t s))))
+    // VP2: (cl (not (= (= t s) false)) (not (= t s)))
+    //
+    // * the corresponding proof node is (not (= t s))
+    case ProofRule::DISTINCT_VALUES:
+    {
+      Assert(res.getKind() == Kind::NOT && res[0].getKind() == Kind::EQUAL);
+      Node eqFalse = res[0].eqNode(d_false);
+      Node vp0 = nm->mkNode(Kind::SEXPR, d_cl, eqFalse);
+      Node vp1 = nm->mkNode(Kind::SEXPR, d_cl, eqFalse.eqNode(res));
+      Node vp2 = nm->mkNode(Kind::SEXPR, d_cl, eqFalse.notNode(), res);
+      return addAletheStep(AletheRule::EVALUATE, vp0, vp0, {}, {}, *cdp)
+             && addAletheStep(
+                 AletheRule::EQUIV_SIMPLIFY, vp1, vp1, {}, {}, *cdp)
+             && addAletheStep(AletheRule::EQUIV1, vp2, vp2, {vp1}, {}, *cdp)
+             && addAletheStep(AletheRule::RESOLUTION,
+                              res,
+                              nm->mkNode(Kind::SEXPR, d_cl, res),
+                              {vp2, vp0},
+                              d_resPivots
+                                  ? std::vector<Node>{eqFalse, d_true}
+                                  : std::vector<Node>(),
+                              *cdp);
+    }
     // If the trusted rule is a theory lemma from arithmetic, we try to phrase
     // it with "lia_generic".
     case ProofRule::TRUST:
