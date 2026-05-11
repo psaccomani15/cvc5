@@ -123,7 +123,8 @@ std::shared_ptr<ProofNode> SubTheory::getProof()
 {
   const auto nm = nodeManager();
   Node falseNode = nm->mkConst<bool>(false);
-  return d_proof->getProof(falseNode);
+  if (d_env.isProofProducing()) return d_proof->getProof(falseNode);
+  return nullptr;
 }
 }  // namespace ff
 }  // namespace theory

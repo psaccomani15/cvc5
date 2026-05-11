@@ -155,7 +155,7 @@ FfResult gb(const std::vector<Node>& facts,
     if (root.empty())
     {
       // set trivial conflict
-      if (env.isProofProducing())
+      if (env.isTheoryProofProducing())
       {
         produceContradiction(
             env.getNodeManager(), cdp, fieldPolys, enc.getTranslation(), enc.getMonicMapping(), facts);
