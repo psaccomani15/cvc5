@@ -137,16 +137,15 @@ class MembershipProofManager : protected EnvObj
    * Call this when a membership test is ended.
    */
   void membershipEnd();
-  /**
-   * For each poly string, its index in the input sequence.
-   */
-  std::unordered_map<std::string, size_t> d_inputNumbers;
 
   /**
    * The sequence of polynomials used for reduction during GBasis production.
    */
   std::vector<CoCoA::RingElem> d_reductionSeq{};
-
+  /**
+   * The sequence of multipliers polynomials used for reduction during GBasis
+   * production.
+   */ 
   std::vector<CoCoA::RingElem> d_multiplierSeq{};
 
   /**
