@@ -73,3 +73,17 @@ name     = "FINITE_FIELD_BITSUM"
 children = "2:"
 comment  = "bitsum of field elements"
 typerule = "::cvc5::internal::theory::ff::FiniteFieldFixedFieldTypeRule"
+
+[[kinds]]
+type     = "operator"
+name     = "FINITE_FIELD_DUMMY1"
+children = 1
+comment  = "Dummy kind for collision reproducing."
+typerule = "::cvc5::internal::theory::ff::FiniteFieldFixedFieldTypeRule"
+
+[[kinds]]
+type     = "operator"
+name     = "FINITE_FIELD_DUMMY2"
+children = 1
+comment  = "Dummy kind for collision reproducing."
+typerule = "::cvc5::internal::theory::ff::FiniteFieldFixedFieldTypeRule"
