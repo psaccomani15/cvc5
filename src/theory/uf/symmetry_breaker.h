@@ -48,7 +48,9 @@
 #include "context/context.h"
 #include "expr/node.h"
 #include "expr/node_builder.h"
+#include "proof/sym_break_proof_info.h"
 #include "smt/env_obj.h"
+#include "theory/uf/symmetry_breaker_proof.h"
 #include "util/statistics_stats.h"
 
 namespace cvc5::internal {
@@ -113,6 +115,8 @@ class SymmetryBreaker : protected EnvObj, public context::ContextNotifyObj
   std::unordered_map<Node, Node> d_normalizationCache;
   TermEqs d_termEqs;
   TermEqs d_termEqsOnly;
+  /** Builds the justification of emitted clauses when proofs are enabled. */
+  SymBreakProofBuilder d_pfBuilder;
 
   void clear();
   void rerunAssertionsIfNecessary();
@@ -161,7 +165,12 @@ class SymmetryBreaker : protected EnvObj, public context::ContextNotifyObj
   SymmetryBreaker(Env& env, std::string name = "");
 
   void assertFormula(TNode phi);
-  void apply(std::vector<Node>& newClauses);
+  /**
+   * Compute symmetry breaking clauses. If infos is non-null, the clauses are
+   * rewritten and infos[i] is the justification of newClauses[i].
+   */
+  void apply(std::vector<Node>& newClauses,
+             std::vector<std::shared_ptr<SymBreakLemma>>* infos = nullptr);
 
 }; /* class SymmetryBreaker */
 

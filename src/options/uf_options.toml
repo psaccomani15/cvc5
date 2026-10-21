@@ -7,8 +7,22 @@ name   = "Uninterpreted Functions Theory"
   long       = "symmetry-breaker"
   type       = "bool"
   default    = "true"
-  no_support = ["proofs"]
   help       = "use UF symmetry breaker (Deharbe et al., CADE 2011)"
+
+[[option]]
+  name       = "ufSymmetryBreakerProofMode"
+  category   = "expert"
+  long       = "symmetry-breaker-proof-mode=MODE"
+  type       = "SymmetryBreakerProofMode"
+  default    = "SUBST"
+  help       = "how proofs justify the clauses of the UF symmetry breaker"
+  help_mode  = "Modes for justifying UF symmetry breaking clauses in proofs."
+[[option.mode.SUBST]]
+  name = "subst"
+  help = "Instantiate the closed refutation with the witness permutation (rule SUBST_CLOSED)."
+[[option.mode.ITE]]
+  name = "ite"
+  help = "Replay the refutation with constants replaced by ite witness terms."
 
 [[option]]
   name       = "ufssAbortCardinality"

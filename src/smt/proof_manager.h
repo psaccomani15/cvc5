@@ -28,6 +28,7 @@ class ProofNode;
 class ProofNodeManager;
 class ProofLogger;
 class SolverEngine;
+class SymBreakLemmaRegistry;
 
 namespace rewriter {
 class RewriteDb;
@@ -49,6 +50,7 @@ namespace smt {
 class Assertions;
 class PreprocessProofGenerator;
 class ProofPostprocess;
+class SymBreakProofAssembler;
 
 /**
  * This class is responsible for managing the proof output of SolverEngine, as
@@ -166,6 +168,8 @@ class PfManager : protected EnvObj
   rewriter::RewriteDb* getRewriteDatabase() const;
   /** Get the preprocess proof generator */
   PreprocessProofGenerator* getPreprocessProofGenerator() const;
+  /** Get the registry of symmetry breaking lemmas with deferred proofs */
+  SymBreakLemmaRegistry* getSymBreakLemmaRegistry() const;
   //--------------------------- end access to utilities
  private:
   /**
@@ -192,6 +196,10 @@ class PfManager : protected EnvObj
   std::unique_ptr<smt::ProofPostprocess> d_pfpp;
   /** The preprocess proof generator. */
   std::unique_ptr<PreprocessProofGenerator> d_pppg;
+  /** The symmetry breaking lemmas whose justification is deferred. */
+  std::unique_ptr<SymBreakLemmaRegistry> d_symbReg;
+  /** Discharges the lemmas of d_symbReg in the final proof. */
+  std::unique_ptr<SymBreakProofAssembler> d_symbAsm;
   /** The post process callback for finalization */
   ProofFinalCallback d_finalCb;
   /**

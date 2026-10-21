@@ -1618,8 +1618,9 @@ void TheoryEngine::lemma(TrustNode tlemma,
   Assert(tlemma.getKind() == TrustNodeKind::LEMMA
          || tlemma.getKind() == TrustNodeKind::CONFLICT);
 
+  bool deferred = isLemmaPropertyDeferredJustification(p);
   // minimize or generalize conflict
-  if (d_cp)
+  if (d_cp && !deferred)
   {
     TrustNode tproc = d_cp->processLemma(tlemma);
     if (!tproc.isNull())
@@ -1638,8 +1639,9 @@ void TheoryEngine::lemma(TrustNode tlemma,
       << "Lemma " << lemma << " from " << from << " has a free variable";
 
   // when proofs are enabled, we ensure the trust node has a generator by
-  // adding a trust step to the lazy proof maintained by this class
-  if (isProofEnabled())
+  // adding a trust step to the lazy proof maintained by this class. Lemmas
+  // with deferred justification are left without a proof.
+  if (isProofEnabled() && !(deferred && tlemma.getGenerator() == nullptr))
   {
     // ensure proof: set THEORY_LEMMA if no generator is provided
     if (tlemma.getGenerator() == nullptr)

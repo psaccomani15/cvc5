@@ -378,11 +378,13 @@ class PropEngine : protected EnvObj
    * @param local Whether this lemma is considered local to the SAT context.
    * In this case, we must cache whether it has been added to the SAT solver
    * already.
+   * @param deferred Whether the lemma has deferred justification.
    */
   void assertTrustedLemmaInternal(theory::InferenceId id,
                                   TrustNode trn,
                                   bool removable,
-                                  bool local);
+                                  bool local,
+                                  bool deferred = false);
   /**
    * Assert node as a formula to the CNF stream
    * @param id The inference identifier.
@@ -410,7 +412,8 @@ class PropEngine : protected EnvObj
                             const std::vector<theory::SkolemLemma>& ppLemmas,
                             bool removable,
                             bool inprocess,
-                            bool local);
+                            bool local,
+                            bool deferred = false);
 
   /**
    * Indicates that the SAT solver is currently solving something and we should

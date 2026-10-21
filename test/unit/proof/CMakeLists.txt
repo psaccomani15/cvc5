@@ -12,3 +12,5 @@
 # [[ Add lengthier description here ]]
 # \todo document this file
 ##
+
+cvc5_add_unit_test_white(subst_closed_white proof)

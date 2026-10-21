@@ -23,6 +23,7 @@
 #include "options/uf_options.h"
 #include "proof/proof_node_manager.h"
 #include "smt/logic_exception.h"
+#include "smt/proof_manager.h"
 #include "theory/arith/arith_utilities.h"
 #include "theory/theory_model.h"
 #include "theory/type_enumerator.h"
@@ -446,14 +447,27 @@ void TheoryUF::presolve()
   if (options().uf.ufSymmetryBreaker)
   {
     vector<Node> newClauses;
-    d_symb.apply(newClauses);
-    for (vector<Node>::const_iterator i = newClauses.begin();
-         i != newClauses.end();
-         ++i)
+    // With proofs, each clause is sent with deferred justification: its
+    // implicational obligations are recorded now and discharged when the
+    // final proof is assembled.
+    smt::PfManager* pfm = d_env.getProofManager();
+    bool proofs = d_env.isTheoryProofProducing() && pfm != nullptr;
+    std::vector<std::shared_ptr<SymBreakLemma>> infos;
+    d_symb.apply(newClauses, proofs ? &infos : nullptr);
+    for (size_t i = 0, nclauses = newClauses.size(); i < nclauses; i++)
     {
-      Trace("uf") << "uf: generating a lemma: " << *i << std::endl;
-      // no proof generator provided
-      d_im.lemma(*i, InferenceId::UF_BREAK_SYMMETRY);
+      Trace("uf") << "uf: generating a lemma: " << newClauses[i] << std::endl;
+      if (proofs)
+      {
+        pfm->getSymBreakLemmaRegistry()->add(infos[i]);
+        d_im.lemma(newClauses[i],
+                   InferenceId::UF_BREAK_SYMMETRY,
+                   LemmaProperty::DEFERRED_JUSTIFICATION);
+      }
+      else
+      {
+        d_im.lemma(newClauses[i], InferenceId::UF_BREAK_SYMMETRY);
+      }
     }
   }
   if (d_thss)

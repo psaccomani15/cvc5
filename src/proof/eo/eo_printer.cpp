@@ -182,6 +182,7 @@ bool EoPrinter::isHandled(const Options& opts, const ProofNode* pfn)
     case ProofRule::BV_EAGER_ATOM:
     case ProofRule::ACI_NORM:
     case ProofRule::ABSORB:
+    case ProofRule::SUBST_CLOSED:
     case ProofRule::ARITH_POLY_NORM:
     case ProofRule::ARITH_POLY_NORM_REL:
     case ProofRule::BV_POLY_NORM:

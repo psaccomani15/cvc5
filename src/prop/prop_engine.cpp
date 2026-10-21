@@ -186,6 +186,7 @@ void PropEngine::assertLemma(theory::InferenceId id,
   bool removable = isLemmaPropertyRemovable(p);
   bool local = isLemmaPropertyLocal(p);
   bool inprocess = isLemmaPropertyInprocess(p);
+  bool deferred = isLemmaPropertyDeferredJustification(p);
 
   // call preprocessor
   std::vector<theory::SkolemLemma> ppLemmas;
@@ -193,7 +194,8 @@ void PropEngine::assertLemma(theory::InferenceId id,
 
   // do final checks on the lemmas we are about to send
   if (d_env.isTheoryProofProducing()
-      && options().proof.proofCheck == options::ProofCheckMode::EAGER)
+      && options().proof.proofCheck == options::ProofCheckMode::EAGER
+      && !(deferred && tplemma.getGenerator() == nullptr))
   {
     Assert(tplemma.getGenerator() != nullptr);
     // ensure closed, make the proof node eagerly here to debug
@@ -219,13 +221,15 @@ void PropEngine::assertLemma(theory::InferenceId id,
   }
 
   // now, assert the lemmas
-  assertLemmasInternal(id, tplemma, ppLemmas, removable, inprocess, local);
+  assertLemmasInternal(
+      id, tplemma, ppLemmas, removable, inprocess, local, deferred);
 }
 
 void PropEngine::assertTrustedLemmaInternal(theory::InferenceId id,
                                             TrustNode trn,
                                             bool removable,
-                                            bool local)
+                                            bool local,
+                                            bool deferred)
 {
   Node node = trn.getNode();
   if (local)
@@ -247,13 +251,22 @@ void PropEngine::assertTrustedLemmaInternal(theory::InferenceId id,
     output(OutputTag::LEMMAS) << ")" << std::endl;
   }
   bool negated = trn.getKind() == TrustNodeKind::CONFLICT;
+  // A lemma with deferred justification and no generator remains a free
+  // assumption of the SAT proof; it is discharged when the final proof is
+  // assembled.
+  bool deferredNoPf = deferred && trn.getGenerator() == nullptr;
+  if (deferredNoPf && d_ppm != nullptr)
+  {
+    d_ppm->registerAssertion(negated ? node.notNode() : node);
+  }
   // should have a proof generator if the theory engine is proof producing
-  Assert(!d_env.isTheoryProofProducing() || trn.getGenerator() != nullptr);
+  Assert(!d_env.isTheoryProofProducing() || trn.getGenerator() != nullptr
+         || deferredNoPf);
   // if we are producing proofs for the SAT solver but not for theory engine,
   // then we need to prevent the lemma of being added as an assumption (since
   // the generator will be null). We use the default proof generator for lemmas.
   if (d_env.isSatProofProducing() && !d_env.isTheoryProofProducing()
-      && !trn.getGenerator())
+      && !trn.getGenerator() && !deferredNoPf)
   {
     Node actualNode = negated ? node.notNode() : node;
     d_theoryLemmaPg.addTrustedStep(actualNode, TrustId::THEORY_LEMMA, {}, {});
@@ -314,7 +327,8 @@ void PropEngine::assertLemmasInternal(
     const std::vector<theory::SkolemLemma>& ppLemmas,
     bool removable,
     bool inprocess,
-    bool local)
+    bool local,
+    bool deferred)
 {
   // notify skolem definitions first to ensure that the computation of
   // when a literal contains a skolem is accurate in the calls below.
@@ -333,7 +347,7 @@ void PropEngine::assertLemmasInternal(
     {
       trn = d_theoryProxy->inprocessLemma(trn);
     }
-    assertTrustedLemmaInternal(id, trn, removable, local);
+    assertTrustedLemmaInternal(id, trn, removable, local, deferred);
   }
   for (const theory::SkolemLemma& lem : ppLemmas)
   {

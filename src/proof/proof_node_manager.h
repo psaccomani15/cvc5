@@ -166,6 +166,13 @@ class ProofNodeManager
                                      bool doMinimize = false,
                                      Node expected = Node::null());
   /**
+   * Make SUBST_CLOSED(pf) instantiating vars by subs. Fails if a free
+   * assumption of pf contains a constant of vars.
+   */
+  std::shared_ptr<ProofNode> mkSubstClosed(std::shared_ptr<ProofNode> pf,
+                                           const std::vector<Node>& vars,
+                                           const std::vector<Node>& subs);
+  /**
    * This method updates pn to be a proof of the form <id>( children, args ),
    * while maintaining its d_proven field. This method returns false if this
    * proof manager is using a checker, and we compute that the above proof

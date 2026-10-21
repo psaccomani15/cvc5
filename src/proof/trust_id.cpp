@@ -27,6 +27,8 @@ const char* toString(TrustId id)
     case TrustId::PREPROCESSED_INPUT: return "PREPROCESSED_INPUT";
     case TrustId::THEORY_LEMMA: return "THEORY_LEMMA";
     case TrustId::SMT_REFUTATION: return "SMT_REFUTATION";
+    case TrustId::SYMM_BREAK_OBLIGATION: return "SYMM_BREAK_OBLIGATION";
+    case TrustId::SYMM_BREAK_REPLAY: return "SYMM_BREAK_REPLAY";
     // core
     case TrustId::THEORY_INFERENCE_ARITH: return "THEORY_INFERENCE_ARITH";
     case TrustId::THEORY_INFERENCE_ARRAYS: return "THEORY_INFERENCE_ARRAYS";

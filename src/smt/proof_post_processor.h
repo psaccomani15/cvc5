@@ -58,6 +58,8 @@ class ProofPostprocessCallback : public ProofNodeUpdaterCallback,
    * has no effect.
    */
   void setEliminateRule(ProofRule rule);
+  /** Never update assumptions in scope, regardless of the default. */
+  void setProtectScopedAssumptions(bool val);
   /** Should proof pn be updated? */
   bool shouldUpdate(std::shared_ptr<ProofNode> pn,
                     const std::vector<Node>& fa,
@@ -93,6 +95,8 @@ class ProofPostprocessCallback : public ProofNodeUpdaterCallback,
   HistogramStat<ProofRule> d_macroExpand;
   /** Whether we post-process assumptions in scope. */
   bool d_updateScopedAssumptions;
+  /** Whether assumptions in scope are currently protected from updates. */
+  bool d_protectScopedAssumptions;
   //---------------------------------reset at the begining of each update
   /** Mapping assumptions to their proof from preprocessing */
   std::map<Node, std::shared_ptr<ProofNode>> d_assumpToProof;
@@ -221,6 +225,12 @@ class ProofPostprocess : protected EnvObj
    * debug whether the final proof is closed.
    */
   void setAssertions(const std::vector<Node>& assertions, bool doDebug);
+  /**
+   * Never update assumptions in scope. This is required when the proof
+   * contains closed subproofs whose free assumptions must not change, e.g.
+   * premises of SUBST_CLOSED.
+   */
+  void setProtectScopedAssumptions(bool val);
 
  private:
   /** The post process callback */

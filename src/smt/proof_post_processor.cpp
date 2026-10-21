@@ -44,7 +44,8 @@ ProofPostprocessCallback::ProofPostprocessCallback(Env& env,
       d_wfpm(env),
       d_macroExpand(statisticsRegistry().registerHistogram<ProofRule>(
           "ProofPostprocessCallback::macroExpandCount")),
-      d_updateScopedAssumptions(updateScopedAssumptions)
+      d_updateScopedAssumptions(updateScopedAssumptions),
+      d_protectScopedAssumptions(false)
 {
   d_true = nodeManager()->mkConst(true);
 }
@@ -60,6 +61,11 @@ void ProofPostprocessCallback::initializeUpdate(ProofGenerator* pppg)
 void ProofPostprocessCallback::setEliminateRule(ProofRule rule)
 {
   d_elimRules.insert(rule);
+}
+
+void ProofPostprocessCallback::setProtectScopedAssumptions(bool val)
+{
+  d_protectScopedAssumptions = val;
 }
 
 bool ProofPostprocessCallback::shouldUpdate(std::shared_ptr<ProofNode> pn,
@@ -78,7 +84,7 @@ bool ProofPostprocessCallback::shouldUpdate(std::shared_ptr<ProofNode> pn,
   {
     return false;
   }
-  if (!d_updateScopedAssumptions
+  if ((!d_updateScopedAssumptions || d_protectScopedAssumptions)
       && std::find(fa.begin(), fa.end(), pn->getResult()) != fa.end())
   {
     Trace("smt-proof-pp-debug")
@@ -1151,6 +1157,11 @@ void ProofPostprocess::setAssertions(const std::vector<Node>& assertions,
                                      bool doDebug)
 {
   d_updater.setFreeAssumptions(assertions, doDebug);
+}
+
+void ProofPostprocess::setProtectScopedAssumptions(bool val)
+{
+  d_cb.setProtectScopedAssumptions(val);
 }
 
 }  // namespace smt

@@ -155,6 +155,25 @@ enum ENUM(ProofRule)
   EVALUE(SUBS),
   /**
    * \verbatim embed:rst:leading-asterisk
+   * **Builtin theory -- Closed substitution**
+   *
+   * .. math::
+   *
+   *   \inferrule{F \mid (c_1 \dots c_n), (t_1 \dots t_n)}
+   *   {F\{c_1\mapsto t_1, \dots, c_n\mapsto t_n\}}
+   *
+   * where :math:`c_1, \dots, c_n` are distinct free constants, each
+   * :math:`t_i` has the type of :math:`c_i`, and the substitution is applied
+   * simultaneously. This rule is only sound if no free assumption of the
+   * proof of :math:`F` contains any :math:`c_i`, and no skolem in that proof
+   * is defined in terms of some :math:`c_i`. The first side condition is
+   * enforced when computing the free assumptions of a proof; the second is
+   * ensured by the producer.
+   * \endverbatim
+   */
+  EVALUE(SUBST_CLOSED),
+  /**
+   * \verbatim embed:rst:leading-asterisk
    * **Builtin theory -- Rewrite**
    *
    * .. math::

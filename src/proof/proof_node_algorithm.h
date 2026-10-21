@@ -25,6 +25,7 @@
 namespace cvc5::internal {
 
 class ProofNode;
+class ProofNodeManager;
 class CDProof;
 
 namespace expr {
@@ -62,6 +63,35 @@ void getFreeAssumptions(ProofNode* pn, std::vector<Node>& assump);
 void getFreeAssumptionsMap(
     std::shared_ptr<ProofNode> pn,
     std::map<Node, std::vector<std::shared_ptr<ProofNode>>>& amap);
+
+/**
+ * Parse the arguments of a SUBST_CLOSED step into vars and subs.
+ * @return false if the arguments are malformed, i.e. not two SEXPR of equal
+ * arity, a var that is not a distinct free constant, or a type mismatch.
+ */
+bool getSubstClosedArgs(const std::vector<Node>& args,
+                        std::vector<Node>& vars,
+                        std::vector<Node>& subs);
+
+/**
+ * Check the side condition of SUBST_CLOSED: no formula in assumps contains a
+ * constant of vars.
+ * @return a violating assumption, or null if the side condition holds.
+ */
+Node getSubstClosedViolation(const std::vector<Node>& assumps,
+                             const std::vector<Node>& vars);
+
+/**
+ * Replay the proof pn with vars simultaneously replaced by subs in every
+ * conclusion, argument and assumption. Each step is re-checked; a step whose
+ * check fails is replaced by a trust step (SYMM_BREAK_REPLAY) with the same
+ * children, and counted in numTrusted. The result is a fresh proof node dag.
+ */
+std::shared_ptr<ProofNode> substituteProofNode(ProofNodeManager* pnm,
+                                               std::shared_ptr<ProofNode> pn,
+                                               const std::vector<Node>& vars,
+                                               const std::vector<Node>& subs,
+                                               size_t& numTrusted);
 
 /**
  * Get the subproofs of pn that have rule r.

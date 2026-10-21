@@ -291,6 +291,26 @@ std::shared_ptr<ProofNode> ProofNodeManager::mkScope(
   return mkNode(ProofRule::SCOPE, {pf}, assumps, minExpected);
 }
 
+std::shared_ptr<ProofNode> ProofNodeManager::mkSubstClosed(
+    std::shared_ptr<ProofNode> pf,
+    const std::vector<Node>& vars,
+    const std::vector<Node>& subs)
+{
+  Assert(vars.size() == subs.size());
+  std::vector<Node> fa;
+  expr::getFreeAssumptions(pf.get(), fa);
+  Node bad = expr::getSubstClosedViolation(fa, vars);
+  if (!bad.isNull())
+  {
+    Unreachable() << "mkSubstClosed: free assumption " << bad
+                  << " contains a substituted constant";
+  }
+  NodeManager* nm = d_true.getNodeManager();
+  std::vector<Node> args{nm->mkNode(Kind::SEXPR, vars),
+                         nm->mkNode(Kind::SEXPR, subs)};
+  return mkNode(ProofRule::SUBST_CLOSED, {pf}, args);
+}
+
 bool ProofNodeManager::updateNode(
     ProofNode* pn,
     ProofRule id,

@@ -34,6 +34,10 @@ enum class TrustId : uint32_t
    * proof producing (--proof-mode=pp-only).
    */
   SMT_REFUTATION,
+  /** An unproven obligation of a symmetry breaking clause */
+  SYMM_BREAK_OBLIGATION,
+  /** A step that failed to re-check when replaying a symmetry witness */
+  SYMM_BREAK_REPLAY,
   /**
    * An internal inference made by a theory without a proof. These are split
    * per theory, and introduced as needed.

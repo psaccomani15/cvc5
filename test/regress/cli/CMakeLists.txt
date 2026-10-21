@@ -2662,6 +2662,9 @@ set(regress_0_tests
   regress0/uf/simple.02.cvc.smt2
   regress0/uf/simple.03.cvc.smt2
   regress0/uf/simple.04.cvc.smt2
+  regress0/uf/symm-break-proof-pigeon.smt2
+  regress0/uf/symm-break-proof-stabilizer.smt2
+  regress0/uf/symm-break-proof-unit.smt2
   regress0/ufdt/leon-amortize-queue-goal3.smt2
   regress0/ufdt/leon-bsearch-tree-goal15.smt2
   regress0/ufdt/leon-heap-goal2.smt2

@@ -15,11 +15,13 @@
 #include <algorithm>
 
 #include "expr/aci_norm.h"
+#include "expr/node_algorithm.h"
 #include "proof/proof.h"
 #include "proof/proof_checker.h"
 #include "proof/proof_node.h"
 #include "proof/proof_node_manager.h"
 #include "proof/proof_rule_checker.h"
+#include "proof/trust_id.h"
 #include "theory/arith/arith_poly_norm.h"
 #include "theory/builtin/generic_op.h"
 #include "theory/quantifiers/term_util.h"
@@ -127,11 +129,158 @@ void getFreeAssumptionsMap(
           }
           continue;
         }
+        else if (id == ProofRule::SUBST_CLOSED)
+        {
+          // the premise must be closed w.r.t. the substituted constants
+          std::map<Node, std::vector<std::shared_ptr<ProofNode>>> amapTmp;
+          expr::getFreeAssumptionsMap(cs[0], amapTmp);
+          std::vector<Node> vars;
+          std::vector<Node> subs;
+          std::vector<Node> assumps;
+          for (const std::pair<const Node,
+                               std::vector<std::shared_ptr<ProofNode>>>& a :
+               amapTmp)
+          {
+            assumps.push_back(a.first);
+          }
+          if (getSubstClosedArgs(cargs, vars, subs))
+          {
+            Node bad = getSubstClosedViolation(assumps, vars);
+            if (!bad.isNull())
+            {
+              Unreachable() << "SUBST_CLOSED premise is not closed, free "
+                               "assumption "
+                            << bad << " contains a substituted constant";
+            }
+          }
+          for (std::pair<const Node, std::vector<std::shared_ptr<ProofNode>>>&
+                   a : amapTmp)
+          {
+            std::vector<std::shared_ptr<ProofNode>>& pfs = amap[a.first];
+            pfs.insert(pfs.end(), a.second.begin(), a.second.end());
+          }
+          continue;
+        }
         // traverse on children
         visit.insert(visit.end(), cs.begin(), cs.end());
       }
     }
   } while (!visit.empty());
+}
+
+bool getSubstClosedArgs(const std::vector<Node>& args,
+                        std::vector<Node>& vars,
+                        std::vector<Node>& subs)
+{
+  if (args.size() != 2 || args[0].getKind() != Kind::SEXPR
+      || args[1].getKind() != Kind::SEXPR
+      || args[0].getNumChildren() != args[1].getNumChildren())
+  {
+    return false;
+  }
+  std::unordered_set<Node> seen;
+  for (size_t i = 0, n = args[0].getNumChildren(); i < n; i++)
+  {
+    Node v = args[0][i];
+    Node s = args[1][i];
+    if (v.getKind() != Kind::VARIABLE || v.getType() != s.getType()
+        || !seen.insert(v).second)
+    {
+      return false;
+    }
+    vars.push_back(v);
+    subs.push_back(s);
+  }
+  return true;
+}
+
+Node getSubstClosedViolation(const std::vector<Node>& assumps,
+                             const std::vector<Node>& vars)
+{
+  for (const Node& a : assumps)
+  {
+    for (const Node& v : vars)
+    {
+      if (expr::hasSubterm(a, v))
+      {
+        return a;
+      }
+    }
+  }
+  return Node::null();
+}
+
+std::shared_ptr<ProofNode> substituteProofNode(ProofNodeManager* pnm,
+                                               std::shared_ptr<ProofNode> pn,
+                                               const std::vector<Node>& vars,
+                                               const std::vector<Node>& subs,
+                                               size_t& numTrusted)
+{
+  ProofChecker* pc = pnm->getChecker();
+  std::unordered_map<const ProofNode*, std::shared_ptr<ProofNode>> done;
+  // pairs of a proof node and whether its children were pushed
+  std::vector<std::pair<std::shared_ptr<ProofNode>, bool>> visit;
+  visit.emplace_back(pn, false);
+  while (!visit.empty())
+  {
+    std::shared_ptr<ProofNode> cur = visit.back().first;
+    bool expanded = visit.back().second;
+    visit.pop_back();
+    if (done.find(cur.get()) != done.end())
+    {
+      continue;
+    }
+    const std::vector<std::shared_ptr<ProofNode>>& cs = cur->getChildren();
+    if (!expanded)
+    {
+      visit.emplace_back(cur, true);
+      for (const std::shared_ptr<ProofNode>& c : cs)
+      {
+        if (done.find(c.get()) == done.end())
+        {
+          visit.emplace_back(c, false);
+        }
+      }
+      continue;
+    }
+    Node res = cur->getResult().substitute(
+        vars.begin(), vars.end(), subs.begin(), subs.end());
+    ProofRule r = cur->getRule();
+    if (r == ProofRule::ASSUME)
+    {
+      done[cur.get()] = pnm->mkAssume(res);
+      continue;
+    }
+    std::vector<std::shared_ptr<ProofNode>> ncs;
+    std::vector<Node> ncres;
+    for (const std::shared_ptr<ProofNode>& c : cs)
+    {
+      std::shared_ptr<ProofNode> nc = done[c.get()];
+      ncs.push_back(nc);
+      ncres.push_back(nc->getResult());
+    }
+    std::vector<Node> nargs;
+    for (const Node& a : cur->getArguments())
+    {
+      nargs.push_back(
+          a.substitute(vars.begin(), vars.end(), subs.begin(), subs.end()));
+    }
+    // check with no expected conclusion, so that the step is really checked
+    Node chk = pc->checkDebug(r, ncres, nargs, Node::null(), "sb-replay");
+    if (chk == res)
+    {
+      done[cur.get()] = pnm->mkNode(r, ncs, nargs, res);
+    }
+    else
+    {
+      Trace("sb-replay") << "Failed to replay " << r << " proving " << res
+                         << std::endl;
+      numTrusted++;
+      done[cur.get()] =
+          pnm->mkTrustedNode(TrustId::SYMM_BREAK_REPLAY, ncs, {}, res);
+    }
+  }
+  return done[pn.get()];
 }
 
 void getSubproofRule(std::shared_ptr<ProofNode> pn,

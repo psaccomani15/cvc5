@@ -15,6 +15,7 @@
 #include "expr/aci_norm.h"
 #include "expr/node_algorithm.h"
 #include "expr/skolem_manager.h"
+#include "proof/proof_node_algorithm.h"
 #include "rewriter/rewrite_db.h"
 #include "rewriter/rewrite_db_term_process.h"
 #include "rewriter/rewrite_proof_rule.h"
@@ -44,6 +45,7 @@ void BuiltinProofRuleChecker::registerTo(ProofChecker* pc)
   pc->registerChecker(ProofRule::ASSUME, this);
   pc->registerChecker(ProofRule::SCOPE, this);
   pc->registerChecker(ProofRule::SUBS, this);
+  pc->registerChecker(ProofRule::SUBST_CLOSED, this);
   pc->registerChecker(ProofRule::EVALUATE, this);
   pc->registerChecker(ProofRule::DISTINCT_VALUES, this);
   pc->registerChecker(ProofRule::ACI_NORM, this);
@@ -257,6 +259,19 @@ Node BuiltinProofRuleChecker::checkInternal(ProofRule id,
       return Node::null();
     }
     return args[0].eqNode(res);
+  }
+  else if (id == ProofRule::SUBST_CLOSED)
+  {
+    Assert(children.size() == 1);
+    Assert(args.size() == 2);
+    std::vector<Node> vars;
+    std::vector<Node> subs;
+    if (!expr::getSubstClosedArgs(args, vars, subs))
+    {
+      return Node::null();
+    }
+    return children[0].substitute(
+        vars.begin(), vars.end(), subs.begin(), subs.end());
   }
   else if (id == ProofRule::MACRO_REWRITE)
   {

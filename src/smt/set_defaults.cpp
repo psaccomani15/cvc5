@@ -158,7 +158,7 @@ void SetDefaults::setDefaultsPre(Options& opts)
       // specific options that are disabled
       OPTION_EXCEPTION_IF_NOT(arith, nlCov, false, "safe options");
       SET_AND_NOTIFY(arith, nlCov, false, "safe options");
-      // never use symmetry breaker, which does not have proofs
+      // never use symmetry breaker, whose proofs are not yet used in safe mode
       SET_AND_NOTIFY(uf, ufSymmetryBreaker, false, "safe options");
       // proofs not yet supported on main
       SET_AND_NOTIFY(quantifiers, cegqiBv, false, "safe options");
@@ -737,8 +737,7 @@ void SetDefaults::setDefaultsPost(const LogicInfo& logic, Options& opts) const
     // We disable this technique when using unsat core production, since it
     // uses a non-standard implementation that sends (unsound) lemmas during
     // presolve.
-    // We also disable it by default if safe unsat cores are enabled, or if
-    // the proof mode is FULL_STRICT.
+    // We also disable it by default if safe unsat cores are enabled.
     bool val = qf_uf_noinc && !safeUnsatCores(opts);
     SET_AND_NOTIFY_VAL_SYM(uf, ufSymmetryBreaker, val, "logic and options");
   }
@@ -1173,8 +1172,6 @@ bool SetDefaults::incompatibleWithProofs(Options& opts,
   if (opts.smt.proofMode == options::ProofMode::FULL_STRICT)
   {
     // these are always disabled by safe options, ok to silently change
-    // symmetry breaking does not have proof support
-    SET_AND_NOTIFY(uf, ufSymmetryBreaker, false, "full strict proofs");
     // CEGQI with deltas and infinities is not supported
     SET_AND_NOTIFY(quantifiers, cegqiMidpoint, true, "full strict proofs");
     SET_AND_NOTIFY(quantifiers, cegqiUseInfInt, false, "full strict proofs");

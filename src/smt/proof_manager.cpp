@@ -24,6 +24,7 @@
 #include "proof/proof_checker.h"
 #include "proof/proof_node_algorithm.h"
 #include "proof/proof_node_manager.h"
+#include "proof/sym_break_proof_info.h"
 #include "rewriter/rewrite_db.h"
 #include "smt/assertions.h"
 #include "smt/difficulty_post_processor.h"
@@ -32,6 +33,7 @@
 #include "smt/proof_logger.h"
 #include "smt/proof_post_processor.h"
 #include "smt/smt_solver.h"
+#include "smt/sym_break_proof_assembler.h"
 
 using namespace cvc5::internal::rewriter;
 namespace cvc5::internal {
@@ -162,6 +164,8 @@ PfManager::PfManager(Env& env)
 
   d_pppg = std::make_unique<PreprocessProofGenerator>(
       d_env, userContext(), "smt::PreprocessProofGenerator");
+  d_symbReg = std::make_unique<SymBreakLemmaRegistry>(userContext());
+  d_symbAsm = std::make_unique<SymBreakProofAssembler>(d_env, *d_symbReg);
 }
 
 PfManager::~PfManager() {}
@@ -228,12 +232,22 @@ std::shared_ptr<ProofNode> PfManager::connectProofToAssertions(
   Trace("smt-proof")
       << "SolverEngine::connectProofToAssertions(): postprocess...\n";
   Assert(d_pfpp != nullptr);
+  // Discharge symmetry breaking lemmas, which are still free assumptions.
+  // This introduces closed subproofs whose free assumptions must not be
+  // changed by the post-processor, hence the settings below.
+  bool symb = !d_symbReg->empty();
+  if (symb)
+  {
+    d_symbAsm->process(pfn);
+  }
+  d_pfpp->setProtectScopedAssumptions(symb);
   // Note that in incremental mode, we cannot set assertions here, as it
   // permits the postprocessor to merge subproofs at a higher user context
-  // level into proofs that are used in a lower user context level.
+  // level into proofs that are used in a lower user context level. We also
+  // do not merge proofs depending on assertions into closed subproofs.
   if (!options().base.incrementalSolving)
   {
-    d_pfpp->setAssertions(assertions, false);
+    d_pfpp->setAssertions(symb ? std::vector<Node>() : assertions, false);
   }
   d_pfpp->process(pfn, d_pppg.get());
 
@@ -455,6 +469,11 @@ rewriter::RewriteDb* PfManager::getRewriteDatabase() const
 PreprocessProofGenerator* PfManager::getPreprocessProofGenerator() const
 {
   return d_pppg.get();
+}
+
+SymBreakLemmaRegistry* PfManager::getSymBreakLemmaRegistry() const
+{
+  return d_symbReg.get();
 }
 
 void PfManager::getAssertions(Assertions& as, std::vector<Node>& assertions)

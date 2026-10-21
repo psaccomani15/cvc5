@@ -196,6 +196,7 @@ libcvc5_add_sources(
   proof/proof_node.h
   proof/proof_node_algorithm.cpp
   proof/proof_node_algorithm.h
+  proof/sym_break_proof_info.h
   proof/proof_node_converter.cpp
   proof/proof_node_converter.h
   proof/proof_node_to_sexpr.cpp
@@ -372,6 +373,8 @@ libcvc5_add_sources(
   smt/smt_solver.h
   smt/sygus_solver.cpp
   smt/sygus_solver.h
+  smt/sym_break_proof_assembler.cpp
+  smt/sym_break_proof_assembler.h
   smt/term_formula_removal.cpp
   smt/term_formula_removal.h
   smt/timeout_core_manager.cpp
@@ -1318,6 +1321,8 @@ libcvc5_add_sources(
   theory/uf/lambda_lift.h
   theory/uf/symmetry_breaker.cpp
   theory/uf/symmetry_breaker.h
+  theory/uf/symmetry_breaker_proof.cpp
+  theory/uf/symmetry_breaker_proof.h
   theory/uf/theory_uf.cpp
   theory/uf/theory_uf.h
   theory/uf/theory_uf_model.cpp

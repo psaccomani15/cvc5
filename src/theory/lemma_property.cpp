@@ -57,6 +57,11 @@ bool isLemmaPropertyLocal(LemmaProperty p)
 {
   return (p & LemmaProperty::LOCAL) == LemmaProperty::LOCAL;
 }
+bool isLemmaPropertyDeferredJustification(LemmaProperty p)
+{
+  return (p & LemmaProperty::DEFERRED_JUSTIFICATION)
+         == LemmaProperty::DEFERRED_JUSTIFICATION;
+}
 
 std::ostream& operator<<(std::ostream& out, LemmaProperty p)
 {
@@ -86,6 +91,10 @@ std::ostream& operator<<(std::ostream& out, LemmaProperty p)
     if (isLemmaPropertyLocal(p))
     {
       out << " LOCAL";
+    }
+    if (isLemmaPropertyDeferredJustification(p))
+    {
+      out << " DEFERRED_JUSTIFICATION";
     }
     out << " }";
   }

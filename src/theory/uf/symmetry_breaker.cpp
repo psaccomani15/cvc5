@@ -210,6 +210,7 @@ SymmetryBreaker::SymmetryBreaker(Env& env, std::string name)
       d_normalizationCache(),
       d_termEqs(),
       d_termEqsOnly(),
+      d_pfBuilder(env),
       d_name(name),
       d_stats(statisticsRegistry(), d_name + "theory::uf::symmetry_breaker::")
 {
@@ -228,6 +229,31 @@ class SBGuard
     d_ref = d_old;
   }
 }; /* class SBGuard */
+
+/**
+ * Hides the term equality tables while normalizing formulas that are not
+ * asserted, so that their equalities are not recorded.
+ */
+class TermEqsGuard
+{
+  SymmetryBreaker::TermEqs& d_eqs;
+  SymmetryBreaker::TermEqs& d_eqsOnly;
+  SymmetryBreaker::TermEqs d_savedEqs;
+  SymmetryBreaker::TermEqs d_savedEqsOnly;
+
+ public:
+  TermEqsGuard(SymmetryBreaker::TermEqs& eqs, SymmetryBreaker::TermEqs& eqsOnly)
+      : d_eqs(eqs), d_eqsOnly(eqsOnly)
+  {
+    std::swap(d_eqs, d_savedEqs);
+    std::swap(d_eqsOnly, d_savedEqsOnly);
+  }
+  ~TermEqsGuard()
+  {
+    std::swap(d_eqs, d_savedEqs);
+    std::swap(d_eqsOnly, d_savedEqsOnly);
+  }
+}; /* class TermEqsGuard */
 
 void SymmetryBreaker::rerunAssertionsIfNecessary()
 {
@@ -563,7 +589,8 @@ void SymmetryBreaker::clear()
   d_termEqsOnly.clear();
 }
 
-void SymmetryBreaker::apply(std::vector<Node>& newClauses)
+void SymmetryBreaker::apply(std::vector<Node>& newClauses,
+                            std::vector<std::shared_ptr<SymBreakLemma>>* infos)
 {
   rerunAssertionsIfNecessary();
   guessPermutations();
@@ -572,6 +599,8 @@ void SymmetryBreaker::apply(std::vector<Node>& newClauses)
       << "UFSYMM have " << d_permutations.size() << " permutation sets" << endl;
   if (!d_permutations.empty())
   {
+    // the formulas before normalization, used for proofs
+    std::vector<Node> raw(d_phi.begin(), d_phi.end());
     {
       TimerStat::CodeTimer codeTimer(d_stats.d_initNormalizationTimer);
       // normalize d_phi
@@ -585,6 +614,16 @@ void SymmetryBreaker::apply(std::vector<Node>& newClauses)
                              << "UFSYMM                to " << *i << endl;
       }
     }
+    std::unordered_map<Node, Node> normToRaw;
+    for (size_t j = 0, nphi = d_phi.size(); j < nphi; j++)
+    {
+      normToRaw.emplace(d_phi[j], raw[j]);
+    }
+    SymBreakProofBuilder::FindImage findImage = [&](const Node& f) {
+      TermEqsGuard g(d_termEqs, d_termEqsOnly);
+      std::unordered_map<Node, Node>::iterator it = normToRaw.find(norm(f));
+      return it == normToRaw.end() ? Node::null() : it->second;
+    };
 
     for (const Permutation& p : d_permutations)
     {
@@ -689,7 +728,18 @@ void SymmetryBreaker::apply(std::vector<Node>& newClauses)
               Trace("ufsymm:clauses")
                   << "UFSYMM symmetry-breaking clause: " << d << endl;
             }
-            newClauses.push_back(d);
+            if (infos != nullptr)
+            {
+              Node lem = rewrite(d);
+              newClauses.push_back(lem);
+              std::vector<Node> pvec(p.begin(), p.end());
+              infos->push_back(
+                  d_pfBuilder.build(lem, t, pvec, cts, c, raw, findImage));
+            }
+            else
+            {
+              newClauses.push_back(d);
+            }
           }
           else
           {
@@ -715,6 +765,8 @@ void SymmetryBreaker::guessPermutations()
 bool SymmetryBreaker::invariantByPermutations(const Permutation& p)
 {
   TimerStat::CodeTimer codeTimer(d_stats.d_invariantByPermutationsTimer);
+  // the permuted formulas are not asserted, do not record their equalities
+  TermEqsGuard g(d_termEqs, d_termEqsOnly);
 
   // use d_phi
   Trace("ufsymm") << "UFSYMM invariantByPermutations()? " << p << endl;
