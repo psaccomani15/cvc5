@@ -42,6 +42,7 @@
 #include <iostream>
 #include <list>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "context/cdlist.h"
@@ -126,6 +127,9 @@ class SymmetryBreaker : protected EnvObj, public context::ContextNotifyObj
   std::vector<Node> d_phiNorm;
   TermEqs d_termEqs;
   TermEqs d_termEqsOnly;
+  /** The formulas collectTermEqs has visited at level 0, and deeper only. */
+  std::unordered_set<Node> d_termEqsVisitedTop;
+  std::unordered_set<Node> d_termEqsVisited;
 
   void clear();
   void rerunAssertionsIfNecessary();
@@ -146,17 +150,32 @@ class SymmetryBreaker : protected EnvObj, public context::ContextNotifyObj
    */
   std::vector<bool> getAffectedAssertions(const std::vector<Node>& subs) const;
   /**
-   * Returns norm(d_phi[k]). Calling norm() again on the same input gives the
-   * same result and has no further effects (its cache is hit, or it only
-   * inserts into sets again), so this computes it only on first use.
+   * Returns norm(d_phi[k]). norm() has no side effects and gives the same
+   * result on the same input, so this computes it only on first use.
    */
   Node normUnchanged(size_t k);
   bool invariantByPermutations(const Permutation& p);
   void selectTerms(const Permutation& p);
   Terms::iterator selectMostPromisingTerm(Terms& terms);
   void insertUsedIn(Term term, const Permutation& p, std::set<Node>& cts);
-  Node normInternal(TNode phi, size_t level);
+  Node normInternal(TNode phi);
+  /**
+   * Returns the normal form of n, in which the arguments of AND, OR, EQUAL,
+   * XOR and DISTINCT are sorted. It has no side effects: it is also applied to
+   * permuted formulas that are not asserted, by the invariance checks.
+   */
   Node norm(TNode n);
+  /**
+   * Record into d_termEqs and d_termEqsOnly the equalities between terms and
+   * variables of the rewritten asserted formula n, at level 0 if they are
+   * asserted (top-level or under AND), and the sets of values of terms
+   * constrained by OR clauses at level 0. It must only be applied to asserted
+   * formulas: selectTerms relies on d_termEqsOnly for a term t only
+   * containing values one of which t is asserted to be equal to.
+   */
+  void collectTermEqs(TNode n, size_t level);
+  /** Record eq, an equality of n at the given level, if it has a variable. */
+  void recordTermEq(TNode eq, size_t level);
 
   std::string d_name;
 

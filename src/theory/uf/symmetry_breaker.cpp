@@ -253,10 +253,10 @@ void SymmetryBreaker::rerunAssertionsIfNecessary()
 Node SymmetryBreaker::norm(TNode phi)
 {
   Node n = rewrite(phi);
-  return normInternal(n, 0);
+  return normInternal(n);
 }
 
-Node SymmetryBreaker::normInternal(TNode n, size_t level)
+Node SymmetryBreaker::normInternal(TNode n)
 {
   Node& result = d_normalizationCache[n];
   if (!result.isNull())
@@ -275,58 +275,6 @@ Node SymmetryBreaker::normInternal(TNode n, size_t level)
     }
 
     case Kind::AND:
-    {
-      // commutative+associative N-ary operator handling
-      vector<Node> kids;
-      kids.reserve(n.getNumChildren());
-      queue<TNode> work;
-      work.push(n);
-      Trace("ufsymm:norm") << "UFSYMM processing " << n << endl;
-      do
-      {
-        TNode m = work.front();
-        work.pop();
-        for (TNode::iterator i = m.begin(); i != m.end(); ++i)
-        {
-          if ((*i).getKind() == k)
-          {
-            work.push(*i);
-          }
-          else
-          {
-            if ((*i).getKind() == Kind::OR)
-            {
-              kids.push_back(normInternal(*i, level));
-            }
-            else if ((*i).getKind() == Kind::EQUAL)
-            {
-              kids.push_back(normInternal(*i, level));
-              if ((*i)[0].isVar() || (*i)[1].isVar())
-              {
-                d_termEqs[(*i)[0]].insert((*i)[1]);
-                d_termEqs[(*i)[1]].insert((*i)[0]);
-                if (level == 0)
-                {
-                  d_termEqsOnly[(*i)[0]].insert((*i)[1]);
-                  d_termEqsOnly[(*i)[1]].insert((*i)[0]);
-                  Trace("ufsymm:eq")
-                      << "UFSYMM " << (*i)[0] << " <==> " << (*i)[1] << endl;
-                }
-              }
-            }
-            else
-            {
-              kids.push_back(*i);
-            }
-          }
-        }
-      } while (!work.empty());
-      Trace("ufsymm:norm") << "UFSYMM got " << kids.size() << " kids for the "
-                           << k << "-kinded Node" << endl;
-      sort(kids.begin(), kids.end());
-      return result = nodeManager()->mkNode(k, kids);
-    }
-
     case Kind::OR:
     {
       // commutative+associative N-ary operator handling
@@ -335,124 +283,30 @@ Node SymmetryBreaker::normInternal(TNode n, size_t level)
       queue<TNode> work;
       work.push(n);
       Trace("ufsymm:norm") << "UFSYMM processing " << n << endl;
-      TNode matchingTerm = TNode::null();
-      vector<TNode> matchingTermEquals;
-      bool first = true, matchedVar = false;
+      // the kind of the children that are normalized: OR and EQUAL under an
+      // AND, AND and EQUAL under an OR
+      Kind other = k == Kind::AND ? Kind::OR : Kind::AND;
       do
       {
         TNode m = work.front();
         work.pop();
         for (TNode::iterator i = m.begin(); i != m.end(); ++i)
         {
-          if ((*i).getKind() == k)
+          Kind ik = (*i).getKind();
+          if (ik == k)
           {
             work.push(*i);
           }
+          else if (ik == other || ik == Kind::EQUAL)
+          {
+            kids.push_back(normInternal(*i));
+          }
           else
           {
-            if ((*i).getKind() == Kind::AND)
-            {
-              first = false;
-              matchingTerm = TNode::null();
-              kids.push_back(normInternal(*i, level + 1));
-            }
-            else if ((*i).getKind() == Kind::EQUAL)
-            {
-              kids.push_back(normInternal(*i, level + 1));
-              if ((*i)[0].isVar() || (*i)[1].isVar())
-              {
-                d_termEqs[(*i)[0]].insert((*i)[1]);
-                d_termEqs[(*i)[1]].insert((*i)[0]);
-                if (level == 0)
-                {
-                  if (first)
-                  {
-                    matchingTerm = *i;
-                  }
-                  else if (!matchingTerm.isNull())
-                  {
-                    if (matchedVar)
-                    {
-                      if (matchingTerm == (*i)[0])
-                      {
-                        matchingTermEquals.push_back((*i)[1]);
-                      }
-                      else if (matchingTerm == (*i)[1])
-                      {
-                        matchingTermEquals.push_back((*i)[0]);
-                      }
-                      else
-                      {
-                        matchingTerm = TNode::null();
-                      }
-                    }
-                    else if ((*i)[0] == matchingTerm[0])
-                    {
-                      matchingTermEquals.push_back(matchingTerm[1]);
-                      matchingTermEquals.push_back((*i)[1]);
-                      matchingTerm = matchingTerm[0];
-                      matchedVar = true;
-                    }
-                    else if ((*i)[1] == matchingTerm[0])
-                    {
-                      matchingTermEquals.push_back(matchingTerm[1]);
-                      matchingTermEquals.push_back((*i)[0]);
-                      matchingTerm = matchingTerm[0];
-                      matchedVar = true;
-                    }
-                    else if ((*i)[0] == matchingTerm[1])
-                    {
-                      matchingTermEquals.push_back(matchingTerm[0]);
-                      matchingTermEquals.push_back((*i)[1]);
-                      matchingTerm = matchingTerm[1];
-                      matchedVar = true;
-                    }
-                    else if ((*i)[1] == matchingTerm[1])
-                    {
-                      matchingTermEquals.push_back(matchingTerm[0]);
-                      matchingTermEquals.push_back((*i)[0]);
-                      matchingTerm = matchingTerm[1];
-                      matchedVar = true;
-                    }
-                    else
-                    {
-                      matchingTerm = TNode::null();
-                    }
-                  }
-                }
-              }
-              else
-              {
-                matchingTerm = TNode::null();
-              }
-              first = false;
-            }
-            else
-            {
-              first = false;
-              matchingTerm = TNode::null();
-              kids.push_back(*i);
-            }
+            kids.push_back(*i);
           }
         }
       } while (!work.empty());
-      if (!matchingTerm.isNull())
-      {
-        if (TraceIsOn("ufsymm:eq"))
-        {
-          Trace("ufsymm:eq") << "UFSYMM here we can conclude that "
-                             << matchingTerm << " is one of {";
-          for (vector<TNode>::const_iterator i = matchingTermEquals.begin();
-               i != matchingTermEquals.end();
-               ++i)
-          {
-            Trace("ufsymm:eq") << " " << *i;
-          }
-          Trace("ufsymm:eq") << " }" << endl;
-        }
-        d_termEqsOnly[matchingTerm].insert(matchingTermEquals.begin(),
-                                           matchingTermEquals.end());
-      }
       Trace("ufsymm:norm") << "UFSYMM got " << kids.size() << " kids for the "
                            << k << "-kinded Node" << endl;
       sort(kids.begin(), kids.end());
@@ -460,18 +314,6 @@ Node SymmetryBreaker::normInternal(TNode n, size_t level)
     }
 
     case Kind::EQUAL:
-      if (n[0].isVar() || n[1].isVar())
-      {
-        d_termEqs[n[0]].insert(n[1]);
-        d_termEqs[n[1]].insert(n[0]);
-        if (level == 0)
-        {
-          d_termEqsOnly[n[0]].insert(n[1]);
-          d_termEqsOnly[n[1]].insert(n[0]);
-          Trace("ufsymm:eq") << "UFSYMM " << n[0] << " <==> " << n[1] << endl;
-        }
-      }
-      CVC5_FALLTHROUGH;
     case Kind::XOR:
       // commutative binary operator handling
       return n[1] < n[0] ? nodeManager()->mkNode(k, n[1], n[0]) : Node(n);
@@ -480,6 +322,169 @@ Node SymmetryBreaker::normInternal(TNode n, size_t level)
       // Normally T-rewriting is enough; only special cases (like
       // Boolean-layer stuff) has to go above.
       return n;
+  }
+}
+
+void SymmetryBreaker::recordTermEq(TNode eq, size_t level)
+{
+  if (!eq[0].isVar() && !eq[1].isVar())
+  {
+    return;
+  }
+  d_termEqs[eq[0]].insert(eq[1]);
+  d_termEqs[eq[1]].insert(eq[0]);
+  if (level == 0)
+  {
+    d_termEqsOnly[eq[0]].insert(eq[1]);
+    d_termEqsOnly[eq[1]].insert(eq[0]);
+    Trace("ufsymm:eq") << "UFSYMM " << eq[0] << " <==> " << eq[1] << endl;
+  }
+}
+
+void SymmetryBreaker::collectTermEqs(TNode n, size_t level)
+{
+  // A formula is collected again at level 0 if it was only collected at a
+  // deeper level, as level 0 records more.
+  if (level == 0 ? !d_termEqsVisitedTop.insert(n).second
+                 : d_termEqsVisitedTop.find(n) != d_termEqsVisitedTop.end()
+                       || !d_termEqsVisited.insert(n).second)
+  {
+    return;
+  }
+  Kind k = n.getKind();
+  if (k == Kind::EQUAL)
+  {
+    recordTermEq(n, level);
+    return;
+  }
+  if (k != Kind::AND && k != Kind::OR)
+  {
+    return;
+  }
+  // for an OR at level 0: the term t such that each disjunct is (= t c), and
+  // the terms c
+  TNode matchingTerm = TNode::null();
+  vector<TNode> matchingTermEquals;
+  bool first = true, matchedVar = false;
+  queue<TNode> work;
+  work.push(n);
+  do
+  {
+    TNode m = work.front();
+    work.pop();
+    for (TNode c : m)
+    {
+      Kind ck = c.getKind();
+      if (ck == k)
+      {
+        // flatten
+        work.push(c);
+        continue;
+      }
+      if (k == Kind::AND)
+      {
+        if (ck == Kind::OR)
+        {
+          collectTermEqs(c, level);
+        }
+        else if (ck == Kind::EQUAL)
+        {
+          recordTermEq(c, level);
+        }
+        continue;
+      }
+      if (ck == Kind::AND)
+      {
+        first = false;
+        matchingTerm = TNode::null();
+        collectTermEqs(c, level + 1);
+        continue;
+      }
+      if (ck != Kind::EQUAL)
+      {
+        first = false;
+        matchingTerm = TNode::null();
+        continue;
+      }
+      recordTermEq(c, level + 1);
+      if (!c[0].isVar() && !c[1].isVar())
+      {
+        matchingTerm = TNode::null();
+      }
+      else if (level == 0)
+      {
+        if (first)
+        {
+          matchingTerm = c;
+        }
+        else if (!matchingTerm.isNull())
+        {
+          if (matchedVar)
+          {
+            if (matchingTerm == c[0])
+            {
+              matchingTermEquals.push_back(c[1]);
+            }
+            else if (matchingTerm == c[1])
+            {
+              matchingTermEquals.push_back(c[0]);
+            }
+            else
+            {
+              matchingTerm = TNode::null();
+            }
+          }
+          else if (c[0] == matchingTerm[0])
+          {
+            matchingTermEquals.push_back(matchingTerm[1]);
+            matchingTermEquals.push_back(c[1]);
+            matchingTerm = matchingTerm[0];
+            matchedVar = true;
+          }
+          else if (c[1] == matchingTerm[0])
+          {
+            matchingTermEquals.push_back(matchingTerm[1]);
+            matchingTermEquals.push_back(c[0]);
+            matchingTerm = matchingTerm[0];
+            matchedVar = true;
+          }
+          else if (c[0] == matchingTerm[1])
+          {
+            matchingTermEquals.push_back(matchingTerm[0]);
+            matchingTermEquals.push_back(c[1]);
+            matchingTerm = matchingTerm[1];
+            matchedVar = true;
+          }
+          else if (c[1] == matchingTerm[1])
+          {
+            matchingTermEquals.push_back(matchingTerm[0]);
+            matchingTermEquals.push_back(c[0]);
+            matchingTerm = matchingTerm[1];
+            matchedVar = true;
+          }
+          else
+          {
+            matchingTerm = TNode::null();
+          }
+        }
+      }
+      first = false;
+    }
+  } while (!work.empty());
+  if (k == Kind::OR && !matchingTerm.isNull())
+  {
+    if (TraceIsOn("ufsymm:eq"))
+    {
+      Trace("ufsymm:eq") << "UFSYMM here we can conclude that " << matchingTerm
+                         << " is one of {";
+      for (TNode e : matchingTermEquals)
+      {
+        Trace("ufsymm:eq") << " " << e;
+      }
+      Trace("ufsymm:eq") << " }" << endl;
+    }
+    d_termEqsOnly[matchingTerm].insert(matchingTermEquals.begin(),
+                                       matchingTermEquals.end());
   }
 }
 
@@ -564,6 +569,8 @@ void SymmetryBreaker::clear()
   d_phiNorm.clear();
   d_termEqs.clear();
   d_termEqsOnly.clear();
+  d_termEqsVisited.clear();
+  d_termEqsVisitedTop.clear();
 }
 
 void SymmetryBreaker::apply(std::vector<Node>& newClauses)
@@ -582,6 +589,10 @@ void SymmetryBreaker::apply(std::vector<Node>& newClauses)
       for (vector<Node>::iterator i = d_phi.begin(); i != d_phi.end(); ++i)
       {
         Node n = *i;
+        // the equalities and values of terms are collected from the asserted
+        // formulas only, not from the permuted formulas that the invariance
+        // checks normalize, which need not be asserted
+        collectTermEqs(rewrite(n), 0);
         *i = norm(n);
         d_phiSet.insert(*i);
         Trace("ufsymm:norm") << "UFSYMM init-norm-rewrite " << n << endl
@@ -694,6 +705,7 @@ void SymmetryBreaker::apply(std::vector<Node>& newClauses)
                   << "UFSYMM symmetry-breaking clause: " << d << endl;
             }
             newClauses.push_back(d);
+            collectTermEqs(rewrite(d), 0);
             Node nd = norm(d);
             d_phi.push_back(nd);
             d_phiSet.insert(nd);
